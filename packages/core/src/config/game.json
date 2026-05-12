@@ -1,0 +1,10 @@
+{
+  "tickRate": 20,
+  "worldWidth": 960,
+  "worldHeight": 540,
+  "groundY": 440,
+  "gravity": 1700,
+  "scrollSpeed": 220,
+  "spawnDistanceMin": 280,
+  "spawnDistanceMax": 520
+}

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smashing Cats</title>
+  <link rel="icon" href="/favicon.png" type="image/png" />
+</head>
+
+<body>
+  <div id="settings-overlay" class="settings-overlay">
+    <label for="view-select" data-i18n="view">View</label>
+    <select id="view-select">
+      <option value="canvas">Canvas</option>
+      <option value="phaser">Phaser</option>
+      <option value="three">Three.js</option>
+    </select>
+    <label for="locale-select" data-i18n="locale">Locale</label>
+    <select id="locale-select">
+      <option value="en">EN</option>
+      <option value="uk">UK</option>
+    </select>
+  </div>
+  <div id="game-shell">
+    <div id="game-root"></div>
+    <div id="ui-root"></div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>

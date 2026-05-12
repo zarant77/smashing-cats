@@ -1,0 +1,227 @@
+.character-select {
+  position: fixed;
+  inset: 0;
+
+  display: grid;
+  place-items: center;
+
+  padding: 24px;
+
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255, 204, 51, 0.16), transparent 34%),
+    linear-gradient(180deg, rgba(14, 18, 24, 0.78), rgba(5, 7, 10, 0.92));
+
+  backdrop-filter: blur(10px);
+  pointer-events: auto;
+  z-index: 30;
+}
+
+.character-select[hidden] {
+  display: none;
+}
+
+.character-select-panel {
+  width: min(620px, calc(100vw - 32px));
+  padding: 26px;
+
+  border: none;
+
+  border-radius: 28px;
+
+}
+
+.character-select-panel h1 {
+  margin: 0 0 22px;
+
+  color: #ffffff;
+  font-size: 32px;
+  font-weight: 900;
+  text-align: center;
+  letter-spacing: 0.5px;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+}
+
+.character-carousel {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) 58px;
+  align-items: center;
+  gap: 16px;
+}
+
+.character-carousel-arrow {
+  width: 58px;
+  height: 58px;
+
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06));
+
+  color: #ffcc33;
+  font-size: 44px;
+  line-height: 0.8;
+
+  cursor: pointer;
+  pointer-events: auto;
+
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease,
+    background 140ms ease;
+}
+
+.character-carousel-arrow:hover,
+.character-carousel-arrow:focus-visible {
+  transform: translateY(-2px) scale(1.04);
+
+  border-color: rgba(255, 204, 51, 0.85);
+  background: rgba(255, 204, 51, 0.14);
+
+  outline: none;
+}
+
+.character-card {
+  position: relative;
+
+  display: grid;
+  gap: 14px;
+
+  min-height: 390px;
+  padding: 24px;
+
+  border: 1px solid rgba(255, 204, 51, 0.35);
+  border-radius: 26px;
+
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 204, 51, 0.22), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.045));
+
+  color: #ffffff;
+
+  cursor: pointer;
+  text-align: center;
+
+  pointer-events: auto;
+
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.character-card:hover,
+.character-card:focus-visible {
+  transform: translateY(-4px);
+
+  border-color: #ffcc33;
+
+  box-shadow:
+    0 24px 56px rgba(0, 0, 0, 0.48),
+    0 0 34px rgba(255, 204, 51, 0.18);
+
+  outline: none;
+}
+
+.character-card-image {
+  width: 210px;
+  height: 210px;
+
+  justify-self: center;
+
+  object-fit: contain;
+  image-rendering: auto;
+
+  filter: drop-shadow(0 18px 18px rgba(0, 0, 0, 0.42));
+}
+
+.character-card strong {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.4px;
+}
+
+.character-card dl {
+  display: grid;
+  gap: 10px;
+
+  margin: 4px 0 0;
+
+  text-align: left;
+}
+
+.character-card dl div {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 14px;
+  align-items: center;
+
+  padding: 9px 12px;
+
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.character-card dt {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.character-card dd {
+  margin: 0;
+
+  color: #ffcc33;
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  text-shadow: 0 0 14px rgba(255, 204, 51, 0.32);
+}
+
+@media (max-width: 560px) {
+  .character-select {
+    padding: 12px;
+  }
+
+  .character-select-panel {
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .character-select-panel h1 {
+    font-size: 25px;
+  }
+
+  .character-carousel {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    gap: 8px;
+  }
+
+  .character-carousel-arrow {
+    width: 44px;
+    height: 44px;
+
+    font-size: 34px;
+  }
+
+  .character-card {
+    min-height: 350px;
+    padding: 18px;
+  }
+
+  .character-card-image {
+    width: 170px;
+    height: 170px;
+  }
+
+  .character-card dl div {
+    grid-template-columns: 74px 1fr;
+  }
+}

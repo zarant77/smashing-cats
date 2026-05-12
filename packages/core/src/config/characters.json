@@ -1,0 +1,132 @@
+{
+  "common": {
+    "width": 42,
+    "height": 38,
+    "smashSpeed": 2000,
+    "bounceSpeed": -360,
+    "smashMinJumpProgress": 0.5,
+    "spawnInvulnerabilitySeconds": 2
+  },
+  "characters": [
+    {
+      "kind": "batcat",
+      "name": {
+        "en": "Batcat",
+        "uk": "Беткіт"
+      },
+      "hp": 4,
+      "moveSpeed": 250,
+      "jumpForce": 780
+    },
+    {
+      "kind": "ironcat",
+      "name": {
+        "en": "Ironcat",
+        "uk": "Залізнокіт"
+      },
+      "hp": 5,
+      "moveSpeed": 210,
+      "jumpForce": 700
+    },
+    {
+      "kind": "darkcat",
+      "name": {
+        "en": "Darkcat",
+        "uk": "Пітьмокіт"
+      },
+      "hp": 2,
+      "moveSpeed": 330,
+      "jumpForce": 920
+    },
+    {
+      "kind": "robocat",
+      "name": {
+        "en": "Robocat",
+        "uk": "Робокіт"
+      },
+      "hp": 4,
+      "moveSpeed": 240,
+      "jumpForce": 760
+    },
+    {
+      "kind": "termicator",
+      "name": {
+        "en": "Termicator",
+        "uk": "Термікатор"
+      },
+      "hp": 5,
+      "moveSpeed": 220,
+      "jumpForce": 720
+    },
+    {
+      "kind": "punishcat",
+      "name": {
+        "en": "Punishcat",
+        "uk": "Каракіт"
+      },
+      "hp": 3,
+      "moveSpeed": 290,
+      "jumpForce": 840
+    },
+    {
+      "kind": "carrambacat",
+      "name": {
+        "en": "Carrambacat",
+        "uk": "Карамбакіт"
+      },
+      "hp": 2,
+      "moveSpeed": 350,
+      "jumpForce": 960
+    },
+    {
+      "kind": "commandocat",
+      "name": {
+        "en": "Commandocat",
+        "uk": "Командокіт"
+      },
+      "hp": 4,
+      "moveSpeed": 260,
+      "jumpForce": 800
+    },
+    {
+      "kind": "cybercat",
+      "name": {
+        "en": "Cybercat",
+        "uk": "Кіберкіт"
+      },
+      "hp": 3,
+      "moveSpeed": 320,
+      "jumpForce": 900
+    },
+    {
+      "kind": "samurcat",
+      "name": {
+        "en": "Samurcat",
+        "uk": "Самуркіт"
+      },
+      "hp": 3,
+      "moveSpeed": 340,
+      "jumpForce": 940
+    },
+    {
+      "kind": "zombocat",
+      "name": {
+        "en": "Zombocat",
+        "uk": "Зомбокіт"
+      },
+      "hp": 6,
+      "moveSpeed": 170,
+      "jumpForce": 620
+    },
+    {
+      "kind": "ghostcat",
+      "name": {
+        "en": "Ghostcat",
+        "uk": "Привидокіт"
+      },
+      "hp": 1,
+      "moveSpeed": 380,
+      "jumpForce": 1020
+    }
+  ]
+}

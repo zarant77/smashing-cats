@@ -1,0 +1,29 @@
+[
+  {
+    "kind": "orc",
+    "width": 44,
+    "height": 42,
+    "damage": 1,
+    "score": 100,
+    "minSpeedBonus": 20,
+    "maxSpeedBonus": 90
+  },
+  {
+    "kind": "boar",
+    "width": 44,
+    "height": 42,
+    "damage": 1,
+    "score": 75,
+    "minSpeedBonus": 20,
+    "maxSpeedBonus": 90
+  },
+  {
+    "kind": "rat",
+    "width": 44,
+    "height": 42,
+    "damage": 1,
+    "score": 50,
+    "minSpeedBonus": 20,
+    "maxSpeedBonus": 90
+  }
+]
