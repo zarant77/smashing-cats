@@ -24,6 +24,7 @@ export class CharacterSelect {
   private locale: Locale;
   private t: Translator;
   private readonly onSelect: (characterKind: EntityKind) => void;
+
   private currentIndex = 0;
   private preferredCharacterKind: EntityKind | undefined;
   private lastCharacters: CharacterDefinition[] = [];
@@ -80,6 +81,7 @@ export class CharacterSelect {
     panel.className = "character-select-panel";
 
     const title = document.createElement("h1");
+    title.className = "character-select-title";
     title.textContent = this.t("chooseCat");
 
     const carousel = document.createElement("div");
@@ -150,6 +152,7 @@ export class CharacterSelect {
 
   private createCharacterCard(character: CharacterDefinition, ranges: StatRanges): HTMLButtonElement {
     const button = document.createElement("button");
+
     button.className = "character-card";
     button.type = "button";
 
@@ -158,21 +161,54 @@ export class CharacterSelect {
     });
 
     const image = document.createElement("img");
+
     image.className = "character-card-image";
     image.src = getCharacterImageSrc(character);
     image.alt = character.name[this.locale] ?? character.name.en;
 
     const name = document.createElement("strong");
+
     name.textContent = character.name[this.locale] ?? character.name.en;
 
+    const divider = document.createElement("div");
+
+    divider.className = "character-divider";
+
+    divider.innerHTML = `
+      <span></span>
+      <div class="character-divider-paw">🐾</div>
+      <span></span>
+    `;
+
     const stats = document.createElement("dl");
+
     stats.append(
-      stat(this.t("hp"), character.hp, ranges.hp),
-      stat(this.t("speed"), character.moveSpeed, ranges.moveSpeed),
-      stat(this.t("jump"), character.jumpForce, ranges.jumpForce),
+      stat("❤️", this.t("hp"), character.hp, ranges.hp),
+      stat("⚡", this.t("speed"), character.moveSpeed, ranges.moveSpeed),
+      stat("🦘", this.t("jump"), character.jumpForce, ranges.jumpForce),
     );
 
-    button.append(image, name, stats);
+    const controls = document.createElement("div");
+
+    controls.className = "character-controls-hint";
+
+    controls.innerHTML = `
+      <div class="character-control-group">
+        <kbd>←</kbd>
+        <kbd>→</kbd>
+        <span>Change</span>
+      </div>
+
+      <div class="character-control-separator"></div>
+
+      <div class="character-control-group">
+        <kbd>Enter</kbd>
+        <kbd>Space</kbd>
+        <span>Select</span>
+      </div>
+    `;
+
+    button.append(image, name, divider, stats, controls);
 
     return button;
   }
@@ -192,22 +228,29 @@ export class CharacterSelect {
 
 function createArrowButton(label: string, ariaLabel: string, onClick: () => void): HTMLButtonElement {
   const button = document.createElement("button");
+
   button.className = "character-carousel-arrow";
   button.type = "button";
-  button.textContent = label;
+  button.innerHTML = `<span>${label}</span>`;
   button.ariaLabel = ariaLabel;
+
   button.addEventListener("click", onClick);
 
   return button;
 }
 
-function stat(label: string, value: number, range: StatRange): HTMLElement {
+function stat(icon: string, label: string, value: number, range: StatRange): HTMLElement {
   const wrapper = document.createElement("div");
 
   const term = document.createElement("dt");
-  term.textContent = label;
+
+  term.innerHTML = `
+    <span class="character-stat-icon">${icon}</span>
+    ${label}
+  `;
 
   const description = document.createElement("dd");
+
   description.textContent = stars(normalizeToStars(value, range));
 
   wrapper.append(term, description);
@@ -236,6 +279,7 @@ function normalizeToStars(value: number, range: StatRange): number {
   }
 
   const ratio = (value - range.min) / (range.max - range.min);
+
   return Math.round(1 + ratio * (STAR_COUNT - 1));
 }
 

@@ -85,8 +85,8 @@ export type PlayerSnapshot = EntitySnapshot & {
 export type GameEvent = {
   id: string;
   tick: number;
-  type: "playerHit" | "enemyKilled" | "civilianKilled";
-  playerId: PlayerId;
+  type: "playerHit" | "enemyKilled" | "civilianKilled" | "civilianKilledByEnemy";
+  playerId?: PlayerId;
   entityId: EntityId;
   entityType: EntityType;
   entityKind: EntityKind;

@@ -2,11 +2,11 @@ export type Locale = "en" | "uk";
 
 export type Translator = (key: TranslationKey) => string;
 
-type TranslationKey = "view" | "locale" | "chooseCat" | "hp" | "speed" | "jump" | "points" | "connecting" | "placeholder";
+type TranslationKey = "engine" | "locale" | "chooseCat" | "hp" | "speed" | "jump" | "points" | "connecting" | "placeholder";
 
 const TRANSLATIONS: Record<Locale, Record<TranslationKey, string>> = {
   en: {
-    view: "View",
+    engine: "Engine",
     locale: "Locale",
     chooseCat: "Choose your cat",
     hp: "HP",
@@ -17,7 +17,7 @@ const TRANSLATIONS: Record<Locale, Record<TranslationKey, string>> = {
     placeholder: "placeholder",
   },
   uk: {
-    view: "Вигляд",
+    engine: "Рушій",
     locale: "Мова",
     chooseCat: "Обери кота",
     hp: "HP",

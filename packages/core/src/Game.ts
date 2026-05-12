@@ -7,7 +7,7 @@ import type {
   PlayerInput,
   PlayerSnapshot,
 } from "@smashing-cats/protocol";
-import { GAME_CONFIG, getCharacterConfig, SPAWNABLES } from "./config.js";
+import { CIVILIANS, ENEMIES, GAME_CONFIG, getCharacterConfig, SPAWNABLES } from "./config.js";
 import { intersects } from "./collisions.js";
 import { Random } from "./Random.js";
 import type { CharacterConfig } from "./config.js";
@@ -18,6 +18,8 @@ const EMPTY_INPUT: PlayerInput = {
   right: false,
   jump: false,
 };
+const CIVILIAN_KINDS = new Set<EntityKind>(CIVILIANS.map((config) => config.kind));
+const ENEMY_KINDS = new Set<EntityKind>(ENEMIES.map((config) => config.kind));
 
 export class Game {
   private readonly seed: number;
@@ -102,6 +104,7 @@ export class Game {
     if (hasAlivePlayers) {
       this.updateEnemies(dt);
       this.resolveCollisions();
+      this.resolveEnemyCivilianCollisions();
     }
     this.cleanupEntities();
   }
@@ -239,10 +242,11 @@ export class Game {
           }
         }
 
-        if (entity.type === "civilian" && player.smashingForCollision) {
+        if (entity.type === "civilian") {
           entity.alive = false;
-          player.score += entity.score;
-          this.addEvent("civilianKilled", player, entity, 0, entity.score);
+          const scoreDelta = -entity.score;
+          player.score += scoreDelta;
+          this.addEvent("civilianKilled", player, entity, 0, scoreDelta);
           player.smashing = false;
           player.jumpStartY = player.y;
         }
@@ -260,8 +264,8 @@ export class Game {
   private spawnAhead(): void {
     while (this.nextSpawnX < this.scrollX + GAME_CONFIG.worldWidth * 1.8) {
       const config = this.rng.pick(SPAWNABLES);
-      const isMovingEntity = "minSpeedBonus" in config;
-      const speedBonus = isMovingEntity ? this.rng.nextInt(config.minSpeedBonus, config.maxSpeedBonus) : 0;
+      const isMovingEntity = "minMoveSpeed" in config;
+      const moveSpeed = isMovingEntity ? this.rng.nextInt(config.minMoveSpeed, config.maxMoveSpeed) : 0;
 
       this.entities.push({
         id: `${config.kind}-${this.nextEntityIndex++}`,
@@ -269,7 +273,7 @@ export class Game {
         kind: config.kind,
         x: this.nextSpawnX,
         y: GAME_CONFIG.groundY - config.height,
-        vx: -speedBonus,
+        vx: -moveSpeed,
         vy: 0,
         width: config.width,
         height: config.height,
@@ -287,22 +291,44 @@ export class Game {
     this.entities = this.entities.filter((entity) => entity.x > minX);
   }
 
+  private resolveEnemyCivilianCollisions(): void {
+    for (const enemy of this.entities) {
+      if (enemy.type !== "enemy" || !enemy.alive) {
+        continue;
+      }
+
+      for (const civilian of this.entities) {
+        if (civilian.type !== "civilian" || !civilian.alive || !intersects(enemy, civilian)) {
+          continue;
+        }
+
+        civilian.alive = false;
+        const players = [...this.players.values()];
+        const scoreDelta = players.length === 0 ? 0 : -civilian.score / players.length;
+        for (const player of players) {
+          player.score += scoreDelta;
+        }
+
+        this.addEvent("civilianKilledByEnemy", undefined, civilian, 0, scoreDelta);
+      }
+    }
+  }
+
   private hasAlivePlayers(): boolean {
     return [...this.players.values()].some((player) => player.alive);
   }
 
   private addEvent(
     type: GameEvent["type"],
-    player: Player,
+    player: Player | undefined,
     entity: Entity,
     damage: number,
     scoreDelta: number,
   ): void {
-    this.events.push({
+    const event: GameEvent = {
       id: `event-${this.tick}-${this.nextEventIndex++}`,
       tick: this.tick,
       type,
-      playerId: player.playerId,
       entityId: entity.id,
       entityType: entity.type,
       entityKind: entity.kind,
@@ -310,7 +336,13 @@ export class Game {
       y: entity.y,
       damage,
       scoreDelta,
-    });
+    };
+
+    if (player !== undefined) {
+      event.playerId = player.playerId;
+    }
+
+    this.events.push(event);
   }
 }
 
@@ -371,11 +403,15 @@ function getPlayerSnapshotX(player: Player, scrollX: number): number {
 }
 
 function getEntityType(config: (typeof SPAWNABLES)[number]): Entity["type"] {
-  if (!("score" in config)) {
-    return "obstacle";
+  if (CIVILIAN_KINDS.has(config.kind)) {
+    return "civilian";
   }
 
-  return config.score < 0 ? "civilian" : "enemy";
+  if (ENEMY_KINDS.has(config.kind)) {
+    return "enemy";
+  }
+
+  return "obstacle";
 }
 
 function isPlayerInvulnerable(player: Player, tick: number): boolean {

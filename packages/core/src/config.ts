@@ -56,8 +56,8 @@ export type EnemyConfig = {
   height: number;
   damage: number;
   score: number;
-  minSpeedBonus: number;
-  maxSpeedBonus: number;
+  minMoveSpeed: number;
+  maxMoveSpeed: number;
 };
 
 export type CivilianConfig = {
@@ -66,8 +66,8 @@ export type CivilianConfig = {
   height: number;
   damage: number;
   score: number;
-  minSpeedBonus: number;
-  maxSpeedBonus: number;
+  minMoveSpeed: number;
+  maxMoveSpeed: number;
 };
 
 export type ObstacleConfig = {

@@ -7,8 +7,10 @@ export class Hud {
 
   public constructor(root: HTMLElement, t: Translator) {
     this.t = t;
+
     this.element = document.createElement("div");
     this.element.className = "hud";
+
     root.append(this.element);
   }
 
@@ -24,11 +26,59 @@ export class Hud {
       return;
     }
 
-    this.element.replaceChildren(...players.map((player) => {
-      const item = document.createElement("div");
-      item.className = player.playerId === localPlayerId ? "hud-player hud-player-local" : "hud-player";
-      item.textContent = `${player.playerId} ${player.hp}/${player.maxHp} ${this.t("hp")} ${player.score} ${this.t("points")}`;
-      return item;
-    }));
+    this.element.replaceChildren(
+      ...players.map((player) => {
+        const item = document.createElement("div");
+
+        item.className = player.playerId === localPlayerId ? "hud-player hud-player-local" : "hud-player";
+
+        const hpPercent = getHpPercent(player.hp, player.maxHp);
+
+        item.innerHTML = `
+          <img
+            class="hud-player-portrait"
+            src="/portraits/${player.kind}.png"
+            alt="${player.kind}"
+          />
+
+          <div class="hud-player-content">
+            <div class="hud-player-top">
+              <strong>${player.kind}</strong>
+              <span class="hud-player-score">⭐ ${player.score}</span>
+            </div>
+
+            <div class="hud-hp-row">
+              <span class="hud-hp-icon">❤️</span>
+
+              <div
+                class="hud-hp-segments"
+                style="grid-template-columns: repeat(${player.maxHp}, 1fr)"
+                aria-label="${this.t("hp")} ${player.hp}/${player.maxHp}"
+              >
+                ${createHpSegments(player.hp, player.maxHp)}
+              </div>
+            </div>
+          </div>
+        `;
+
+        return item;
+      }),
+    );
   }
+}
+
+function createHpSegments(hp: number, maxHp: number): string {
+  return Array.from({ length: maxHp }, (_, index) => {
+    const className = index < hp ? "hud-hp-segment hud-hp-segment-active" : "hud-hp-segment";
+
+    return `<span class="${className}"></span>`;
+  }).join("");
+}
+
+function getHpPercent(hp: number, maxHp: number): number {
+  if (maxHp <= 0) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(100, Math.round((hp / maxHp) * 100)));
 }

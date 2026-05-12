@@ -1,29 +1,29 @@
 [
   {
     "kind": "orc",
-    "width": 44,
-    "height": 42,
+    "width": 64,
+    "height": 48,
     "damage": 1,
     "score": 100,
-    "minSpeedBonus": 20,
-    "maxSpeedBonus": 90
+    "minMoveSpeed": 50,
+    "maxMoveSpeed": 70
   },
   {
     "kind": "boar",
-    "width": 44,
-    "height": 42,
+    "width": 64,
+    "height": 48,
     "damage": 1,
     "score": 75,
-    "minSpeedBonus": 20,
-    "maxSpeedBonus": 90
+    "minMoveSpeed": 90,
+    "maxMoveSpeed": 120
   },
   {
     "kind": "rat",
-    "width": 44,
-    "height": 42,
+    "width": 64,
+    "height": 33,
     "damage": 1,
     "score": 50,
-    "minSpeedBonus": 20,
-    "maxSpeedBonus": 90
+    "minMoveSpeed": 150,
+    "maxMoveSpeed": 200
   }
 ]

@@ -1,7 +1,7 @@
 {
   "common": {
-    "width": 42,
-    "height": 38,
+    "width": 60,
+    "height": 35,
     "smashSpeed": 2000,
     "bounceSpeed": -360,
     "smashMinJumpProgress": 0.5,

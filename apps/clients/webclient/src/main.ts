@@ -19,7 +19,7 @@ if (uiRoot === null) {
   throw new Error("UI root was not found");
 }
 
-const viewSelect = document.querySelector<HTMLSelectElement>("#view-select");
+const engineSelect = document.querySelector<HTMLSelectElement>("#engine-select");
 const localeSelect = document.querySelector<HTMLSelectElement>("#locale-select");
 const params = new URLSearchParams(window.location.search);
 let locale = parseLocale(params.get("locale") ?? localStorage.getItem("smashing-cats-locale"));
@@ -61,10 +61,10 @@ let localTick = 0;
 
 characterSelect.render(characters, hasSelectedCharacter);
 
-if (viewSelect !== null) {
-  viewSelect.value = viewKind;
-  viewSelect.addEventListener("change", () => {
-    viewKind = parseViewKind(viewSelect.value);
+if (engineSelect !== null) {
+  engineSelect.value = viewKind;
+  engineSelect.addEventListener("change", () => {
+    viewKind = parseViewKind(engineSelect.value);
     localStorage.setItem("smashing-cats-view", viewKind);
     view = createView(viewKind, root);
     view.setLocale?.(locale, t);
@@ -132,7 +132,7 @@ function applyStaticTranslations(): void {
   document.documentElement.lang = locale;
   for (const element of document.querySelectorAll<HTMLElement>("[data-i18n]")) {
     const key = element.dataset.i18n;
-    if (key === "view" || key === "locale") {
+    if (key === "engine" || key === "locale") {
       element.textContent = t(key);
     }
   }

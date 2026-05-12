@@ -1,11 +1,11 @@
 [
   {
-    "kind": "villager",
-    "width": 34,
+    "kind": "granny",
+    "width": 46,
     "height": 46,
     "damage": 0,
-    "score": -100,
-    "minSpeedBonus": 0,
-    "maxSpeedBonus": 35
+    "score": 100,
+    "minMoveSpeed": 10,
+    "maxMoveSpeed": 20
   }
 ]
