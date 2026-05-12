@@ -1,8 +1,0 @@
-[phases.install]
-cmds = ["pnpm install --frozen-lockfile"]
-
-[phases.build]
-cmds = ["pnpm build:server"]
-
-[start]
-cmd = "pnpm --filter @smashing-cats/server start"
