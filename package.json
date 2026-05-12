@@ -7,7 +7,7 @@
     "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",
     "build:server": "tsc -b --force packages/protocol packages/core apps/server",
-    "build:webclient": "pnpm --filter @smashing-cats/webclient build",
+    "build:webclient": "tsc -b --force packages/protocol apps/clients/webclient && pnpm --filter @smashing-cats/webclient vite build",
     "start:server": "pnpm --filter @smashing-cats/server start",
     "start:webclient": "pnpm --filter @smashing-cats/webclient preview -- --host 0.0.0.0 --port ${PORT:-4173}",
     "typecheck": "pnpm -r typecheck"
