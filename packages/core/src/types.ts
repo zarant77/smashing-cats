@@ -34,6 +34,8 @@ export type Player = Entity & {
   jumpStartY: number;
   wasJumpPressed: boolean;
   lastInputSnapshotTick: number | undefined;
+  lastReceivedInputSeq: number;
+  lastProcessedInputSeq: number;
   smashSnapshotTick: number | undefined;
   damagedByEntityIds: Set<EntityId>;
   lastInput: PlayerInput;

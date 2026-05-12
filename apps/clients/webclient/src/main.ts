@@ -1,7 +1,16 @@
-import type { CharacterDefinition, EntityKind, PlayerId, ServerToClientMessage } from "@smashing-cats/protocol";
+import type {
+  CharacterDefinition,
+  EntitySnapshot,
+  EntityKind,
+  GameSnapshot,
+  PlayerId,
+  PlayerSnapshot,
+  ServerToClientMessage,
+} from "@smashing-cats/protocol";
 import { createTranslator, parseLocale } from "./i18n.js";
 import { readInput } from "./input.js";
 import { SnapshotInterpolator } from "./interpolation.js";
+import { receiveWithSimulatedLag, sendWithSimulatedLag } from "./networkDebug.js";
 import { LocalPlayerPredictor } from "./prediction.js";
 import { CharacterSelect } from "./ui/CharacterSelect.js";
 import { Hud } from "./ui/Hud.js";
@@ -34,6 +43,7 @@ let hasSelectedCharacter = false;
 const interpolator = new SnapshotInterpolator();
 const predictor = new LocalPlayerPredictor();
 const socket = new WebSocket(import.meta.env.VITE_WS_URL ?? "ws://localhost:8080");
+const reportedEntityCollisions = new Set<string>();
 const hud = new Hud(uiRoot, t);
 const characterSelect = new CharacterSelect(uiRoot, {
   locale,
@@ -59,7 +69,7 @@ const characterSelect = new CharacterSelect(uiRoot, {
 });
 
 let playerId: PlayerId | undefined;
-let localTick = 0;
+let localTick = 1;
 
 characterSelect.render(characters, hasSelectedCharacter);
 
@@ -103,7 +113,9 @@ socket.addEventListener("message", (event) => {
   }
 
   if (message.type === "snapshot") {
-    interpolator.add(message.snapshot);
+    receiveWithSimulatedLag(() => {
+      interpolator.add(message.snapshot);
+    });
   }
 });
 
@@ -112,19 +124,34 @@ setInterval(() => {
     return;
   }
 
-  socket.send(
+  const input = readInput();
+  const inputSeq = localTick++;
+  const playerState = predictor.getPlayerState();
+  if (playerState === undefined) {
+    return;
+  }
+
+  sendWithSimulatedLag(
+    socket,
     JSON.stringify({
-      type: "input",
-      tick: localTick++,
+      type: "playerState",
+      inputSeq,
       snapshotTick: interpolator.getRenderedTick(),
-      input: readInput(),
+      x: playerState.x,
+      y: playerState.y,
+      vx: playerState.vx,
+      vy: playerState.vy,
+      grounded: playerState.grounded,
+      smashing: playerState.smashing,
+      jumpStartY: playerState.jumpStartY,
+      wasJumpPressed: playerState.wasJumpPressed,
     }),
   );
 }, 1000 / 60);
 
 function frame(): void {
-  const input = readInput();
-  const snapshot = predictor.apply(interpolator.get(playerId), interpolator.getLatest(), playerId, input, characters);
+  const snapshot = predictor.apply(interpolator.get(playerId), interpolator.getLatest(), playerId, readInput(), characters);
+  reportLocalEntityCollisions(snapshot);
   view.render(snapshot, playerId);
   hud.render(snapshot, playerId);
   requestAnimationFrame(frame);
@@ -140,4 +167,44 @@ function applyStaticTranslations(): void {
       element.textContent = t(key);
     }
   }
+}
+
+function reportLocalEntityCollisions(snapshot: GameSnapshot | undefined): void {
+  if (snapshot === undefined || playerId === undefined || socket.readyState !== WebSocket.OPEN) {
+    return;
+  }
+
+  const player = snapshot.players.find((candidate) => candidate.playerId === playerId);
+  if (player === undefined || !player.alive) {
+    return;
+  }
+
+  for (const entity of snapshot.entities) {
+    if (!entity.alive || reportedEntityCollisions.has(entity.id)) {
+      continue;
+    }
+
+    if (!intersectsPlayerEntity(player, entity, snapshot.world.scrollX)) {
+      continue;
+    }
+
+    reportedEntityCollisions.add(entity.id);
+    sendWithSimulatedLag(
+      socket,
+      JSON.stringify({
+        type: "entityCollision",
+        entityId: entity.id,
+        collisionKind: player.smashing ? "smash" : "touch",
+        snapshotTick: interpolator.getRenderedTick(),
+      }),
+    );
+  }
+}
+
+function intersectsPlayerEntity(player: PlayerSnapshot, entity: EntitySnapshot, scrollX: number): boolean {
+  const entityScreenX = entity.x - scrollX;
+  return player.x < entityScreenX + entity.width &&
+    player.x + player.width > entityScreenX &&
+    player.y < entity.y + entity.height &&
+    player.y + player.height > entity.y;
 }

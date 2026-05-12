@@ -54,7 +54,15 @@ export class Room {
     }
 
     if (message.type === "input") {
-      this.game.setInput(playerId, message.input, message.snapshotTick);
+      this.game.setInput(playerId, message.input, message.snapshotTick, message.inputSeq ?? message.tick);
+    }
+
+    if (message.type === "playerState") {
+      this.game.setPlayerState(playerId, message);
+    }
+
+    if (message.type === "entityCollision") {
+      this.game.handleEntityCollision(playerId, message);
     }
 
     if (message.type === "selectCharacter") {

@@ -1,10 +1,12 @@
 import type {
   EntitySnapshot,
+  EntityCollisionMessage,
   EntityKind,
   GameEvent,
   GameSnapshot,
   PlayerId,
   PlayerInput,
+  PlayerStateMessage,
   PlayerSnapshot,
 } from "@smashing-cats/protocol";
 import { CIVILIANS, ENEMIES, GAME_CONFIG, getCharacterConfig, SPAWNABLES } from "./config.js";
@@ -84,6 +86,8 @@ export class Game {
       jumpStartY: GAME_CONFIG.groundY - characterConfig.height,
       wasJumpPressed: false,
       lastInputSnapshotTick: undefined,
+      lastReceivedInputSeq: 0,
+      lastProcessedInputSeq: 0,
       smashSnapshotTick: undefined,
       damagedByEntityIds: new Set(),
       lastInput: { ...EMPTY_INPUT },
@@ -94,7 +98,12 @@ export class Game {
     this.players.delete(playerId);
   }
 
-  public setInput(playerId: PlayerId, input: PlayerInput, snapshotTick: number | undefined): void {
+  public setInput(
+    playerId: PlayerId,
+    input: PlayerInput,
+    snapshotTick: number | undefined,
+    inputSeq: number | undefined,
+  ): void {
     const player = this.players.get(playerId);
     if (player === undefined) {
       return;
@@ -102,6 +111,51 @@ export class Game {
 
     player.lastInput = input;
     player.lastInputSnapshotTick = normalizeSnapshotTick(snapshotTick);
+    player.lastReceivedInputSeq = normalizeInputSeq(inputSeq, player.lastReceivedInputSeq);
+  }
+
+  public setPlayerState(playerId: PlayerId, state: PlayerStateMessage): void {
+    const player = this.players.get(playerId);
+    if (player === undefined || !player.alive) {
+      return;
+    }
+
+    const startedSmash = !player.smashing && state.smashing;
+    player.x = clampFinite(state.x, 20, GAME_CONFIG.worldWidth - player.width - 20, player.x);
+    player.y = clampFinite(state.y, -GAME_CONFIG.worldHeight * 2, GAME_CONFIG.groundY - player.height, player.y);
+    player.vx = finiteOr(state.vx, player.vx);
+    player.vy = finiteOr(state.vy, player.vy);
+    player.grounded = state.grounded;
+    player.smashing = state.smashing;
+    player.smashingForCollision = state.smashing;
+    player.jumpStartY = finiteOr(state.jumpStartY, player.jumpStartY);
+    player.wasJumpPressed = state.wasJumpPressed;
+    player.lastInputSnapshotTick = normalizeSnapshotTick(state.snapshotTick);
+    player.lastReceivedInputSeq = normalizeInputSeq(state.inputSeq, player.lastReceivedInputSeq);
+    player.lastProcessedInputSeq = player.lastReceivedInputSeq;
+
+    if (startedSmash) {
+      player.smashSnapshotTick = player.lastInputSnapshotTick;
+    }
+
+    if (player.grounded && !player.smashing) {
+      player.smashSnapshotTick = undefined;
+    }
+  }
+
+  public handleEntityCollision(playerId: PlayerId, collision: EntityCollisionMessage): void {
+    const player = this.players.get(playerId);
+    const entity = this.entities.find((candidate) => candidate.id === collision.entityId);
+    if (player === undefined || entity === undefined || !player.alive || !entity.alive) {
+      return;
+    }
+
+    if (collision.snapshotTick !== undefined) {
+      player.lastInputSnapshotTick = normalizeSnapshotTick(collision.snapshotTick);
+      player.smashSnapshotTick = player.lastInputSnapshotTick;
+    }
+
+    this.resolvePlayerEntityCollision(player, entity, collision.collisionKind);
   }
 
   public update(dt: number): void {
@@ -131,6 +185,8 @@ export class Game {
       kind: player.kind,
       x: getPlayerSnapshotX(player, this.scrollX),
       y: player.y,
+      vx: player.vx,
+      vy: player.vy,
       width: player.width,
       height: player.height,
       damage: player.damage,
@@ -141,6 +197,9 @@ export class Game {
       invulnerable: isPlayerInvulnerable(player, this.tick),
       grounded: player.grounded,
       smashing: player.smashing,
+      jumpStartY: player.jumpStartY,
+      wasJumpPressed: player.wasJumpPressed,
+      lastProcessedInputSeq: player.lastProcessedInputSeq,
     }));
 
     const entities: EntitySnapshot[] = this.entities.map((entity) => ({
@@ -149,6 +208,8 @@ export class Game {
       kind: entity.kind,
       x: entity.x,
       y: entity.y,
+      vx: entity.vx,
+      vy: entity.vy,
       width: entity.width,
       height: entity.height,
       damage: entity.damage,
@@ -180,40 +241,6 @@ export class Game {
         updateDeadPlayer(player, dt);
         continue;
       }
-
-      const input = player.lastInput;
-      const characterConfig = getCharacterConfig(player.kind);
-      const moveDirection = Number(input.right) - Number(input.left);
-      const jumpPressed = input.jump && !player.wasJumpPressed;
-      player.smashingForCollision = player.smashing;
-      player.vx = player.smashing ? 0 : moveDirection * characterConfig.moveSpeed;
-
-      if (jumpPressed && player.grounded) {
-        player.vy = -characterConfig.jumpForce;
-        player.grounded = false;
-        player.jumpStartY = player.y;
-      } else if (jumpPressed && !player.grounded && !player.smashing && canSmash(player, characterConfig)) {
-        player.vy = characterConfig.smashSpeed;
-        player.smashing = true;
-        player.smashingForCollision = true;
-        player.smashSnapshotTick = player.lastInputSnapshotTick;
-      }
-
-      player.x += player.vx * dt;
-      updatePlayerVertical(player, characterConfig, dt);
-
-      player.x = clamp(player.x, 20, GAME_CONFIG.worldWidth - player.width - 20);
-
-      if (player.y + player.height >= GAME_CONFIG.groundY) {
-        player.y = GAME_CONFIG.groundY - player.height;
-        player.vy = 0;
-        player.grounded = true;
-        player.smashing = false;
-        player.smashSnapshotTick = undefined;
-        player.jumpStartY = player.y;
-      }
-
-      player.wasJumpPressed = input.jump;
     }
   }
 
@@ -246,38 +273,52 @@ export class Game {
 
         const currentIntersects = intersects(collisionPlayer, entity);
 
-        if (entity.type === "enemy") {
-          if (player.smashingForCollision && (currentIntersects || this.intersectsCompensatedEntity(player, entity))) {
-            entity.alive = false;
-            player.score += entity.score;
-            this.addEvent("enemyKilled", player, entity, 0, entity.score);
-            player.smashing = false;
-            player.smashSnapshotTick = undefined;
-            player.jumpStartY = player.y;
-          } else if (currentIntersects) {
-            const damage = damagePlayer(player, entity, this.scrollX, this.tick);
-            if (damage > 0) {
-              this.addEvent("playerHit", player, entity, damage, 0);
-            }
-          }
+        if (currentIntersects || this.intersectsCompensatedEntity(player, entity)) {
+          this.resolvePlayerEntityCollision(player, entity, player.smashingForCollision ? "smash" : "touch");
         }
+      }
+    }
+  }
 
-        if (entity.type === "civilian" && (currentIntersects || this.intersectsCompensatedEntity(player, entity))) {
-          entity.alive = false;
-          const scoreDelta = -entity.score;
-          player.score += scoreDelta;
-          this.addEvent("civilianKilled", player, entity, 0, scoreDelta);
-          player.smashing = false;
-          player.smashSnapshotTick = undefined;
-          player.jumpStartY = player.y;
-        }
+  private resolvePlayerEntityCollision(
+    player: Player,
+    entity: Entity,
+    collisionKind: EntityCollisionMessage["collisionKind"],
+  ): void {
+    if (!entity.alive) {
+      return;
+    }
 
-        if (entity.type === "obstacle" && currentIntersects) {
-          const damage = damagePlayer(player, entity, this.scrollX, this.tick);
-          if (damage > 0) {
-            this.addEvent("playerHit", player, entity, damage, 0);
-          }
+    if (entity.type === "enemy") {
+      if (collisionKind === "smash" || player.smashingForCollision) {
+        entity.alive = false;
+        player.score += entity.score;
+        this.addEvent("enemyKilled", player, entity, 0, entity.score);
+        player.smashing = false;
+        player.smashSnapshotTick = undefined;
+        player.jumpStartY = player.y;
+      } else {
+        const damage = damagePlayer(player, entity, this.scrollX, this.tick);
+        if (damage > 0) {
+          this.addEvent("playerHit", player, entity, damage, 0);
         }
+      }
+    }
+
+    if (entity.type === "civilian") {
+      entity.alive = false;
+      const scoreDelta = -entity.score;
+      player.score += scoreDelta;
+      this.addEvent("civilianKilled", player, entity, 0, scoreDelta);
+      player.smashing = false;
+      player.smashSnapshotTick = undefined;
+      player.jumpStartY = player.y;
+    }
+
+    if (entity.type === "obstacle") {
+      const damage = damagePlayer(player, entity, this.scrollX, this.tick);
+      if (damage > 0) {
+        this.addEvent("playerHit", player, entity, damage, 0);
       }
     }
   }
@@ -431,16 +472,6 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-function canSmash(player: Player, characterConfig: CharacterConfig): boolean {
-  const maxJumpHeight = (characterConfig.jumpForce * characterConfig.jumpForce) / (2 * GAME_CONFIG.gravity);
-  return player.jumpStartY - player.y >= maxJumpHeight * characterConfig.smashMinJumpProgress;
-}
-
-function updatePlayerVertical(player: Player, characterConfig: CharacterConfig, dt: number): void {
-  player.y += player.vy * dt;
-  player.vy += GAME_CONFIG.gravity * dt;
-}
-
 function damagePlayer(player: Player, entity: Entity, scrollX: number, tick: number): number {
   if (isPlayerInvulnerable(player, tick) || player.damagedByEntityIds.has(entity.id)) {
     return 0;
@@ -468,6 +499,22 @@ function normalizeSnapshotTick(snapshotTick: number | undefined): number | undef
   }
 
   return Math.max(0, Math.floor(snapshotTick));
+}
+
+function normalizeInputSeq(inputSeq: number | undefined, fallback: number): number {
+  if (inputSeq === undefined || !Number.isFinite(inputSeq)) {
+    return fallback;
+  }
+
+  return Math.max(fallback, Math.floor(inputSeq));
+}
+
+function finiteOr(value: number, fallback: number): number {
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function clampFinite(value: number, min: number, max: number, fallback: number): number {
+  return clamp(finiteOr(value, fallback), min, max);
 }
 
 function updateDeadPlayer(player: Player, dt: number): void {

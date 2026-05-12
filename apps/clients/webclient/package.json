@@ -10,6 +10,7 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "@smashing-cats/core": "workspace:*",
     "@smashing-cats/protocol": "workspace:*",
     "vite": "^6.0.3"
   },

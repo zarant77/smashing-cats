@@ -30,6 +30,7 @@ export type PlayerInput = {
 export type InputMessage = {
   type: "input";
   tick: number;
+  inputSeq?: number;
   snapshotTick?: number;
   input: PlayerInput;
 };
@@ -45,7 +46,33 @@ export type SelectCharacterMessage = {
   name?: string;
 };
 
-export type ClientToServerMessage = JoinMessage | SelectCharacterMessage | InputMessage;
+export type PlayerStateMessage = {
+  type: "playerState";
+  inputSeq: number;
+  snapshotTick?: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  grounded: boolean;
+  smashing: boolean;
+  jumpStartY: number;
+  wasJumpPressed: boolean;
+};
+
+export type EntityCollisionMessage = {
+  type: "entityCollision";
+  entityId: EntityId;
+  collisionKind: "touch" | "smash";
+  snapshotTick?: number;
+};
+
+export type ClientToServerMessage =
+  | JoinMessage
+  | SelectCharacterMessage
+  | InputMessage
+  | PlayerStateMessage
+  | EntityCollisionMessage;
 
 export type CharacterDefinition = {
   kind: EntityKind;
@@ -65,6 +92,8 @@ export type EntitySnapshot = {
   kind: EntityKind;
   x: number;
   y: number;
+  vx: number;
+  vy: number;
   width: number;
   height: number;
   damage: number;
@@ -75,12 +104,17 @@ export type EntitySnapshot = {
 export type PlayerSnapshot = EntitySnapshot & {
   type: "player";
   playerId: PlayerId;
+  vx: number;
+  vy: number;
   hp: number;
   maxHp: number;
   score: number;
   invulnerable: boolean;
   grounded: boolean;
   smashing: boolean;
+  jumpStartY: number;
+  wasJumpPressed: boolean;
+  lastProcessedInputSeq: number;
 };
 
 export type GameEvent = {
