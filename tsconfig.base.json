@@ -9,6 +9,10 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@smashing-cats/protocol": ["packages/protocol/src/index.ts"]
+    },
     "declaration": true,
     "sourceMap": true
   }
