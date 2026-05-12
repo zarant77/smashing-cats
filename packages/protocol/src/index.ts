@@ -106,6 +106,7 @@ export type GameSnapshot = {
     width: number;
     height: number;
     groundY: number;
+    gravity: number;
   };
   players: PlayerSnapshot[];
   entities: EntitySnapshot[];

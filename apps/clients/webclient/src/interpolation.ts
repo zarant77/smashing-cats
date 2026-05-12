@@ -74,6 +74,10 @@ export class SnapshotInterpolator {
     return this.renderedTick;
   }
 
+  public getLatest(): GameSnapshot | undefined {
+    return this.snapshots.at(-1)?.snapshot;
+  }
+
   private setRenderedTick(snapshot: GameSnapshot | undefined): GameSnapshot | undefined {
     this.renderedTick = snapshot?.tick;
     return snapshot;

@@ -165,6 +165,7 @@ export class Game {
         width: GAME_CONFIG.worldWidth,
         height: GAME_CONFIG.worldHeight,
         groundY: GAME_CONFIG.groundY,
+        gravity: GAME_CONFIG.gravity,
       },
       players,
       entities,

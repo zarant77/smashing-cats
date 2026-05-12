@@ -2,6 +2,7 @@ import type { CharacterDefinition, EntityKind, PlayerId, ServerToClientMessage }
 import { createTranslator, parseLocale } from "./i18n.js";
 import { readInput } from "./input.js";
 import { SnapshotInterpolator } from "./interpolation.js";
+import { LocalPlayerPredictor } from "./prediction.js";
 import { CharacterSelect } from "./ui/CharacterSelect.js";
 import { Hud } from "./ui/Hud.js";
 import { createView, parseViewKind } from "./views/createView.js";
@@ -31,6 +32,7 @@ view.setLocale?.(locale, t);
 let characters: CharacterDefinition[] = [];
 let hasSelectedCharacter = false;
 const interpolator = new SnapshotInterpolator();
+const predictor = new LocalPlayerPredictor();
 const socket = new WebSocket(import.meta.env.VITE_WS_URL ?? "ws://localhost:8080");
 const hud = new Hud(uiRoot, t);
 const characterSelect = new CharacterSelect(uiRoot, {
@@ -121,7 +123,8 @@ setInterval(() => {
 }, 1000 / 60);
 
 function frame(): void {
-  const snapshot = interpolator.get(playerId);
+  const input = readInput();
+  const snapshot = predictor.apply(interpolator.get(playerId), interpolator.getLatest(), playerId, input, characters);
   view.render(snapshot, playerId);
   hud.render(snapshot, playerId);
   requestAnimationFrame(frame);
