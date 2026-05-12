@@ -1,6 +1,6 @@
-export const SIMULATED_INPUT_LAG_MS = 60;
-export const SIMULATED_SNAPSHOT_LAG_MS = 60;
-export const SIMULATED_JITTER_MS = 50;
+export const SIMULATED_INPUT_LAG_MS = 0;
+export const SIMULATED_SNAPSHOT_LAG_MS = 0;
+export const SIMULATED_JITTER_MS = 0;
 
 export function sendWithSimulatedLag(socket: WebSocket, payload: string): void {
   runWithSimulatedLag(SIMULATED_INPUT_LAG_MS, () => {
