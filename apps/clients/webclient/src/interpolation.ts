@@ -3,7 +3,6 @@ import type { EntitySnapshot, GameSnapshot, PlayerId, PlayerSnapshot } from "@sm
 const REMOTE_PLAYER_INTERPOLATION_DELAY_MS = 75;
 const MAX_EXTRAPOLATION_MS = 120;
 const MAX_BUFFERED_SNAPSHOTS = 12;
-const LOCAL_PLAYER_SMOOTHING_MS = 55;
 const WORLD_CORRECTION_SMOOTHING_MS = 70;
 
 type BufferedSnapshot = {
@@ -13,12 +12,12 @@ type BufferedSnapshot = {
 
 export class SnapshotInterpolator {
   private readonly snapshots: BufferedSnapshot[] = [];
-  private readonly localPlayers = new Map<PlayerId, { player: PlayerSnapshot; updatedAt: number }>();
   private smoothedWorld: { snapshot: GameSnapshot; updatedAt: number } | undefined;
   private renderedTick: number | undefined;
 
   public add(snapshot: GameSnapshot, receivedAt = performance.now()): void {
     const last = this.snapshots.at(-1);
+
     if (last !== undefined && snapshot.tick <= last.snapshot.tick) {
       return;
     }
@@ -41,11 +40,13 @@ export class SnapshotInterpolator {
     }
 
     const renderTime = now - REMOTE_PLAYER_INTERPOLATION_DELAY_MS;
+
     let previous = this.snapshots[0];
     let next = this.snapshots.at(-1);
 
     for (let index = 1; index < this.snapshots.length; index += 1) {
       const candidate = this.snapshots[index];
+
       if (candidate === undefined) {
         continue;
       }
@@ -62,32 +63,20 @@ export class SnapshotInterpolator {
       return this.setRenderedTick(this.smoothWorld(this.extrapolateWorld(this.snapshots.at(-1), now), now));
     }
 
-    const latestBuffered = this.snapshots.at(-1);
-    const latest = latestBuffered?.snapshot;
-
     if (previous === next || next.receivedAt <= previous.receivedAt) {
-      const extrapolatedNext = this.smoothWorld(this.extrapolateWorld(next, now), now);
-      return this.setRenderedTick(
-        extrapolatedNext === undefined
-          ? undefined
-          : this.withSmoothedLocalPlayer(extrapolatedNext, latest, localPlayerId, now),
-      );
+      return this.setRenderedTick(this.smoothWorld(this.extrapolateWorld(next, now), now));
     }
 
     const alpha = clamp01((renderTime - previous.receivedAt) / (next.receivedAt - previous.receivedAt));
+
+    const latestBuffered = this.snapshots.at(-1);
     const extrapolatedLatest = this.smoothWorld(this.extrapolateWorld(latestBuffered ?? next, now), now);
-    return this.setRenderedTick(
-      this.withSmoothedLocalPlayer(
-        {
-          ...interpolateSnapshot(previous.snapshot, next.snapshot, alpha),
-          world: extrapolatedLatest?.world ?? next.snapshot.world,
-          entities: extrapolatedLatest?.entities ?? next.snapshot.entities,
-        },
-        latest,
-        localPlayerId,
-        now,
-      ),
-    );
+
+    return this.setRenderedTick({
+      ...interpolateSnapshot(previous.snapshot, next.snapshot, alpha, localPlayerId),
+      world: extrapolatedLatest?.world ?? next.snapshot.world,
+      entities: extrapolatedLatest?.entities ?? next.snapshot.entities,
+    });
   }
 
   public getRenderedTick(): number | undefined {
@@ -109,6 +98,7 @@ export class SnapshotInterpolator {
     }
 
     const dt = Math.min(MAX_EXTRAPOLATION_MS, Math.max(0, now - buffered.receivedAt)) / 1000;
+
     return {
       ...buffered.snapshot,
       world: {
@@ -129,12 +119,14 @@ export class SnapshotInterpolator {
     }
 
     const previous = this.smoothedWorld;
+
     if (previous === undefined) {
       this.smoothedWorld = { snapshot, updatedAt: now };
       return snapshot;
     }
 
     const alpha = clamp01((now - previous.updatedAt) / WORLD_CORRECTION_SMOOTHING_MS);
+
     const smoothed = {
       ...snapshot,
       world: {
@@ -145,45 +137,12 @@ export class SnapshotInterpolator {
     };
 
     this.smoothedWorld = { snapshot: smoothed, updatedAt: now };
+
     return smoothed;
-  }
-
-  private withSmoothedLocalPlayer(
-    snapshot: GameSnapshot,
-    latest: GameSnapshot | undefined,
-    localPlayerId: PlayerId | undefined,
-    now: number,
-  ): GameSnapshot {
-    if (latest === undefined || localPlayerId === undefined) {
-      return snapshot;
-    }
-
-    const latestPlayer = latest.players.find((player) => player.playerId === localPlayerId);
-    if (latestPlayer === undefined) {
-      return snapshot;
-    }
-
-    const previous = this.localPlayers.get(localPlayerId);
-    if (latestPlayer.smashing || previous?.player.smashing) {
-      this.localPlayers.set(localPlayerId, { player: latestPlayer, updatedAt: now });
-      return {
-        ...snapshot,
-        players: snapshot.players.map((player) => (player.playerId === localPlayerId ? latestPlayer : player)),
-      };
-    }
-
-    const alpha = previous === undefined ? 1 : clamp01((now - previous.updatedAt) / LOCAL_PLAYER_SMOOTHING_MS);
-    const smoothedPlayer = interpolatePlayer(previous?.player, latestPlayer, alpha);
-    this.localPlayers.set(localPlayerId, { player: smoothedPlayer, updatedAt: now });
-
-    return {
-      ...snapshot,
-      players: snapshot.players.map((player) => (player.playerId === localPlayerId ? smoothedPlayer : player)),
-    };
   }
 }
 
-function interpolateSnapshot(from: GameSnapshot, to: GameSnapshot, alpha: number): GameSnapshot {
+function interpolateSnapshot(from: GameSnapshot, to: GameSnapshot, alpha: number, localPlayerId: PlayerId | undefined): GameSnapshot {
   return {
     ...to,
     tick: Math.round(lerp(from.tick, to.tick, alpha)),
@@ -191,7 +150,13 @@ function interpolateSnapshot(from: GameSnapshot, to: GameSnapshot, alpha: number
       ...to.world,
       scrollX: lerp(from.world.scrollX, to.world.scrollX, alpha),
     },
-    players: to.players.map((player) => interpolatePlayer(findById(from.players, player.id), player, alpha)),
+    players: to.players.map((player) => {
+      if (player.playerId === localPlayerId) {
+        return player;
+      }
+
+      return interpolatePlayer(findById(from.players, player.id), player, alpha);
+    }),
     entities: to.entities.map((entity) => interpolateEntity(findById(from.entities, entity.id), entity, alpha)),
   };
 }

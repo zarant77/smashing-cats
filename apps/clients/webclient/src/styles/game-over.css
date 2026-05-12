@@ -1,0 +1,73 @@
+.game-over-popup {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+
+  display: grid;
+  place-items: center;
+
+  background: rgba(0, 0, 0, 0.48);
+  pointer-events: auto;
+}
+
+.game-over-popup[hidden] {
+  display: none !important;
+}
+
+.game-over-card {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+
+  width: min(360px, calc(100vw - 32px));
+  padding: 28px;
+
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 28px;
+
+  background: linear-gradient(180deg, rgba(35, 39, 52, 0.96), rgba(16, 18, 26, 0.96));
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+}
+
+.game-over-card h2 {
+  margin: 0;
+
+  color: white;
+  font-size: 28px;
+  text-align: center;
+}
+
+.game-over-cat {
+  width: 180px;
+  height: 180px;
+
+  object-fit: contain;
+  image-rendering: auto;
+}
+
+.game-over-score {
+  color: white;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.game-over-restart {
+  min-width: 160px;
+  padding: 12px 20px;
+
+  border: 0;
+  border-radius: 999px;
+
+  color: #151515;
+  background: #ffd166;
+
+  font-size: 16px;
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+.game-over-restart:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}

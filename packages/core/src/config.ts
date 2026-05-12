@@ -18,7 +18,6 @@ export type GameConfig = {
 
 export type CharacterConfig = {
   kind: EntityKind;
-  name: Record<"en" | "uk", string>;
   width: number;
   height: number;
   hp: number;
@@ -32,18 +31,10 @@ export type CharacterConfig = {
 
 type CharacterCommonConfig = Pick<
   CharacterConfig,
-  | "width"
-  | "height"
-  | "spawnInvulnerabilitySeconds"
-  | "smashSpeed"
-  | "bounceSpeed"
-  | "smashMinJumpProgress"
+  "width" | "height" | "spawnInvulnerabilitySeconds" | "smashSpeed" | "bounceSpeed" | "smashMinJumpProgress"
 >;
 
-type CharacterSpecificConfig = Pick<
-  CharacterConfig,
-  "kind" | "name" | "hp" | "moveSpeed" | "jumpForce"
->;
+type CharacterSpecificConfig = Pick<CharacterConfig, "kind" | "hp" | "moveSpeed" | "jumpForce">;
 
 type CharactersConfigFile = {
   common: CharacterCommonConfig;
@@ -78,20 +69,26 @@ export type ObstacleConfig = {
 };
 
 export const GAME_CONFIG = gameData as GameConfig;
+
 const CHARACTERS_CONFIG = charactersData as CharactersConfigFile;
+
 export const CHARACTERS = CHARACTERS_CONFIG.characters.map((character) => ({
   ...CHARACTERS_CONFIG.common,
   ...character,
 })) satisfies CharacterConfig[];
+
 export const CIVILIANS = civiliansData as CivilianConfig[];
 export const ENEMIES = enemiesData as EnemyConfig[];
 export const OBSTACLES = obstaclesData as ObstacleConfig[];
+
 export const SPAWNABLES = [...OBSTACLES, ...ENEMIES, ...CIVILIANS] as const;
+
 export const TICK_RATE = GAME_CONFIG.tickRate;
 export const FIXED_DT = 1 / TICK_RATE;
 
 export function getCharacterConfig(kind: EntityKind): CharacterConfig {
   const config = CHARACTERS.find((character) => character.kind === kind);
+
   if (config === undefined) {
     throw new Error(`Missing character config for "${kind}"`);
   }

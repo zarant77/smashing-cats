@@ -9,12 +9,15 @@ export type Entity = {
   id: EntityId;
   type: EntityType;
   kind: EntityKind;
+
   x: number;
   y: number;
   vx: number;
   vy: number;
+
   width: number;
   height: number;
+
   damage: number;
   score: number;
   alive: boolean;
@@ -23,20 +26,30 @@ export type Entity = {
 export type Player = Entity & {
   type: "player";
   playerId: PlayerId;
+
   hp: number;
   maxHp: number;
-  score: number;
+
   invulnerableUntilTick: number;
+
   grounded: boolean;
   smashing: boolean;
   smashingForCollision: boolean;
+
+  previousX: number;
+  previousY: number;
+
   lockedWorldX: number | undefined;
+
   jumpStartY: number;
   wasJumpPressed: boolean;
+
   lastInputSnapshotTick: number | undefined;
   lastReceivedInputSeq: number;
   lastProcessedInputSeq: number;
-  smashSnapshotTick: number | undefined;
-  damagedByEntityIds: Set<EntityId>;
   lastInput: PlayerInput;
+
+  smashSnapshotTick: number | undefined;
+
+  damagedByEntityIds: Set<EntityId>;
 };

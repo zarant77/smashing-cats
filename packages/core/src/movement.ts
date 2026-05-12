@@ -16,13 +16,18 @@ export type GameMovementConfig = {
 export type PlayerMovementState = {
   x: number;
   y: number;
+
   vx: number;
   vy: number;
+
   width: number;
   height: number;
+
   grounded: boolean;
+
   smashing: boolean;
   smashingForCollision: boolean;
+
   jumpStartY: number;
   wasJumpPressed: boolean;
 };
@@ -38,16 +43,19 @@ export function simulatePlayerMovement(
   gameConfig: GameMovementConfig,
   dt: number,
 ): PlayerMovementResult {
+  const wasSmashing = player.smashing;
   const moveDirection = Number(input.right) - Number(input.left);
   const jumpPressed = input.jump && !player.wasJumpPressed;
+
   let startedSmash = false;
 
-  player.smashingForCollision = player.smashing;
   player.vx = player.smashing ? 0 : moveDirection * characterConfig.moveSpeed;
 
   if (jumpPressed && player.grounded) {
     player.vy = -characterConfig.jumpForce;
     player.grounded = false;
+    player.smashing = false;
+    player.smashingForCollision = false;
     player.jumpStartY = player.y;
   } else if (jumpPressed && !player.grounded && !player.smashing && canSmash(player, characterConfig, gameConfig)) {
     player.vy = characterConfig.smashSpeed;
@@ -58,7 +66,10 @@ export function simulatePlayerMovement(
 
   player.x += player.vx * dt;
   player.y += player.vy * dt;
-  player.vy += gameConfig.gravity * dt;
+
+  if (!player.grounded) {
+    player.vy += gameConfig.gravity * dt;
+  }
 
   player.x = clamp(player.x, 20, gameConfig.width - player.width - 20);
 
@@ -67,22 +78,26 @@ export function simulatePlayerMovement(
     player.vy = 0;
     player.grounded = true;
     player.smashing = false;
-    player.smashingForCollision = false;
     player.jumpStartY = player.y;
+  } else {
+    player.grounded = false;
   }
+
+  player.smashingForCollision = wasSmashing || startedSmash || player.smashing;
 
   player.wasJumpPressed = input.jump;
 
-  return { startedSmash };
+  return {
+    startedSmash,
+  };
 }
 
-function canSmash(
-  player: PlayerMovementState,
-  characterConfig: CharacterMovementConfig,
-  gameConfig: GameMovementConfig,
-): boolean {
+function canSmash(player: PlayerMovementState, characterConfig: CharacterMovementConfig, gameConfig: GameMovementConfig): boolean {
   const maxJumpHeight = (characterConfig.jumpForce * characterConfig.jumpForce) / (2 * gameConfig.gravity);
-  return player.jumpStartY - player.y >= maxJumpHeight * characterConfig.smashMinJumpProgress;
+
+  const currentJumpHeight = player.jumpStartY - player.y;
+
+  return currentJumpHeight >= maxJumpHeight * characterConfig.smashMinJumpProgress;
 }
 
 function clamp(value: number, min: number, max: number): number {

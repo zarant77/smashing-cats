@@ -40,6 +40,7 @@ export class Room {
 
     this.interval = setInterval(() => {
       this.game.update(FIXED_DT);
+
       this.broadcast({
         type: "snapshot",
         snapshot: this.game.createSnapshot(),
@@ -49,24 +50,22 @@ export class Room {
 
   private handleMessage(playerId: string, raw: string): void {
     const message = parseClientMessage(raw);
+
     if (message === undefined) {
       return;
     }
 
-    if (message.type === "input") {
-      this.game.setInput(playerId, message.input, message.snapshotTick, message.inputSeq ?? message.tick);
-    }
+    switch (message.type) {
+      case "join":
+        return;
 
-    if (message.type === "playerState") {
-      this.game.setPlayerState(playerId, message);
-    }
+      case "selectCharacter":
+        this.game.addPlayer(playerId, message.characterKind);
+        return;
 
-    if (message.type === "entityCollision") {
-      this.game.handleEntityCollision(playerId, message);
-    }
-
-    if (message.type === "selectCharacter") {
-      this.game.addPlayer(playerId, message.characterKind);
+      case "input":
+        this.game.setInput(playerId, message.input, message.snapshotTick, message.inputSeq);
+        return;
     }
   }
 

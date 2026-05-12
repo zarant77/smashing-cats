@@ -1,7 +1,10 @@
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
 import type { Locale, Translator } from "../../i18n.js";
 import type { GameView } from "../types.js";
+import { BackgroundRenderer } from "./BackgroundRenderer.js";
 import { EntityRenderer } from "./EntityRenderer.js";
+import { FloatingTextRenderer } from "./FloatingTextRenderer.js";
+import { GroundRenderer } from "./GroundRenderer.js";
 import { PlayerRenderer } from "./PlayerRenderer.js";
 import { ScreenShake } from "./ScreenShake.js";
 import { resizeCanvasToRoot } from "./viewport.js";
@@ -10,9 +13,14 @@ export class CanvasView implements GameView {
   private readonly context: CanvasRenderingContext2D;
   private readonly canvas: HTMLCanvasElement;
   private readonly root: HTMLElement;
+
+  private readonly background = new BackgroundRenderer();
+  private readonly ground = new GroundRenderer();
   private readonly entities = new EntityRenderer();
   private readonly players = new PlayerRenderer();
   private readonly screenShake = new ScreenShake();
+  private readonly floatingTexts = new FloatingTextRenderer();
+
   private t: Translator = (key) => key;
 
   public constructor(root: HTMLElement) {
@@ -36,24 +44,25 @@ export class CanvasView implements GameView {
 
     resizeCanvasToRoot(this.canvas, this.root);
     this.screenShake.update(snapshot);
+    this.floatingTexts.update(snapshot);
+
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    if (snapshot === undefined) {
+      ctx.fillStyle = "#87ceeb";
+      ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      this.drawCenteredText(this.t("connecting"));
+      return;
+    }
+
+    this.background.draw(ctx, this.canvas, snapshot);
 
     const shake = this.screenShake.getOffset();
 
     ctx.save();
     ctx.translate(shake.x, shake.y);
-    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    ctx.fillStyle = "#87ceeb";
-    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-    if (snapshot === undefined) {
-      this.drawCenteredText(this.t("connecting"));
-      ctx.restore();
-      return;
-    }
-
-    ctx.fillStyle = "#79b851";
-    ctx.fillRect(0, snapshot.world.groundY, this.canvas.width, this.canvas.height - snapshot.world.groundY);
+    this.ground.draw(ctx, this.canvas, snapshot);
 
     for (const entity of snapshot.entities) {
       this.entities.draw(ctx, this.canvas.width, snapshot, entity);
@@ -62,6 +71,8 @@ export class CanvasView implements GameView {
     for (const player of snapshot.players) {
       this.players.draw(ctx, snapshot, player, player.playerId === playerId);
     }
+
+    this.floatingTexts.draw(ctx);
 
     ctx.restore();
   }

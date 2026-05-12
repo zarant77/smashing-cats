@@ -1,8 +1,14 @@
 [
   {
     "kind": "cactus",
-    "width": 40,
-    "height": 64,
+    "width": 80,
+    "height": 128,
+    "damage": 1
+  },
+  {
+    "kind": "cactus",
+    "width": 80,
+    "height": 80,
     "damage": 1
   }
 ]

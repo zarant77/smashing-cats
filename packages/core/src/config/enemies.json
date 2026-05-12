@@ -1,21 +1,21 @@
 [
   {
     "kind": "orc",
-    "width": 64,
-    "height": 48,
+    "width": 128,
+    "height": 96,
     "damage": 1,
     "score": 100,
-    "minMoveSpeed": 50,
-    "maxMoveSpeed": 70
+    "minMoveSpeed": 100,
+    "maxMoveSpeed": 150
   },
   {
     "kind": "boar",
-    "width": 64,
-    "height": 48,
+    "width": 128,
+    "height": 96,
     "damage": 1,
     "score": 75,
-    "minMoveSpeed": 90,
-    "maxMoveSpeed": 120
+    "minMoveSpeed": 200,
+    "maxMoveSpeed": 300
   },
   {
     "kind": "rat",
@@ -23,7 +23,7 @@
     "height": 33,
     "damage": 1,
     "score": 50,
-    "minMoveSpeed": 150,
-    "maxMoveSpeed": 200
+    "minMoveSpeed": 300,
+    "maxMoveSpeed": 400
   }
 ]

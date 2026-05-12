@@ -1,16 +1,7 @@
-import type {
-  EntitySnapshot,
-  EntityCollisionMessage,
-  EntityKind,
-  GameEvent,
-  GameSnapshot,
-  PlayerId,
-  PlayerInput,
-  PlayerStateMessage,
-  PlayerSnapshot,
-} from "@smashing-cats/protocol";
+import type { EntityKind, EntitySnapshot, GameEvent, GameSnapshot, PlayerId, PlayerInput, PlayerSnapshot } from "@smashing-cats/protocol";
 import { CIVILIANS, ENEMIES, GAME_CONFIG, getCharacterConfig, SPAWNABLES } from "./config.js";
 import { intersects } from "./collisions.js";
+import { simulatePlayerMovement } from "./movement.js";
 import { Random } from "./Random.js";
 import type { CharacterConfig } from "./config.js";
 import type { Entity, Player } from "./types.js";
@@ -21,8 +12,10 @@ const EMPTY_INPUT: PlayerInput = {
   right: false,
   jump: false,
 };
+
 const CIVILIAN_KINDS = new Set<EntityKind>(CIVILIANS.map((config) => config.kind));
 const ENEMY_KINDS = new Set<EntityKind>(ENEMIES.map((config) => config.kind));
+
 const LAG_COMPENSATION_SECONDS = 0.5;
 const MAX_ENTITY_HISTORY_TICKS = Math.ceil(GAME_CONFIG.tickRate * LAG_COMPENSATION_SECONDS);
 
@@ -35,11 +28,13 @@ type EntityHistoryFrame = {
 export class Game {
   private readonly seed: number;
   private readonly rng: Random;
+
   private tick = 0;
   private scrollX = 0;
   private nextEntityIndex = 1;
   private nextEventIndex = 1;
   private nextSpawnX = GAME_CONFIG.worldWidth + 240;
+
   private players = new Map<PlayerId, Player>();
   private entities: Entity[] = [];
   private entityHistory: EntityHistoryFrame[] = [];
@@ -56,39 +51,53 @@ export class Game {
     }
 
     let characterConfig: CharacterConfig;
+
     try {
       characterConfig = getCharacterConfig(characterKind);
     } catch {
       return;
     }
+
     const index = this.players.size;
+    const x = 120 + index * 70;
+    const y = GAME_CONFIG.groundY - characterConfig.height;
+
     this.players.set(playerId, {
       id: `${characterConfig.kind}-${playerId}`,
       playerId,
       type: "player",
       kind: characterConfig.kind,
-      x: 120 + index * 70,
-      y: GAME_CONFIG.groundY - characterConfig.height,
+
+      x,
+      y,
+      previousX: x,
+      previousY: y,
       vx: 0,
       vy: 0,
+
       width: characterConfig.width,
       height: characterConfig.height,
+
       damage: 0,
       score: 0,
       alive: true,
+
       hp: characterConfig.hp,
       maxHp: characterConfig.hp,
       invulnerableUntilTick: this.tick + Math.ceil(characterConfig.spawnInvulnerabilitySeconds * GAME_CONFIG.tickRate),
+
       grounded: true,
       smashing: false,
       smashingForCollision: false,
       lockedWorldX: undefined,
-      jumpStartY: GAME_CONFIG.groundY - characterConfig.height,
+      jumpStartY: y,
       wasJumpPressed: false,
+
       lastInputSnapshotTick: undefined,
       lastReceivedInputSeq: 0,
       lastProcessedInputSeq: 0,
       smashSnapshotTick: undefined,
+
       damagedByEntityIds: new Set(),
       lastInput: { ...EMPTY_INPUT },
     });
@@ -98,81 +107,37 @@ export class Game {
     this.players.delete(playerId);
   }
 
-  public setInput(
-    playerId: PlayerId,
-    input: PlayerInput,
-    snapshotTick: number | undefined,
-    inputSeq: number | undefined,
-  ): void {
+  public setInput(playerId: PlayerId, input: PlayerInput, snapshotTick: number | undefined, inputSeq: number | undefined): void {
     const player = this.players.get(playerId);
-    if (player === undefined) {
-      return;
-    }
 
-    player.lastInput = input;
-    player.lastInputSnapshotTick = normalizeSnapshotTick(snapshotTick);
-    player.lastReceivedInputSeq = normalizeInputSeq(inputSeq, player.lastReceivedInputSeq);
-  }
-
-  public setPlayerState(playerId: PlayerId, state: PlayerStateMessage): void {
-    const player = this.players.get(playerId);
     if (player === undefined || !player.alive) {
       return;
     }
 
-    const startedSmash = !player.smashing && state.smashing;
-    player.x = clampFinite(state.x, 20, GAME_CONFIG.worldWidth - player.width - 20, player.x);
-    player.y = clampFinite(state.y, -GAME_CONFIG.worldHeight * 2, GAME_CONFIG.groundY - player.height, player.y);
-    player.vx = finiteOr(state.vx, player.vx);
-    player.vy = finiteOr(state.vy, player.vy);
-    player.grounded = state.grounded;
-    player.smashing = state.smashing;
-    player.smashingForCollision = state.smashing;
-    player.jumpStartY = finiteOr(state.jumpStartY, player.jumpStartY);
-    player.wasJumpPressed = state.wasJumpPressed;
-    player.lastInputSnapshotTick = normalizeSnapshotTick(state.snapshotTick);
-    player.lastReceivedInputSeq = normalizeInputSeq(state.inputSeq, player.lastReceivedInputSeq);
-    player.lastProcessedInputSeq = player.lastReceivedInputSeq;
-
-    if (startedSmash) {
-      player.smashSnapshotTick = player.lastInputSnapshotTick;
-    }
-
-    if (player.grounded && !player.smashing) {
-      player.smashSnapshotTick = undefined;
-    }
-  }
-
-  public handleEntityCollision(playerId: PlayerId, collision: EntityCollisionMessage): void {
-    const player = this.players.get(playerId);
-    const entity = this.entities.find((candidate) => candidate.id === collision.entityId);
-    if (player === undefined || entity === undefined || !player.alive || !entity.alive) {
-      return;
-    }
-
-    if (collision.snapshotTick !== undefined) {
-      player.lastInputSnapshotTick = normalizeSnapshotTick(collision.snapshotTick);
-      player.smashSnapshotTick = player.lastInputSnapshotTick;
-    }
-
-    this.resolvePlayerEntityCollision(player, entity, collision.collisionKind);
+    player.lastInput = normalizeInput(input);
+    player.lastInputSnapshotTick = normalizeSnapshotTick(snapshotTick);
+    player.lastReceivedInputSeq = normalizeInputSeq(inputSeq, player.lastReceivedInputSeq);
   }
 
   public update(dt: number): void {
     this.tick += 1;
     this.events = [];
+
     const hasAlivePlayers = this.hasAlivePlayers();
+
     if (hasAlivePlayers) {
       this.scrollX += GAME_CONFIG.scrollSpeed * dt;
       this.spawnAhead();
     }
 
     this.updatePlayers(dt);
+
     if (hasAlivePlayers) {
       this.updateEnemies(dt);
       this.resolveCollisions();
       this.resolveEnemyCivilianCollisions();
     }
+
     this.cleanupEntities();
     this.recordEntityHistory();
   }
@@ -183,22 +148,28 @@ export class Game {
       playerId: player.playerId,
       type: "player",
       kind: player.kind,
+
       x: getPlayerSnapshotX(player, this.scrollX),
       y: player.y,
       vx: player.vx,
       vy: player.vy,
+
       width: player.width,
       height: player.height,
+
       damage: player.damage,
       score: player.score,
       alive: player.alive,
+
       hp: player.hp,
       maxHp: player.maxHp,
       invulnerable: isPlayerInvulnerable(player, this.tick),
+
       grounded: player.grounded,
       smashing: player.smashing,
       jumpStartY: player.jumpStartY,
       wasJumpPressed: player.wasJumpPressed,
+
       lastProcessedInputSeq: player.lastProcessedInputSeq,
     }));
 
@@ -206,12 +177,15 @@ export class Game {
       id: entity.id,
       type: entity.type,
       kind: entity.kind,
+
       x: entity.x,
       y: entity.y,
       vx: entity.vx,
       vy: entity.vy,
+
       width: entity.width,
       height: entity.height,
+
       damage: entity.damage,
       score: entity.score,
       alive: entity.alive,
@@ -236,17 +210,44 @@ export class Game {
 
   private updatePlayers(dt: number): void {
     for (const player of this.players.values()) {
+      player.previousX = player.x;
+      player.previousY = player.y;
+
       if (!player.alive) {
         player.smashingForCollision = false;
         updateDeadPlayer(player, dt);
         continue;
+      }
+
+      const characterConfig = getCharacterConfig(player.kind);
+
+      const result = simulatePlayerMovement(
+        player,
+        player.lastInput,
+        characterConfig,
+        {
+          width: GAME_CONFIG.worldWidth,
+          groundY: GAME_CONFIG.groundY,
+          gravity: GAME_CONFIG.gravity,
+        },
+        dt,
+      );
+
+      player.lastProcessedInputSeq = player.lastReceivedInputSeq;
+
+      if (result.startedSmash) {
+        player.smashSnapshotTick = player.lastInputSnapshotTick;
+      }
+
+      if (player.grounded && !player.smashing) {
+        player.smashSnapshotTick = undefined;
       }
     }
   }
 
   private updateEnemies(dt: number): void {
     for (const entity of this.entities) {
-      if (entity.type !== "enemy" || !entity.alive) {
+      if (!entity.alive) {
         continue;
       }
 
@@ -261,62 +262,83 @@ export class Game {
         continue;
       }
 
-      const collisionPlayer = {
-        ...player,
+      const currentPlayerBounds: Bounds = {
         x: player.x + this.scrollX,
+        y: player.y,
+        width: player.width,
+        height: player.height,
       };
+
+      const previousPlayerBounds: Bounds = {
+        x: player.previousX + this.scrollX,
+        y: player.previousY,
+        width: player.width,
+        height: player.height,
+      };
+
+      const sweptPlayerBounds = getSweptBounds(previousPlayerBounds, currentPlayerBounds);
+      const collisionBounds = player.smashingForCollision ? sweptPlayerBounds : currentPlayerBounds;
 
       for (const entity of this.entities) {
         if (!entity.alive) {
           continue;
         }
 
-        const currentIntersects = intersects(collisionPlayer, entity);
+        const currentIntersects = intersects(collisionBounds, entity);
 
         if (currentIntersects || this.intersectsCompensatedEntity(player, entity)) {
-          this.resolvePlayerEntityCollision(player, entity, player.smashingForCollision ? "smash" : "touch");
+          this.resolvePlayerEntityCollision(player, entity);
         }
       }
     }
   }
 
-  private resolvePlayerEntityCollision(
-    player: Player,
-    entity: Entity,
-    collisionKind: EntityCollisionMessage["collisionKind"],
-  ): void {
+  private resolvePlayerEntityCollision(player: Player, entity: Entity): void {
     if (!entity.alive) {
       return;
     }
 
     if (entity.type === "enemy") {
-      if (collisionKind === "smash" || player.smashingForCollision) {
+      if (player.smashingForCollision) {
         entity.alive = false;
         player.score += entity.score;
+
         this.addEvent("enemyKilled", player, entity, 0, entity.score);
+
         player.smashing = false;
+        player.smashingForCollision = false;
         player.smashSnapshotTick = undefined;
         player.jumpStartY = player.y;
-      } else {
-        const damage = damagePlayer(player, entity, this.scrollX, this.tick);
-        if (damage > 0) {
-          this.addEvent("playerHit", player, entity, damage, 0);
-        }
+        return;
       }
+
+      const damage = damagePlayer(player, entity, this.scrollX, this.tick);
+
+      if (damage > 0) {
+        this.addEvent("playerHit", player, entity, damage, 0);
+      }
+
+      return;
     }
 
     if (entity.type === "civilian") {
       entity.alive = false;
+
       const scoreDelta = -entity.score;
       player.score += scoreDelta;
+
       this.addEvent("civilianKilled", player, entity, 0, scoreDelta);
+
       player.smashing = false;
+      player.smashingForCollision = false;
       player.smashSnapshotTick = undefined;
       player.jumpStartY = player.y;
+      return;
     }
 
     if (entity.type === "obstacle") {
       const damage = damagePlayer(player, entity, this.scrollX, this.tick);
+
       if (damage > 0) {
         this.addEvent("playerHit", player, entity, damage, 0);
       }
@@ -333,12 +355,15 @@ export class Game {
         id: `${config.kind}-${this.nextEntityIndex++}`,
         type: getEntityType(config),
         kind: config.kind,
+
         x: this.nextSpawnX,
         y: GAME_CONFIG.groundY - config.height,
         vx: -moveSpeed,
         vy: 0,
+
         width: config.width,
         height: config.height,
+
         damage: config.damage,
         score: "score" in config ? config.score : 0,
         alive: true,
@@ -365,8 +390,10 @@ export class Game {
         }
 
         civilian.alive = false;
+
         const players = [...this.players.values()];
         const scoreDelta = players.length === 0 ? 0 : -civilian.score / players.length;
+
         for (const player of players) {
           player.score += scoreDelta;
         }
@@ -398,6 +425,7 @@ export class Game {
     });
 
     const minTick = this.tick - MAX_ENTITY_HISTORY_TICKS;
+
     while (this.entityHistory[0] !== undefined && this.entityHistory[0].tick < minTick) {
       this.entityHistory.shift();
     }
@@ -410,6 +438,7 @@ export class Game {
 
     const frame = this.getEntityHistoryFrame(player.smashSnapshotTick);
     const entityBounds = frame?.entities.get(entity.id);
+
     if (frame === undefined || entityBounds === undefined) {
       return false;
     }
@@ -427,6 +456,7 @@ export class Game {
 
   private getEntityHistoryFrame(snapshotTick: number): EntityHistoryFrame | undefined {
     const targetTick = clamp(Math.floor(snapshotTick), this.tick - MAX_ENTITY_HISTORY_TICKS, this.tick);
+
     let closestFrame: EntityHistoryFrame | undefined;
 
     for (const frame of this.entityHistory) {
@@ -440,13 +470,7 @@ export class Game {
     return closestFrame;
   }
 
-  private addEvent(
-    type: GameEvent["type"],
-    player: Player | undefined,
-    entity: Entity,
-    damage: number,
-    scoreDelta: number,
-  ): void {
+  private addEvent(type: GameEvent["type"], player: Player | undefined, entity: Entity, damage: number, scoreDelta: number): void {
     const event: GameEvent = {
       id: `event-${this.tick}-${this.nextEventIndex++}`,
       tick: this.tick,
@@ -468,29 +492,12 @@ export class Game {
   }
 }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
-
-function damagePlayer(player: Player, entity: Entity, scrollX: number, tick: number): number {
-  if (isPlayerInvulnerable(player, tick) || player.damagedByEntityIds.has(entity.id)) {
-    return 0;
-  }
-
-  player.damagedByEntityIds.add(entity.id);
-  const damage = entity.damage;
-  player.hp = Math.max(0, player.hp - entity.damage);
-  player.alive = player.hp > 0;
-
-  if (!player.alive) {
-    player.lockedWorldX = player.x + scrollX;
-    player.vx = 0;
-    player.smashing = false;
-    player.smashingForCollision = false;
-    player.smashSnapshotTick = undefined;
-  }
-
-  return damage;
+function normalizeInput(input: PlayerInput): PlayerInput {
+  return {
+    left: input.left === true,
+    right: input.right === true,
+    jump: input.jump === true,
+  };
 }
 
 function normalizeSnapshotTick(snapshotTick: number | undefined): number | undefined {
@@ -509,12 +516,45 @@ function normalizeInputSeq(inputSeq: number | undefined, fallback: number): numb
   return Math.max(fallback, Math.floor(inputSeq));
 }
 
-function finiteOr(value: number, fallback: number): number {
-  return Number.isFinite(value) ? value : fallback;
+function getSweptBounds(from: Bounds, to: Bounds): Bounds {
+  const left = Math.min(from.x, to.x);
+  const top = Math.min(from.y, to.y);
+  const right = Math.max(from.x + from.width, to.x + to.width);
+  const bottom = Math.max(from.y + from.height, to.y + to.height);
+
+  return {
+    x: left,
+    y: top,
+    width: right - left,
+    height: bottom - top,
+  };
 }
 
-function clampFinite(value: number, min: number, max: number, fallback: number): number {
-  return clamp(finiteOr(value, fallback), min, max);
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function damagePlayer(player: Player, entity: Entity, scrollX: number, tick: number): number {
+  if (isPlayerInvulnerable(player, tick) || player.damagedByEntityIds.has(entity.id)) {
+    return 0;
+  }
+
+  player.damagedByEntityIds.add(entity.id);
+
+  const damage = entity.damage;
+
+  player.hp = Math.max(0, player.hp - entity.damage);
+  player.alive = player.hp > 0;
+
+  if (!player.alive) {
+    player.lockedWorldX = player.x + scrollX;
+    player.vx = 0;
+    player.smashing = false;
+    player.smashingForCollision = false;
+    player.smashSnapshotTick = undefined;
+  }
+
+  return damage;
 }
 
 function updateDeadPlayer(player: Player, dt: number): void {

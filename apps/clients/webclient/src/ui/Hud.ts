@@ -43,7 +43,7 @@ export class Hud {
 
           <div class="hud-player-content">
             <div class="hud-player-top">
-              <strong>${player.kind}</strong>
+              <strong>${this.t(player.kind)}</strong>
               <span class="hud-player-score">⭐ ${player.score}</span>
             </div>
 

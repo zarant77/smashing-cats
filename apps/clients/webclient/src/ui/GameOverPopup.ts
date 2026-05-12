@@ -1,0 +1,74 @@
+import type { EntityKind, GameSnapshot, PlayerId } from "@smashing-cats/protocol";
+import type { Translator } from "../i18n.js";
+
+export class GameOverPopup {
+  private readonly element: HTMLDivElement;
+  private readonly t: Translator;
+  private visible = false;
+
+  public constructor(root: HTMLElement, t: Translator) {
+    this.t = t;
+
+    this.element = document.createElement("div");
+    this.element.className = "game-over-popup";
+    this.element.hidden = true;
+
+    root.append(this.element);
+  }
+
+  public render(snapshot: GameSnapshot | undefined, localPlayerId: PlayerId | undefined): void {
+    const player = snapshot?.players.find((item) => item.playerId === localPlayerId);
+
+    if (player === undefined || player.alive) {
+      this.hide();
+      return;
+    }
+
+    this.show(player.kind, player.score);
+  }
+
+  private show(kind: EntityKind, score: number): void {
+    if (this.visible) {
+      return;
+    }
+
+    this.visible = true;
+    this.element.hidden = false;
+
+    this.element.innerHTML = `
+    <div class="game-over-card">
+      <h2>${this.t("gameOverTitle")}</h2>
+
+      <img
+        class="game-over-cat"
+        src="/portraits/${kind}.png"
+        alt="${kind}"
+      />
+
+      <div class="game-over-score">
+        ${this.t("score")}: <strong>${score}</strong>
+      </div>
+
+      <button class="game-over-restart" type="button">
+        ${this.t("restart")}
+      </button>
+    </div>
+  `;
+
+    const restartButton = this.element.querySelector<HTMLButtonElement>(".game-over-restart");
+
+    restartButton?.addEventListener("click", () => {
+      window.location.reload();
+    });
+  }
+
+  private hide(): void {
+    if (!this.visible) {
+      return;
+    }
+
+    this.visible = false;
+    this.element.hidden = true;
+    this.element.replaceChildren();
+  }
+}

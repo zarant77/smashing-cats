@@ -164,11 +164,11 @@ export class CharacterSelect {
 
     image.className = "character-card-image";
     image.src = getCharacterImageSrc(character);
-    image.alt = character.name[this.locale] ?? character.name.en;
 
     const name = document.createElement("strong");
 
-    name.textContent = character.name[this.locale] ?? character.name.en;
+    // Set name
+    name.textContent = image.alt = this.t(character.kind);
 
     const divider = document.createElement("div");
 
