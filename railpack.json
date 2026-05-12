@@ -3,6 +3,7 @@
   "provider": "node",
   "steps": {
     "install": {
+      "inputs": [{ "local": true, "include": ["."] }],
       "commands": ["pnpm install --frozen-lockfile"]
     },
     "build": {
