@@ -5,12 +5,7 @@ import { ImageCache } from "./ImageCache.js";
 export class PlayerRenderer {
   private readonly portraits = new ImageCache();
 
-  public draw(
-    ctx: CanvasRenderingContext2D,
-    snapshot: GameSnapshot,
-    player: PlayerSnapshot,
-    isLocal: boolean,
-  ): void {
+  public draw(ctx: CanvasRenderingContext2D, snapshot: GameSnapshot, player: PlayerSnapshot, isLocal: boolean): void {
     const image = this.portraits.get(`/portraits/${player.kind}.png`);
     const shouldBlinkOff = player.invulnerable && Math.floor(snapshot.tick / 2) % 2 === 0;
 

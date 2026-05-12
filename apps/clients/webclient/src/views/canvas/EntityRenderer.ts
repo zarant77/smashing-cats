@@ -15,7 +15,7 @@ export class EntityRenderer {
     const image = this.images.get(getEntityImagePath(entity));
 
     ctx.save();
-    ctx.globalAlpha = entity.alive ? 1 : 0.35;
+    // ctx.globalAlpha = entity.alive ? 1 : 0.35;
 
     if (image.complete && image.naturalWidth > 0) {
       ctx.drawImage(image, screenX, entity.y, entity.width, entity.height);
