@@ -54,7 +54,7 @@ export class Room {
     }
 
     if (message.type === "input") {
-      this.game.setInput(playerId, message.input);
+      this.game.setInput(playerId, message.input, message.snapshotTick);
     }
 
     if (message.type === "selectCharacter") {

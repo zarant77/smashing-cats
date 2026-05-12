@@ -1,6 +1,11 @@
-import type { Entity } from "./types.js";
+export type Bounds = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
 
-export function intersects(a: Entity, b: Entity): boolean {
+export function intersects(a: Bounds, b: Bounds): boolean {
   return a.x < b.x + b.width &&
     a.x + a.width > b.x &&
     a.y < b.y + b.height &&

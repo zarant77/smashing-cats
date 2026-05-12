@@ -30,6 +30,7 @@ export type PlayerInput = {
 export type InputMessage = {
   type: "input";
   tick: number;
+  snapshotTick?: number;
   input: PlayerInput;
 };
 

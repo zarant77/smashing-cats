@@ -33,6 +33,8 @@ export type Player = Entity & {
   lockedWorldX: number | undefined;
   jumpStartY: number;
   wasJumpPressed: boolean;
+  lastInputSnapshotTick: number | undefined;
+  smashSnapshotTick: number | undefined;
   damagedByEntityIds: Set<EntityId>;
   lastInput: PlayerInput;
 };

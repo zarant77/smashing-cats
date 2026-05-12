@@ -144,8 +144,6 @@
 
 .character-card:hover,
 .character-card:focus-visible {
-  transform: translateY(-4px);
-
   border-color: #ffcc33;
 
   box-shadow:

@@ -12,6 +12,7 @@ import { intersects } from "./collisions.js";
 import { Random } from "./Random.js";
 import type { CharacterConfig } from "./config.js";
 import type { Entity, Player } from "./types.js";
+import type { Bounds } from "./collisions.js";
 
 const EMPTY_INPUT: PlayerInput = {
   left: false,
@@ -20,6 +21,14 @@ const EMPTY_INPUT: PlayerInput = {
 };
 const CIVILIAN_KINDS = new Set<EntityKind>(CIVILIANS.map((config) => config.kind));
 const ENEMY_KINDS = new Set<EntityKind>(ENEMIES.map((config) => config.kind));
+const LAG_COMPENSATION_SECONDS = 0.5;
+const MAX_ENTITY_HISTORY_TICKS = Math.ceil(GAME_CONFIG.tickRate * LAG_COMPENSATION_SECONDS);
+
+type EntityHistoryFrame = {
+  tick: number;
+  scrollX: number;
+  entities: Map<string, Bounds>;
+};
 
 export class Game {
   private readonly seed: number;
@@ -31,6 +40,7 @@ export class Game {
   private nextSpawnX = GAME_CONFIG.worldWidth + 240;
   private players = new Map<PlayerId, Player>();
   private entities: Entity[] = [];
+  private entityHistory: EntityHistoryFrame[] = [];
   private events: GameEvent[] = [];
 
   public constructor(seed: number) {
@@ -73,6 +83,8 @@ export class Game {
       lockedWorldX: undefined,
       jumpStartY: GAME_CONFIG.groundY - characterConfig.height,
       wasJumpPressed: false,
+      lastInputSnapshotTick: undefined,
+      smashSnapshotTick: undefined,
       damagedByEntityIds: new Set(),
       lastInput: { ...EMPTY_INPUT },
     });
@@ -82,13 +94,14 @@ export class Game {
     this.players.delete(playerId);
   }
 
-  public setInput(playerId: PlayerId, input: PlayerInput): void {
+  public setInput(playerId: PlayerId, input: PlayerInput, snapshotTick: number | undefined): void {
     const player = this.players.get(playerId);
     if (player === undefined) {
       return;
     }
 
     player.lastInput = input;
+    player.lastInputSnapshotTick = normalizeSnapshotTick(snapshotTick);
   }
 
   public update(dt: number): void {
@@ -107,6 +120,7 @@ export class Game {
       this.resolveEnemyCivilianCollisions();
     }
     this.cleanupEntities();
+    this.recordEntityHistory();
   }
 
   public createSnapshot(): GameSnapshot {
@@ -181,6 +195,7 @@ export class Game {
         player.vy = characterConfig.smashSpeed;
         player.smashing = true;
         player.smashingForCollision = true;
+        player.smashSnapshotTick = player.lastInputSnapshotTick;
       }
 
       player.x += player.vx * dt;
@@ -193,6 +208,7 @@ export class Game {
         player.vy = 0;
         player.grounded = true;
         player.smashing = false;
+        player.smashSnapshotTick = undefined;
         player.jumpStartY = player.y;
       }
 
@@ -223,18 +239,21 @@ export class Game {
       };
 
       for (const entity of this.entities) {
-        if (!entity.alive || !intersects(collisionPlayer, entity)) {
+        if (!entity.alive) {
           continue;
         }
 
+        const currentIntersects = intersects(collisionPlayer, entity);
+
         if (entity.type === "enemy") {
-          if (player.smashingForCollision) {
+          if (player.smashingForCollision && (currentIntersects || this.intersectsCompensatedEntity(player, entity))) {
             entity.alive = false;
             player.score += entity.score;
             this.addEvent("enemyKilled", player, entity, 0, entity.score);
             player.smashing = false;
+            player.smashSnapshotTick = undefined;
             player.jumpStartY = player.y;
-          } else {
+          } else if (currentIntersects) {
             const damage = damagePlayer(player, entity, this.scrollX, this.tick);
             if (damage > 0) {
               this.addEvent("playerHit", player, entity, damage, 0);
@@ -242,16 +261,17 @@ export class Game {
           }
         }
 
-        if (entity.type === "civilian") {
+        if (entity.type === "civilian" && (currentIntersects || this.intersectsCompensatedEntity(player, entity))) {
           entity.alive = false;
           const scoreDelta = -entity.score;
           player.score += scoreDelta;
           this.addEvent("civilianKilled", player, entity, 0, scoreDelta);
           player.smashing = false;
+          player.smashSnapshotTick = undefined;
           player.jumpStartY = player.y;
         }
 
-        if (entity.type === "obstacle") {
+        if (entity.type === "obstacle" && currentIntersects) {
           const damage = damagePlayer(player, entity, this.scrollX, this.tick);
           if (damage > 0) {
             this.addEvent("playerHit", player, entity, damage, 0);
@@ -318,6 +338,66 @@ export class Game {
     return [...this.players.values()].some((player) => player.alive);
   }
 
+  private recordEntityHistory(): void {
+    this.entityHistory.push({
+      tick: this.tick,
+      scrollX: this.scrollX,
+      entities: new Map(
+        this.entities.map((entity) => [
+          entity.id,
+          {
+            x: entity.x,
+            y: entity.y,
+            width: entity.width,
+            height: entity.height,
+          },
+        ]),
+      ),
+    });
+
+    const minTick = this.tick - MAX_ENTITY_HISTORY_TICKS;
+    while (this.entityHistory[0] !== undefined && this.entityHistory[0].tick < minTick) {
+      this.entityHistory.shift();
+    }
+  }
+
+  private intersectsCompensatedEntity(player: Player, entity: Entity): boolean {
+    if (!player.smashingForCollision || player.smashSnapshotTick === undefined) {
+      return false;
+    }
+
+    const frame = this.getEntityHistoryFrame(player.smashSnapshotTick);
+    const entityBounds = frame?.entities.get(entity.id);
+    if (frame === undefined || entityBounds === undefined) {
+      return false;
+    }
+
+    return intersects(
+      {
+        x: player.x + frame.scrollX,
+        y: player.y,
+        width: player.width,
+        height: player.height,
+      },
+      entityBounds,
+    );
+  }
+
+  private getEntityHistoryFrame(snapshotTick: number): EntityHistoryFrame | undefined {
+    const targetTick = clamp(Math.floor(snapshotTick), this.tick - MAX_ENTITY_HISTORY_TICKS, this.tick);
+    let closestFrame: EntityHistoryFrame | undefined;
+
+    for (const frame of this.entityHistory) {
+      if (frame.tick > targetTick) {
+        break;
+      }
+
+      closestFrame = frame;
+    }
+
+    return closestFrame;
+  }
+
   private addEvent(
     type: GameEvent["type"],
     player: Player | undefined,
@@ -375,9 +455,18 @@ function damagePlayer(player: Player, entity: Entity, scrollX: number, tick: num
     player.vx = 0;
     player.smashing = false;
     player.smashingForCollision = false;
+    player.smashSnapshotTick = undefined;
   }
 
   return damage;
+}
+
+function normalizeSnapshotTick(snapshotTick: number | undefined): number | undefined {
+  if (snapshotTick === undefined || !Number.isFinite(snapshotTick)) {
+    return undefined;
+  }
+
+  return Math.max(0, Math.floor(snapshotTick));
 }
 
 function updateDeadPlayer(player: Player, dt: number): void {

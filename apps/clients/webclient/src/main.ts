@@ -114,6 +114,7 @@ setInterval(() => {
     JSON.stringify({
       type: "input",
       tick: localTick++,
+      snapshotTick: interpolator.getRenderedTick(),
       input: readInput(),
     }),
   );

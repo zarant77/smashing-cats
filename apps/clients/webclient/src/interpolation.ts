@@ -12,6 +12,7 @@ type BufferedSnapshot = {
 export class SnapshotInterpolator {
   private readonly snapshots: BufferedSnapshot[] = [];
   private readonly localPlayers = new Map<PlayerId, { player: PlayerSnapshot; updatedAt: number }>();
+  private renderedTick: number | undefined;
 
   public add(snapshot: GameSnapshot, receivedAt = performance.now()): void {
     const last = this.snapshots.at(-1);
@@ -32,7 +33,7 @@ export class SnapshotInterpolator {
     }
 
     if (this.snapshots.length === 1) {
-      return this.snapshots[0]?.snapshot;
+      return this.setRenderedTick(this.snapshots[0]?.snapshot);
     }
 
     const renderTime = now - INTERPOLATION_DELAY_MS;
@@ -54,17 +55,28 @@ export class SnapshotInterpolator {
     }
 
     if (previous === undefined || next === undefined) {
-      return this.snapshots.at(-1)?.snapshot;
+      return this.setRenderedTick(this.snapshots.at(-1)?.snapshot);
     }
 
     const latest = this.snapshots.at(-1)?.snapshot;
 
     if (previous === next || next.receivedAt <= previous.receivedAt) {
-      return this.withSmoothedLocalPlayer(next.snapshot, latest, localPlayerId, now);
+      return this.setRenderedTick(this.withSmoothedLocalPlayer(next.snapshot, latest, localPlayerId, now));
     }
 
     const alpha = clamp01((renderTime - previous.receivedAt) / (next.receivedAt - previous.receivedAt));
-    return this.withSmoothedLocalPlayer(interpolateSnapshot(previous.snapshot, next.snapshot, alpha), latest, localPlayerId, now);
+    return this.setRenderedTick(
+      this.withSmoothedLocalPlayer(interpolateSnapshot(previous.snapshot, next.snapshot, alpha), latest, localPlayerId, now),
+    );
+  }
+
+  public getRenderedTick(): number | undefined {
+    return this.renderedTick;
+  }
+
+  private setRenderedTick(snapshot: GameSnapshot | undefined): GameSnapshot | undefined {
+    this.renderedTick = snapshot?.tick;
+    return snapshot;
   }
 
   private withSmoothedLocalPlayer(
@@ -105,6 +117,7 @@ export class SnapshotInterpolator {
 function interpolateSnapshot(from: GameSnapshot, to: GameSnapshot, alpha: number): GameSnapshot {
   return {
     ...to,
+    tick: Math.round(lerp(from.tick, to.tick, alpha)),
     world: {
       ...to.world,
       scrollX: lerp(from.world.scrollX, to.world.scrollX, alpha),
