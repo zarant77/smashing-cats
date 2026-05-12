@@ -2,7 +2,7 @@
 cmds = ["pnpm install --frozen-lockfile"]
 
 [phases.build]
-cmds = ["pnpm --filter @smashing-cats/server... build"]
+cmds = ["pnpm build:server"]
 
 [start]
 cmd = "pnpm --filter @smashing-cats/server start"

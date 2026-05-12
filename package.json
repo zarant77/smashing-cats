@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",
+    "build:server": "tsc -b packages/protocol packages/core apps/server",
     "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {
