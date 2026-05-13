@@ -10,7 +10,7 @@ import {
   type ServerToClientMessage,
 } from "@smashing-cats/protocol";
 import { preloadAssets } from "./assets/assets.js";
-import { audioEvents, initAudio } from "./audio/audio.js";
+import { audio, audioEvents, initAudio, musicEvents } from "./audio/audio.js";
 import { createTranslator, parseLocale } from "./i18n.js";
 import { readInput } from "./input.js";
 import { SnapshotInterpolator } from "./interpolation.js";
@@ -24,6 +24,9 @@ import { createView, parseViewKind } from "./views/createView.js";
 import type { GameView } from "./views/types.js";
 
 import "./styles/index.css";
+
+const SOUNDS_ENABLED_KEY = "smashing-cats-sounds-enabled";
+const MUSIC_ENABLED_KEY = "smashing-cats-music-enabled";
 
 void bootstrap();
 
@@ -46,12 +49,20 @@ async function bootstrap(): Promise<void> {
 
   const engineSelect = document.querySelector<HTMLSelectElement>("#engine-select");
   const localeButtons = document.querySelectorAll<HTMLButtonElement>("[data-locale]");
+  const soundToggle = document.querySelector<HTMLButtonElement>("#sound-toggle");
+  const musicToggle = document.querySelector<HTMLButtonElement>("#music-toggle");
 
   const params = new URLSearchParams(window.location.search);
   const matchCode = ensureMatchCode(params);
 
   let locale = parseLocale(params.get("locale") ?? localStorage.getItem("smashing-cats-locale"));
   let t = createTranslator(locale);
+
+  let soundsEnabled = localStorage.getItem(SOUNDS_ENABLED_KEY) !== "false";
+  let musicEnabled = localStorage.getItem(MUSIC_ENABLED_KEY) !== "false";
+
+  audio.setSoundsEnabled(soundsEnabled);
+  audio.setMusicEnabled(musicEnabled);
 
   let viewKind = parseViewKind(params.get("view") ?? localStorage.getItem("smashing-cats-view"));
   let selectedCharacterKind = localStorage.getItem("smashing-cats-character") as EntityKind | null;
@@ -135,6 +146,8 @@ async function bootstrap(): Promise<void> {
 
   characterSelect.render(characters, hasSelectedCharacter);
   applyStaticTranslations(locale, t);
+  updateLocaleButtons(localeButtons, locale);
+  updateAudioButtons(soundToggle, musicToggle, soundsEnabled, musicEnabled, t);
 
   if (engineSelect !== null) {
     engineSelect.value = viewKind;
@@ -150,7 +163,30 @@ async function bootstrap(): Promise<void> {
     });
   }
 
-  updateLocaleButtons(localeButtons, locale);
+  soundToggle?.addEventListener("click", () => {
+    soundsEnabled = !soundsEnabled;
+
+    localStorage.setItem(SOUNDS_ENABLED_KEY, String(soundsEnabled));
+    audio.setSoundsEnabled(soundsEnabled);
+
+    if (soundsEnabled) {
+      audioEvents.uiClick();
+    }
+
+    updateAudioButtons(soundToggle, musicToggle, soundsEnabled, musicEnabled, t);
+  });
+
+  musicToggle?.addEventListener("click", () => {
+    musicEnabled = !musicEnabled;
+
+    localStorage.setItem(MUSIC_ENABLED_KEY, String(musicEnabled));
+    audio.setMusicEnabled(musicEnabled);
+
+    audioEvents.uiClick();
+    musicEvents.gameplay();
+
+    updateAudioButtons(soundToggle, musicToggle, soundsEnabled, musicEnabled, t);
+  });
 
   for (const button of localeButtons) {
     button.addEventListener("click", () => {
@@ -163,6 +199,7 @@ async function bootstrap(): Promise<void> {
 
       applyStaticTranslations(locale, t);
       updateLocaleButtons(localeButtons, locale);
+      updateAudioButtons(soundToggle, musicToggle, soundsEnabled, musicEnabled, t);
 
       hud.setTranslator(t);
 
@@ -392,5 +429,25 @@ function parseServerMessage(data: unknown): ServerToClientMessage | undefined {
 function updateLocaleButtons(buttons: NodeListOf<HTMLButtonElement>, locale: string): void {
   for (const button of buttons) {
     button.classList.toggle("active", button.dataset.locale === locale);
+  }
+}
+
+function updateAudioButtons(
+  soundToggle: HTMLButtonElement | null,
+  musicToggle: HTMLButtonElement | null,
+  soundsEnabled: boolean,
+  musicEnabled: boolean,
+  t: (key: string) => string,
+): void {
+  if (soundToggle !== null) {
+    soundToggle.classList.toggle("muted", !soundsEnabled);
+    soundToggle.title = soundsEnabled ? t("soundsOn") : t("soundsOff");
+    soundToggle.setAttribute("aria-label", soundsEnabled ? t("soundsOn") : t("soundsOff"));
+  }
+
+  if (musicToggle !== null) {
+    musicToggle.classList.toggle("muted", !musicEnabled);
+    musicToggle.title = musicEnabled ? t("musicOn") : t("musicOff");
+    musicToggle.setAttribute("aria-label", musicEnabled ? t("musicOn") : t("musicOff"));
   }
 }

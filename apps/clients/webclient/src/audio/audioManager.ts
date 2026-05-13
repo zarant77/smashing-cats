@@ -12,6 +12,9 @@ export class AudioManager {
 
   private soundIndex = 0;
 
+  private soundsEnabled = true;
+  private musicEnabled = true;
+
   public constructor(soundChannels = 4) {
     const channelCount = Math.max(1, soundChannels);
 
@@ -36,17 +39,25 @@ export class AudioManager {
   }
 
   public async playMusic(pathOrPaths: AudioPath, volume = 1): Promise<void> {
+    if (!this.musicEnabled) {
+      return;
+    }
+
     const path = this.pickPath(pathOrPaths);
 
     if (path === null) {
       return;
     }
 
-    if (this.music.src.includes(path)) {
-      return;
+    const sameTrack = this.music.src.includes(path);
+
+    this.music.pause();
+
+    if (!sameTrack) {
+      this.music.src = path;
     }
 
-    this.music.src = path;
+    this.music.currentTime = 0;
     this.music.volume = volume;
 
     try {
@@ -66,6 +77,10 @@ export class AudioManager {
   }
 
   public playSound(pathOrPaths: AudioPath, options: SoundOptions = {}): void {
+    if (!this.soundsEnabled) {
+      return;
+    }
+
     const path = this.pickPath(pathOrPaths);
 
     if (path === null) {
@@ -85,6 +100,37 @@ export class AudioManager {
     audio.playbackRate = options.playbackRate ?? 1;
 
     void audio.play();
+  }
+
+  public stopAllSounds(): void {
+    for (const audio of this.soundPool) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+  }
+
+  public setSoundsEnabled(enabled: boolean): void {
+    this.soundsEnabled = enabled;
+
+    if (!enabled) {
+      this.stopAllSounds();
+    }
+  }
+
+  public setMusicEnabled(enabled: boolean): void {
+    this.musicEnabled = enabled;
+
+    if (!enabled) {
+      this.stopMusic();
+    }
+  }
+
+  public getSoundsEnabled(): boolean {
+    return this.soundsEnabled;
+  }
+
+  public getMusicEnabled(): boolean {
+    return this.musicEnabled;
   }
 
   private pickPath(pathOrPaths: AudioPath): string | null {

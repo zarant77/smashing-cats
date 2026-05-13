@@ -16,6 +16,10 @@ const TRANSLATIONS: Record<Locale, Record<string, string>> = {
     restart: "Restart",
     score: "Score",
     gameOverTitle: "Game Over",
+    soundsOn: "Sounds on",
+    soundsOff: "Sounds off",
+    musicOn: "Music on",
+    musicOff: "Music off",
 
     // Character names
     batcat: "Batcat",
@@ -44,6 +48,10 @@ const TRANSLATIONS: Record<Locale, Record<string, string>> = {
     restart: "Перезапустити",
     score: "Рахунок",
     gameOverTitle: "Гра закінчена",
+    soundsOn: "Звуки увімкнено",
+    soundsOff: "Звуки вимкнено",
+    musicOn: "Музику увімкнено",
+    musicOff: "Музику вимкнено",
 
     // Character names
     batcat: "Кіт-Кажан",

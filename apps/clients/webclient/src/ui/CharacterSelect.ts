@@ -1,6 +1,6 @@
 import type { CharacterDefinition, EntityKind } from "@smashing-cats/protocol";
 import type { Locale, Translator } from "../i18n.js";
-import { musicEvents } from "../audio/audio.js";
+import { audioEvents } from "../audio/audio.js";
 
 type CharacterSelectOptions = {
   locale: Locale;
@@ -34,10 +34,7 @@ export class CharacterSelect {
     this.locale = options.locale;
     this.t = options.t;
     this.preferredCharacterKind = options.initialCharacterKind;
-    this.onSelect = (characterKind) => {
-      musicEvents.gameplay();
-      options.onSelect(characterKind);
-    };
+    this.onSelect = options.onSelect;
 
     this.element = document.createElement("div");
     this.element.className = "character-select";
@@ -137,11 +134,13 @@ export class CharacterSelect {
   private selectPreviousCharacter(): void {
     this.currentIndex = wrapIndex(this.currentIndex - 1, this.lastCharacters.length);
     this.render(this.lastCharacters, false);
+    audioEvents.uiClick();
   }
 
   private selectNextCharacter(): void {
     this.currentIndex = wrapIndex(this.currentIndex + 1, this.lastCharacters.length);
     this.render(this.lastCharacters, false);
+    audioEvents.uiClick();
   }
 
   private selectCurrentCharacter(): void {
@@ -151,6 +150,7 @@ export class CharacterSelect {
       return;
     }
 
+    audioEvents.uiClick();
     this.onSelect(character.kind);
   }
 

@@ -1,6 +1,6 @@
 import { AudioManager } from "./audioManager.js";
 
-const audio = new AudioManager(4);
+export const audio = new AudioManager(4);
 
 const Music = {
   Gameplay: ["/bgm/bgm1.mp3", "/bgm/bgm2.mp3"],
@@ -27,6 +27,8 @@ const MusicFiles = Object.values(Music).flat();
 
 export async function initAudio(): Promise<void> {
   await audio.preload([...MusicFiles, ...Object.values(Sounds)]);
+
+  setupAudioUnlock();
 }
 
 export const audioEvents = {
@@ -88,3 +90,25 @@ export const musicEvents = {
     audio.setMusicVolume(volume);
   },
 } as const;
+
+let audioUnlocked = false;
+
+function setupAudioUnlock(): void {
+  const unlock = (): void => {
+    if (audioUnlocked) {
+      return;
+    }
+
+    audioUnlocked = true;
+
+    void audio.playMusic("/bgm/bgm1.mp3", 0.4);
+
+    window.removeEventListener("pointerdown", unlock);
+    window.removeEventListener("keydown", unlock);
+    window.removeEventListener("touchstart", unlock);
+  };
+
+  window.addEventListener("pointerdown", unlock, { passive: true });
+  window.addEventListener("keydown", unlock);
+  window.addEventListener("touchstart", unlock, { passive: true });
+}
