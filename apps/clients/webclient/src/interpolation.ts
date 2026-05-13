@@ -69,14 +69,9 @@ export class SnapshotInterpolator {
 
     const alpha = clamp01((renderTime - previous.receivedAt) / (next.receivedAt - previous.receivedAt));
 
-    const latestBuffered = this.snapshots.at(-1);
-    const extrapolatedLatest = this.smoothWorld(this.extrapolateWorld(latestBuffered ?? next, now), now);
+    const interpolated = interpolateSnapshot(previous.snapshot, next.snapshot, alpha, localPlayerId);
 
-    return this.setRenderedTick({
-      ...interpolateSnapshot(previous.snapshot, next.snapshot, alpha, localPlayerId),
-      world: extrapolatedLatest?.world ?? next.snapshot.world,
-      entities: extrapolatedLatest?.entities ?? next.snapshot.entities,
-    });
+    return this.setRenderedTick(this.smoothWorld(interpolated, now));
   }
 
   public getRenderedTick(): number | undefined {
@@ -105,11 +100,6 @@ export class SnapshotInterpolator {
         ...buffered.snapshot.world,
         scrollX: buffered.snapshot.world.scrollX + buffered.snapshot.world.speed * dt,
       },
-      entities: buffered.snapshot.entities.map((entity) => ({
-        ...entity,
-        x: entity.x + entity.vx * dt,
-        y: entity.y + entity.vy * dt,
-      })),
     };
   }
 

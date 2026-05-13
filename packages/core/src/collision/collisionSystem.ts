@@ -20,25 +20,33 @@ export type CollisionContext = {
   intersectsCompensatedEntity: (player: Player, entity: Entity) => boolean;
 };
 
+const HITBOX_SHRINK_PERCENT = 0.5;
+
 export function resolvePlayerEntityCollisions(context: CollisionContext): void {
   for (const player of context.players) {
     if (!player.alive) {
       continue;
     }
 
-    const currentPlayerBounds: Bounds = {
-      x: player.x + context.scrollX,
-      y: player.y,
-      width: player.width,
-      height: player.height,
-    };
+    const currentPlayerBounds = shrinkBounds(
+      {
+        x: player.x + context.scrollX,
+        y: player.y,
+        width: player.width,
+        height: player.height,
+      },
+      HITBOX_SHRINK_PERCENT,
+    );
 
-    const previousPlayerBounds: Bounds = {
-      x: player.previousX + context.scrollX,
-      y: player.previousY,
-      width: player.width,
-      height: player.height,
-    };
+    const previousPlayerBounds = shrinkBounds(
+      {
+        x: player.previousX + context.scrollX,
+        y: player.previousY,
+        width: player.width,
+        height: player.height,
+      },
+      HITBOX_SHRINK_PERCENT,
+    );
 
     const sweptPlayerBounds = getSweptBounds(previousPlayerBounds, currentPlayerBounds);
     const collisionBounds = player.smashingForCollision ? sweptPlayerBounds : currentPlayerBounds;
@@ -48,7 +56,9 @@ export function resolvePlayerEntityCollisions(context: CollisionContext): void {
         continue;
       }
 
-      if (intersects(collisionBounds, entity) || context.intersectsCompensatedEntity(player, entity)) {
+      const entityBounds = shrinkBounds(entity, HITBOX_SHRINK_PERCENT);
+
+      if (intersects(collisionBounds, entityBounds) || context.intersectsCompensatedEntity(player, entity)) {
         resolvePlayerEntityCollision(context, player, entity);
       }
     }
@@ -116,8 +126,16 @@ export function resolveEnemyCivilianCollisions(context: Pick<CollisionContext, "
       continue;
     }
 
+    const enemyBounds = shrinkBounds(enemy, HITBOX_SHRINK_PERCENT);
+
     for (const civilian of context.entities) {
-      if (civilian.type !== "civilian" || !civilian.alive || !intersects(enemy, civilian)) {
+      if (civilian.type !== "civilian" || !civilian.alive) {
+        continue;
+      }
+
+      const civilianBounds = shrinkBounds(civilian, HITBOX_SHRINK_PERCENT);
+
+      if (!intersects(enemyBounds, civilianBounds)) {
         continue;
       }
 
@@ -153,5 +171,17 @@ function getSweptBounds(from: Bounds, to: Bounds): Bounds {
     y: top,
     width: right - left,
     height: bottom - top,
+  };
+}
+
+function shrinkBounds(bounds: Bounds, percent: number): Bounds {
+  const widthShrink = bounds.width * percent;
+  const heightShrink = bounds.height * percent;
+
+  return {
+    x: bounds.x + widthShrink / 2,
+    y: bounds.y + heightShrink / 2,
+    width: bounds.width - widthShrink,
+    height: bounds.height - heightShrink,
   };
 }
