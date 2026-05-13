@@ -1,7 +1,7 @@
 import type { EntitySnapshot, GameSnapshot, PlayerId, PlayerSnapshot } from "@smashing-cats/protocol";
 
-const REMOTE_PLAYER_INTERPOLATION_DELAY_MS = 75;
-const MAX_EXTRAPOLATION_MS = 120;
+const REMOTE_PLAYER_INTERPOLATION_DELAY_MS = 35;
+const MAX_EXTRAPOLATION_MS = 80;
 const MAX_BUFFERED_SNAPSHOTS = 12;
 const WORLD_CORRECTION_SMOOTHING_MS = 70;
 
@@ -12,7 +12,7 @@ type BufferedSnapshot = {
 
 export class SnapshotInterpolator {
   private readonly snapshots: BufferedSnapshot[] = [];
-  private smoothedWorld: { snapshot: GameSnapshot; updatedAt: number } | undefined;
+  private smoothedScrollX: { value: number; updatedAt: number } | undefined;
   private renderedTick: number | undefined;
 
   public add(snapshot: GameSnapshot, receivedAt = performance.now()): void {
@@ -31,12 +31,13 @@ export class SnapshotInterpolator {
 
   public get(localPlayerId: PlayerId | undefined, now = performance.now()): GameSnapshot | undefined {
     if (this.snapshots.length === 0) {
-      this.smoothedWorld = undefined;
+      this.smoothedScrollX = undefined;
+      this.renderedTick = undefined;
       return undefined;
     }
 
     if (this.snapshots.length === 1) {
-      return this.setRenderedTick(this.smoothWorld(this.extrapolateWorld(this.snapshots[0], now), now));
+      return this.setRenderedTick(this.smoothScrollX(this.extrapolateWorld(this.snapshots[0], now), now));
     }
 
     const renderTime = now - REMOTE_PLAYER_INTERPOLATION_DELAY_MS;
@@ -60,18 +61,17 @@ export class SnapshotInterpolator {
     }
 
     if (previous === undefined || next === undefined) {
-      return this.setRenderedTick(this.smoothWorld(this.extrapolateWorld(this.snapshots.at(-1), now), now));
+      return this.setRenderedTick(this.smoothScrollX(this.extrapolateWorld(this.snapshots.at(-1), now), now));
     }
 
     if (previous === next || next.receivedAt <= previous.receivedAt) {
-      return this.setRenderedTick(this.smoothWorld(this.extrapolateWorld(next, now), now));
+      return this.setRenderedTick(this.smoothScrollX(this.extrapolateWorld(next, now), now));
     }
 
     const alpha = clamp01((renderTime - previous.receivedAt) / (next.receivedAt - previous.receivedAt));
-
     const interpolated = interpolateSnapshot(previous.snapshot, next.snapshot, alpha, localPlayerId);
 
-    return this.setRenderedTick(this.smoothWorld(interpolated, now));
+    return this.setRenderedTick(this.smoothScrollX(interpolated, now));
   }
 
   public getRenderedTick(): number | undefined {
@@ -103,32 +103,37 @@ export class SnapshotInterpolator {
     };
   }
 
-  private smoothWorld(snapshot: GameSnapshot | undefined, now: number): GameSnapshot | undefined {
+  private smoothScrollX(snapshot: GameSnapshot | undefined, now: number): GameSnapshot | undefined {
     if (snapshot === undefined) {
       return undefined;
     }
 
-    const previous = this.smoothedWorld;
+    const previous = this.smoothedScrollX;
 
     if (previous === undefined) {
-      this.smoothedWorld = { snapshot, updatedAt: now };
+      this.smoothedScrollX = {
+        value: snapshot.world.scrollX,
+        updatedAt: now,
+      };
+
       return snapshot;
     }
 
     const alpha = clamp01((now - previous.updatedAt) / WORLD_CORRECTION_SMOOTHING_MS);
+    const scrollX = lerp(previous.value, snapshot.world.scrollX, alpha);
 
-    const smoothed = {
+    this.smoothedScrollX = {
+      value: scrollX,
+      updatedAt: now,
+    };
+
+    return {
       ...snapshot,
       world: {
         ...snapshot.world,
-        scrollX: lerp(previous.snapshot.world.scrollX, snapshot.world.scrollX, alpha),
+        scrollX,
       },
-      entities: snapshot.entities.map((entity) => interpolateEntity(findById(previous.snapshot.entities, entity.id), entity, alpha)),
     };
-
-    this.smoothedWorld = { snapshot: smoothed, updatedAt: now };
-
-    return smoothed;
   }
 }
 
