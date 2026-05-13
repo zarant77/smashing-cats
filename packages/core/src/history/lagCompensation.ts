@@ -1,4 +1,4 @@
-import { intersects } from "../collisions.js";
+import { intersects } from "../collision/collisions.js";
 import { clamp } from "../math/clamp.js";
 import { getEntityHistoryFrame } from "./entityHistory.js";
 

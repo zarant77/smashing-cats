@@ -1,7 +1,7 @@
 import type { EntitySnapshot, GameEvent, GameSnapshot, PlayerSnapshot } from "@smashing-cats/protocol";
 
 import { GAME_CONFIG } from "../config.js";
-import { getPlayerSnapshotX, isPlayerInvulnerable } from "../playerState.js";
+import { getPlayerSnapshotX, isPlayerInvulnerable } from "../player/playerState.js";
 
 import type { Entity, Player } from "../types.js";
 

@@ -2,7 +2,7 @@ import type { EntityKind, GameEvent, GameSnapshot, PlayerId, PlayerInput } from 
 import type { Entity, Player } from "./types.js";
 import { type CharacterConfig, GAME_CONFIG, getCharacterConfig } from "./config.js";
 import { Random } from "./Random.js";
-import { resolveEnemyCivilianCollisions, resolvePlayerEntityCollisions } from "./collisionSystem.js";
+import { resolveEnemyCivilianCollisions, resolvePlayerEntityCollisions } from "./collision/collisionSystem.js";
 import { spawnAhead } from "./entity/entitySpawner.js";
 import { cleanupEntities, updateEntities } from "./entity/entitySystem.js";
 import { createGameEvent } from "./event/gameEventFactory.js";

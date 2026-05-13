@@ -1,5 +1,5 @@
-import { GAME_CONFIG } from "./config.js";
-import type { Entity, Player } from "./types.js";
+import { GAME_CONFIG } from "../config.js";
+import type { Entity, Player } from "../types.js";
 
 export function damagePlayer(player: Player, entity: Entity, scrollX: number, tick: number): number {
   if (isPlayerInvulnerable(player, tick) || player.damagedByEntityIds.has(entity.id)) {

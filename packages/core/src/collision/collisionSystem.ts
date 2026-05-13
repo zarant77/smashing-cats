@@ -1,8 +1,7 @@
 import type { GameEvent } from "@smashing-cats/protocol";
-import { intersects } from "./collisions.js";
-import { damagePlayer } from "./playerState.js";
-import type { Bounds } from "./collisions.js";
-import type { Entity, Player } from "./types.js";
+import { type Bounds, intersects } from "./collisions.js";
+import { damagePlayer } from "../player/playerState.js";
+import type { Entity, Player } from "../types.js";
 
 export type AddGameEvent = (
   type: GameEvent["type"],

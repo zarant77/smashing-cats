@@ -1,4 +1,4 @@
-import type { Bounds } from "../collisions.js";
+import type { Bounds } from "../collision/collisions.js";
 import type { Entity } from "../types.js";
 
 export type EntityHistoryFrame = {

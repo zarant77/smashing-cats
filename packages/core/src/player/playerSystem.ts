@@ -1,6 +1,6 @@
 import { GAME_CONFIG, getCharacterConfig } from "../config.js";
 import { simulatePlayerMovement } from "../movement.js";
-import { updateDeadPlayer } from "../playerState.js";
+import { updateDeadPlayer } from "./playerState.js";
 
 import type { Player } from "../types.js";
 
