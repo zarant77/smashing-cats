@@ -20,7 +20,7 @@ export type CollisionContext = {
   intersectsCompensatedEntity: (player: Player, entity: Entity) => boolean;
 };
 
-const HITBOX_SHRINK_PERCENT = 0.5;
+const HURTBOX_SHRINK_PERCENT = 0.15;
 
 export function resolvePlayerEntityCollisions(context: CollisionContext): void {
   for (const player of context.players) {
@@ -28,37 +28,40 @@ export function resolvePlayerEntityCollisions(context: CollisionContext): void {
       continue;
     }
 
-    const currentPlayerBounds = shrinkBounds(
-      {
-        x: player.x + context.scrollX,
-        y: player.y,
-        width: player.width,
-        height: player.height,
-      },
-      HITBOX_SHRINK_PERCENT,
-    );
+    const currentPlayerBounds: Bounds = {
+      x: player.x + context.scrollX,
+      y: player.y,
+      width: player.width,
+      height: player.height,
+    };
 
-    const previousPlayerBounds = shrinkBounds(
-      {
-        x: player.previousX + context.scrollX,
-        y: player.previousY,
-        width: player.width,
-        height: player.height,
-      },
-      HITBOX_SHRINK_PERCENT,
-    );
+    const previousPlayerBounds: Bounds = {
+      x: player.previousX + context.scrollX,
+      y: player.previousY,
+      width: player.width,
+      height: player.height,
+    };
 
     const sweptPlayerBounds = getSweptBounds(previousPlayerBounds, currentPlayerBounds);
-    const collisionBounds = player.smashingForCollision ? sweptPlayerBounds : currentPlayerBounds;
+    const attackBounds = player.smashingForCollision ? sweptPlayerBounds : currentPlayerBounds;
+    const playerHurtbox = shrinkBounds(currentPlayerBounds, HURTBOX_SHRINK_PERCENT);
 
     for (const entity of context.entities) {
       if (!entity.alive) {
         continue;
       }
 
-      const entityBounds = shrinkBounds(entity, HITBOX_SHRINK_PERCENT);
+      if (player.smashingForCollision) {
+        if (intersects(attackBounds, entity) || context.intersectsCompensatedEntity(player, entity)) {
+          resolvePlayerEntityCollision(context, player, entity);
+        }
 
-      if (intersects(collisionBounds, entityBounds) || context.intersectsCompensatedEntity(player, entity)) {
+        continue;
+      }
+
+      const entityHurtbox = shrinkBounds(entity, HURTBOX_SHRINK_PERCENT);
+
+      if (intersects(playerHurtbox, entityHurtbox)) {
         resolvePlayerEntityCollision(context, player, entity);
       }
     }
@@ -126,16 +129,8 @@ export function resolveEnemyCivilianCollisions(context: Pick<CollisionContext, "
       continue;
     }
 
-    const enemyBounds = shrinkBounds(enemy, HITBOX_SHRINK_PERCENT);
-
     for (const civilian of context.entities) {
-      if (civilian.type !== "civilian" || !civilian.alive) {
-        continue;
-      }
-
-      const civilianBounds = shrinkBounds(civilian, HITBOX_SHRINK_PERCENT);
-
-      if (!intersects(enemyBounds, civilianBounds)) {
+      if (civilian.type !== "civilian" || !civilian.alive || !intersects(enemy, civilian)) {
         continue;
       }
 
