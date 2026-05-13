@@ -5,6 +5,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Smashing Cats" />
+  <meta property="og:description"
+    content="Smash enemies, rescue civilians, and unleash chaotic cat power in this fast-paced action game!" />
+  <meta property="og:image" content="https://smash.catemup.com/og-image.jpg" />
+  <meta property="og:image:type" content="image/jpeg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:url" content="https://smash.catemup.com/" />
+  <meta property="og:site_name" content="Smashing Cats" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Smashing Cats" />
+  <meta name="twitter:description" content="Smash enemies, rescue civilians, and unleash chaotic cat power!" />
+  <meta name="twitter:image" content="https://smash.catemup.com/og-image.jpg" />
+
   <title>Smash!ng Cats</title>
 
   <link rel="icon" href="/favicon.png" type="image/png" />
@@ -161,30 +177,32 @@
     const locale = localStorage.getItem("smashing-cats-locale");
     const normalizedLocale = locale === "uk" ? "uk" : "en";
 
-    const messages = LOADING_MESSAGES[normalizedLocale];
-
     const loadingSubtitle = document.querySelector(".loading-subtitle");
 
-    let currentIndex = -1;
+    function shuffle(array) {
+      const result = [...array];
 
-    function getRandomIndex() {
-      if (messages.length <= 1) {
-        return 0;
+      for (let i = result.length - 1; i > 0; i--) {
+        const randomIndex = Math.floor(Math.random() * (i + 1));
+
+        [result[i], result[randomIndex]] = [result[randomIndex], result[i]];
       }
 
-      let nextIndex = currentIndex;
-
-      while (nextIndex === currentIndex) {
-        nextIndex = Math.floor(Math.random() * messages.length);
-      }
-
-      return nextIndex;
+      return result;
     }
 
-    function updateLoadingMessage() {
-      currentIndex = getRandomIndex();
+    let shuffledMessages = shuffle(LOADING_MESSAGES[normalizedLocale]);
+    let currentIndex = 0;
 
-      loadingSubtitle.textContent = messages[currentIndex];
+    function updateLoadingMessage() {
+      if (currentIndex >= shuffledMessages.length) {
+        shuffledMessages = shuffle(LOADING_MESSAGES[normalizedLocale]);
+        currentIndex = 0;
+      }
+
+      loadingSubtitle.textContent = shuffledMessages[currentIndex];
+
+      currentIndex += 1;
     }
 
     updateLoadingMessage();
