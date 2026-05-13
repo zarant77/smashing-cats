@@ -1,4 +1,12 @@
-import type { CharacterDefinition, EntityKind, PlayerId, ServerToClientMessage } from "@smashing-cats/protocol";
+import {
+  normalizeServerMessage,
+  toMiniClientMessage,
+  type CharacterDefinition,
+  type EntityKind,
+  type InputMessage,
+  type PlayerId,
+  type ServerToClientMessage,
+} from "@smashing-cats/protocol";
 import { preloadAssets } from "./assets/assets.js";
 import { createTranslator, parseLocale } from "./i18n.js";
 import { readInput } from "./input.js";
@@ -78,10 +86,12 @@ async function bootstrap(): Promise<void> {
       characterSelect.render(characters, hasSelectedCharacter);
 
       socket.send(
-        JSON.stringify({
-          type: "selectCharacter",
-          characterKind,
-        }),
+        JSON.stringify(
+          toMiniClientMessage({
+            type: "selectCharacter",
+            characterKind,
+          }),
+        ),
       );
     },
   });
@@ -124,12 +134,15 @@ async function bootstrap(): Promise<void> {
 
   socket.addEventListener("open", () => {
     socket.send(
-      JSON.stringify({
-        type: "join",
-        name: "Cat",
-        matchCode,
-      }),
+      JSON.stringify(
+        toMiniClientMessage({
+          type: "join",
+          name: "Cat",
+        }),
+      ),
     );
+
+    void matchCode;
   });
 
   socket.addEventListener("message", (event) => {
@@ -173,15 +186,23 @@ async function bootstrap(): Promise<void> {
     const currentInputSeq = inputSeq++;
 
     if (socket.readyState === WebSocket.OPEN && playerId !== undefined && hasSelectedCharacter) {
-      sendWithSimulatedLag(
-        socket,
-        JSON.stringify({
-          type: "input",
-          inputSeq: currentInputSeq,
-          snapshotTick: interpolator.getRenderedTick(),
-          input,
-        }),
-      );
+      const snapshotTick = interpolator.getRenderedTick();
+
+      const inputMessage: InputMessage =
+        snapshotTick === undefined
+          ? {
+              type: "input",
+              inputSeq: currentInputSeq,
+              input,
+            }
+          : {
+              type: "input",
+              inputSeq: currentInputSeq,
+              snapshotTick,
+              input,
+            };
+
+      sendWithSimulatedLag(socket, JSON.stringify(toMiniClientMessage(inputMessage)));
     }
 
     const snapshot = predictor.apply(interpolator.get(playerId), interpolator.getLatest(), playerId, currentInputSeq, input, characters);
@@ -244,7 +265,7 @@ function parseServerMessage(data: unknown): ServerToClientMessage | undefined {
   }
 
   try {
-    return JSON.parse(data) as ServerToClientMessage;
+    return normalizeServerMessage(JSON.parse(data));
   } catch {
     return undefined;
   }

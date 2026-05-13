@@ -1,5 +1,11 @@
 import { CHARACTERS, FIXED_DT, Game, TICK_RATE } from "@smashing-cats/core";
-import type { ClientToServerMessage, GameSnapshot, ServerToClientMessage } from "@smashing-cats/protocol";
+import {
+  normalizeClientMessage,
+  toMiniServerMessage,
+  type ClientToServerMessage,
+  type GameSnapshot,
+  type ServerToClientMessage,
+} from "@smashing-cats/protocol";
 import type { WebSocket } from "ws";
 
 type Client = {
@@ -111,13 +117,13 @@ export class Room {
       return;
     }
 
-    socket.send(JSON.stringify(message));
+    socket.send(JSON.stringify(toMiniServerMessage(message)));
   }
 }
 
 function parseClientMessage(raw: string): ClientToServerMessage | undefined {
   try {
-    return JSON.parse(raw) as ClientToServerMessage;
+    return normalizeClientMessage(JSON.parse(raw));
   } catch {
     return undefined;
   }
