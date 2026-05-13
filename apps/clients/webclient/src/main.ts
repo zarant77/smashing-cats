@@ -32,7 +32,7 @@ async function bootstrap(): Promise<void> {
   }
 
   const engineSelect = document.querySelector<HTMLSelectElement>("#engine-select");
-  const localeSelect = document.querySelector<HTMLSelectElement>("#locale-select");
+  const localeButtons = document.querySelectorAll<HTMLButtonElement>("[data-locale]");
 
   const params = new URLSearchParams(window.location.search);
   const matchCode = ensureMatchCode(params);
@@ -99,16 +99,17 @@ async function bootstrap(): Promise<void> {
     });
   }
 
-  if (localeSelect !== null) {
-    localeSelect.value = locale;
+  updateLocaleButtons(localeButtons, locale);
 
-    localeSelect.addEventListener("change", () => {
-      locale = parseLocale(localeSelect.value);
+  for (const button of localeButtons) {
+    button.addEventListener("click", () => {
+      locale = parseLocale(button.dataset.locale ?? null);
       t = createTranslator(locale);
 
       localStorage.setItem("smashing-cats-locale", locale);
 
       applyStaticTranslations(locale, t);
+      updateLocaleButtons(localeButtons, locale);
 
       hud.setTranslator(t);
 
@@ -229,5 +230,11 @@ function parseServerMessage(data: unknown): ServerToClientMessage | undefined {
     return JSON.parse(data) as ServerToClientMessage;
   } catch {
     return undefined;
+  }
+}
+
+function updateLocaleButtons(buttons: NodeListOf<HTMLButtonElement>, locale: string): void {
+  for (const button of buttons) {
+    button.classList.toggle("active", button.dataset.locale === locale);
   }
 }

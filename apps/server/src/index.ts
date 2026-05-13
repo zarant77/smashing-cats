@@ -11,4 +11,4 @@ server.on("connection", (socket) => {
   room.addClient(socket);
 });
 
-console.log(`Smashing Cats server listening on ws://localhost:${port}`);
+console.log(`Smash!ng Cats server listening on ws://localhost:${port}`);

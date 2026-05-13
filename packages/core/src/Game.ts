@@ -322,6 +322,10 @@ export class Game {
     }
 
     if (entity.type === "civilian") {
+      if (!player.smashingForCollision) {
+        return;
+      }
+
       entity.alive = false;
 
       const scoreDelta = -entity.score;

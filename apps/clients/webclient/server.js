@@ -21,14 +21,15 @@ const server = createServer((request, response) => {
   const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
   const pathname = decodeURIComponent(url.pathname);
   const requestedPath = normalize(join(root, pathname));
-  const filePath = requestedPath.startsWith(root) && existsSync(requestedPath) && statSync(requestedPath).isFile()
-    ? requestedPath
-    : join(root, "index.html");
+  const filePath =
+    requestedPath.startsWith(root) && existsSync(requestedPath) && statSync(requestedPath).isFile()
+      ? requestedPath
+      : join(root, "index.html");
 
   response.setHeader("Content-Type", mimeTypes.get(extname(filePath)) ?? "application/octet-stream");
   createReadStream(filePath).pipe(response);
 });
 
 server.listen(port, "0.0.0.0", () => {
-  console.log(`Smashing Cats webclient listening on http://0.0.0.0:${port}`);
+  console.log(`Smash!ng Cats webclient listening on http://0.0.0.0:${port}`);
 });

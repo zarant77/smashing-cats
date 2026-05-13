@@ -52,9 +52,7 @@
   font-weight: 700;
 
   outline: none;
-
   cursor: pointer;
-
   appearance: none;
 
   box-shadow:
@@ -82,8 +80,62 @@
   width: 170px;
 }
 
-#locale-select {
-  width: 88px;
+.locale-flags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.locale-flag {
+  width: 38px;
+  height: 32px;
+
+  display: grid;
+  place-items: center;
+
+  padding: 0;
+
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+
+  font-size: 20px;
+  line-height: 1;
+
+  cursor: pointer;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 4px 14px rgba(0, 0, 0, 0.22);
+
+  transition:
+    transform 120ms ease,
+    border-color 140ms ease,
+    background 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.locale-flag:hover {
+  transform: translateY(-1px);
+
+  border-color: rgba(255, 204, 51, 0.45);
+
+  background: linear-gradient(180deg, rgba(255, 204, 51, 0.1), rgba(255, 204, 51, 0.04));
+
+  box-shadow:
+    0 0 16px rgba(255, 204, 51, 0.1),
+    0 6px 18px rgba(0, 0, 0, 0.28);
+}
+
+.locale-flag.active {
+  border-color: rgba(255, 204, 51, 0.75);
+
+  background: linear-gradient(180deg, rgba(255, 204, 51, 0.2), rgba(255, 204, 51, 0.07));
+
+  box-shadow:
+    0 0 18px rgba(255, 204, 51, 0.16),
+    0 6px 18px rgba(0, 0, 0, 0.3);
 }
 
 @media (max-width: 640px) {
@@ -103,8 +155,11 @@
     width: 130px;
   }
 
-  #locale-select {
-    width: 72px;
+  .locale-flag {
+    width: 36px;
+    height: 30px;
+
+    font-size: 19px;
   }
 }
 

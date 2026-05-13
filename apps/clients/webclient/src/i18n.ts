@@ -46,18 +46,18 @@ const TRANSLATIONS: Record<Locale, Record<string, string>> = {
     gameOverTitle: "Гра закінчена",
 
     // Character names
-    batcat: "Кажанкіт",
-    ironcat: "Залізнокіт",
-    darkcat: "Темнокіт",
+    batcat: "Кіт-Кажан",
+    ironcat: "Залізна Котина",
+    darkcat: "Кіт Пітьми",
     robocat: "Робокіт",
     termicator: "Термікатор",
     punishcat: "Каракіт",
-    carrambacat: "Каррамбакіт",
-    commandocat: "Командокіт",
+    carrambacat: "Каррамба-кіт",
+    commandocat: "Котандо",
     cybercat: "Кіберкіт",
     samurcat: "Самуркіт",
     zombocat: "Зомбокіт",
-    ghostcat: "Привидокіт",
+    ghostcat: "Прикіт",
   },
 };
 

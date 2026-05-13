@@ -1,4 +1,4 @@
-# Smashing Cats
+# Smash!ng Cats
 
 Server-authoritative multiplayer arcade runner with a deterministic core and multi-client architecture.
 
