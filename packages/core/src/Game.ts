@@ -1,29 +1,18 @@
-import type { EntityKind, EntitySnapshot, GameEvent, GameSnapshot, PlayerId, PlayerInput, PlayerSnapshot } from "@smashing-cats/protocol";
-import { CIVILIANS, ENEMIES, GAME_CONFIG, getCharacterConfig, SPAWNABLES } from "./config.js";
-import { intersects } from "./collisions.js";
-import { simulatePlayerMovement } from "./movement.js";
-import { Random } from "./Random.js";
-import type { CharacterConfig } from "./config.js";
+import type { EntityKind, GameEvent, GameSnapshot, PlayerId, PlayerInput } from "@smashing-cats/protocol";
 import type { Entity, Player } from "./types.js";
-import type { Bounds } from "./collisions.js";
-
-const EMPTY_INPUT: PlayerInput = {
-  left: false,
-  right: false,
-  jump: false,
-};
-
-const CIVILIAN_KINDS = new Set<EntityKind>(CIVILIANS.map((config) => config.kind));
-const ENEMY_KINDS = new Set<EntityKind>(ENEMIES.map((config) => config.kind));
-
-const LAG_COMPENSATION_SECONDS = 0.5;
-const MAX_ENTITY_HISTORY_TICKS = Math.ceil(GAME_CONFIG.tickRate * LAG_COMPENSATION_SECONDS);
-
-type EntityHistoryFrame = {
-  tick: number;
-  scrollX: number;
-  entities: Map<string, Bounds>;
-};
+import { type CharacterConfig, GAME_CONFIG, getCharacterConfig } from "./config.js";
+import { Random } from "./Random.js";
+import { resolveEnemyCivilianCollisions, resolvePlayerEntityCollisions } from "./collisionSystem.js";
+import { spawnAhead } from "./entity/entitySpawner.js";
+import { cleanupEntities, updateEntities } from "./entity/entitySystem.js";
+import { createGameEvent } from "./event/gameEventFactory.js";
+import { EntityHistoryFrame, recordEntityHistory } from "./history/entityHistory.js";
+import { MAX_ENTITY_HISTORY_TICKS } from "./history/historyConfig.js";
+import { intersectsCompensatedEntity } from "./history/lagCompensation.js";
+import { applyPlayerInput } from "./input/applyPlayerInput.js";
+import { updatePlayers } from "./player/playerSystem.js";
+import { createPlayer } from "./player/playerFactory.js";
+import { createGameSnapshot } from "./snapshot/snapshotFactory.js";
 
 export class Game {
   private readonly seed: number;
@@ -35,9 +24,9 @@ export class Game {
   private nextEventIndex = 1;
   private nextSpawnX = GAME_CONFIG.worldWidth + 240;
 
-  private players = new Map<PlayerId, Player>();
+  private readonly players = new Map<PlayerId, Player>();
+  private readonly entityHistory: EntityHistoryFrame[] = [];
   private entities: Entity[] = [];
-  private entityHistory: EntityHistoryFrame[] = [];
   private events: GameEvent[] = [];
 
   public constructor(seed: number) {
@@ -58,49 +47,16 @@ export class Game {
       return;
     }
 
-    const index = this.players.size;
-    const x = 120 + index * 70;
-    const y = GAME_CONFIG.groundY - characterConfig.height;
-
-    this.players.set(playerId, {
-      id: `${characterConfig.kind}-${playerId}`,
+    const player = createPlayer({
       playerId,
-      type: "player",
-      kind: characterConfig.kind,
-
-      x,
-      y,
-      previousX: x,
-      previousY: y,
-      vx: 0,
-      vy: 0,
-
-      width: characterConfig.width,
-      height: characterConfig.height,
-
-      damage: 0,
-      score: 0,
-      alive: true,
-
-      hp: characterConfig.hp,
-      maxHp: characterConfig.hp,
-      invulnerableUntilTick: this.tick + Math.ceil(characterConfig.spawnInvulnerabilitySeconds * GAME_CONFIG.tickRate),
-
-      grounded: true,
-      smashing: false,
-      smashingForCollision: false,
-      lockedWorldX: undefined,
-      jumpStartY: y,
-      wasJumpPressed: false,
-
-      lastInputSnapshotTick: undefined,
-      lastReceivedInputSeq: 0,
-      lastProcessedInputSeq: 0,
-      smashSnapshotTick: undefined,
-
-      damagedByEntityIds: new Set(),
-      lastInput: { ...EMPTY_INPUT },
+      characterConfig,
+      index: this.players.size,
+      tick: this.tick,
+      groundY: GAME_CONFIG.groundY,
+      tickRate: GAME_CONFIG.tickRate,
     });
+
+    this.players.set(playerId, player);
   }
 
   public removePlayer(playerId: PlayerId): void {
@@ -114,13 +70,17 @@ export class Game {
       return;
     }
 
-    player.lastInput = normalizeInput(input);
-    player.lastInputSnapshotTick = normalizeSnapshotTick(snapshotTick);
-    player.lastReceivedInputSeq = normalizeInputSeq(inputSeq, player.lastReceivedInputSeq);
+    applyPlayerInput({
+      player,
+      input,
+      snapshotTick,
+      inputSeq,
+    });
   }
 
   public update(dt: number): void {
     this.tick += 1;
+
     this.events = [];
 
     const hasAlivePlayers = this.hasAlivePlayers();
@@ -130,471 +90,97 @@ export class Game {
       this.spawnAhead();
     }
 
-    this.updatePlayers(dt);
+    updatePlayers({
+      players: this.players.values(),
+      dt,
+    });
 
     if (hasAlivePlayers) {
-      this.updateEnemies(dt);
-      this.resolveCollisions();
-      this.resolveEnemyCivilianCollisions();
+      updateEntities({
+        entities: this.entities,
+        dt,
+      });
+
+      resolvePlayerEntityCollisions({
+        tick: this.tick,
+        scrollX: this.scrollX,
+        players: this.players.values(),
+        entities: this.entities,
+        addEvent: this.addEvent.bind(this),
+
+        intersectsCompensatedEntity: (player, entity): boolean =>
+          intersectsCompensatedEntity({
+            player,
+            entity,
+            history: this.entityHistory,
+            currentTick: this.tick,
+            maxHistoryTicks: MAX_ENTITY_HISTORY_TICKS,
+          }),
+      });
+
+      resolveEnemyCivilianCollisions({
+        players: this.players.values(),
+        entities: this.entities,
+        addEvent: this.addEvent.bind(this),
+      });
     }
 
-    this.cleanupEntities();
-    this.recordEntityHistory();
+    this.entities = cleanupEntities({
+      entities: this.entities,
+      scrollX: this.scrollX,
+    });
+
+    recordEntityHistory({
+      history: this.entityHistory,
+      tick: this.tick,
+      scrollX: this.scrollX,
+      entities: this.entities,
+      maxHistoryTicks: MAX_ENTITY_HISTORY_TICKS,
+    });
   }
 
   public createSnapshot(): GameSnapshot {
-    const players: PlayerSnapshot[] = [...this.players.values()].map((player) => ({
-      id: player.id,
-      playerId: player.playerId,
-      type: "player",
-      kind: player.kind,
-
-      x: getPlayerSnapshotX(player, this.scrollX),
-      y: player.y,
-      vx: player.vx,
-      vy: player.vy,
-
-      width: player.width,
-      height: player.height,
-
-      damage: player.damage,
-      score: player.score,
-      alive: player.alive,
-
-      hp: player.hp,
-      maxHp: player.maxHp,
-      invulnerable: isPlayerInvulnerable(player, this.tick),
-
-      grounded: player.grounded,
-      smashing: player.smashing,
-      jumpStartY: player.jumpStartY,
-      wasJumpPressed: player.wasJumpPressed,
-
-      lastProcessedInputSeq: player.lastProcessedInputSeq,
-    }));
-
-    const entities: EntitySnapshot[] = this.entities.map((entity) => ({
-      id: entity.id,
-      type: entity.type,
-      kind: entity.kind,
-
-      x: entity.x,
-      y: entity.y,
-      vx: entity.vx,
-      vy: entity.vy,
-
-      width: entity.width,
-      height: entity.height,
-
-      damage: entity.damage,
-      score: entity.score,
-      alive: entity.alive,
-    }));
-
-    return {
+    return createGameSnapshot({
       tick: this.tick,
       seed: this.seed,
-      world: {
-        scrollX: this.scrollX,
-        speed: GAME_CONFIG.scrollSpeed,
-        width: GAME_CONFIG.worldWidth,
-        height: GAME_CONFIG.worldHeight,
-        groundY: GAME_CONFIG.groundY,
-        gravity: GAME_CONFIG.gravity,
-      },
-      players,
-      entities,
-      events: [...this.events],
-    };
-  }
-
-  private updatePlayers(dt: number): void {
-    for (const player of this.players.values()) {
-      player.previousX = player.x;
-      player.previousY = player.y;
-
-      if (!player.alive) {
-        player.smashingForCollision = false;
-        updateDeadPlayer(player, dt);
-        continue;
-      }
-
-      const characterConfig = getCharacterConfig(player.kind);
-
-      const result = simulatePlayerMovement(
-        player,
-        player.lastInput,
-        characterConfig,
-        {
-          width: GAME_CONFIG.worldWidth,
-          groundY: GAME_CONFIG.groundY,
-          gravity: GAME_CONFIG.gravity,
-        },
-        dt,
-      );
-
-      player.lastProcessedInputSeq = player.lastReceivedInputSeq;
-
-      if (result.startedSmash) {
-        player.smashSnapshotTick = player.lastInputSnapshotTick;
-      }
-
-      if (player.grounded && !player.smashing) {
-        player.smashSnapshotTick = undefined;
-      }
-    }
-  }
-
-  private updateEnemies(dt: number): void {
-    for (const entity of this.entities) {
-      if (!entity.alive) {
-        continue;
-      }
-
-      entity.x += entity.vx * dt;
-      entity.y += entity.vy * dt;
-    }
-  }
-
-  private resolveCollisions(): void {
-    for (const player of this.players.values()) {
-      if (!player.alive) {
-        continue;
-      }
-
-      const currentPlayerBounds: Bounds = {
-        x: player.x + this.scrollX,
-        y: player.y,
-        width: player.width,
-        height: player.height,
-      };
-
-      const previousPlayerBounds: Bounds = {
-        x: player.previousX + this.scrollX,
-        y: player.previousY,
-        width: player.width,
-        height: player.height,
-      };
-
-      const sweptPlayerBounds = getSweptBounds(previousPlayerBounds, currentPlayerBounds);
-      const collisionBounds = player.smashingForCollision ? sweptPlayerBounds : currentPlayerBounds;
-
-      for (const entity of this.entities) {
-        if (!entity.alive) {
-          continue;
-        }
-
-        const currentIntersects = intersects(collisionBounds, entity);
-
-        if (currentIntersects || this.intersectsCompensatedEntity(player, entity)) {
-          this.resolvePlayerEntityCollision(player, entity);
-        }
-      }
-    }
-  }
-
-  private resolvePlayerEntityCollision(player: Player, entity: Entity): void {
-    if (!entity.alive) {
-      return;
-    }
-
-    if (entity.type === "enemy") {
-      if (player.smashingForCollision) {
-        entity.alive = false;
-        player.score += entity.score;
-
-        this.addEvent("enemyKilled", player, entity, 0, entity.score);
-
-        player.smashing = false;
-        player.smashingForCollision = false;
-        player.smashSnapshotTick = undefined;
-        player.jumpStartY = player.y;
-        return;
-      }
-
-      const damage = damagePlayer(player, entity, this.scrollX, this.tick);
-
-      if (damage > 0) {
-        this.addEvent("playerHit", player, entity, damage, 0);
-      }
-
-      return;
-    }
-
-    if (entity.type === "civilian") {
-      if (!player.smashingForCollision) {
-        return;
-      }
-
-      entity.alive = false;
-
-      const scoreDelta = -entity.score;
-      player.score += scoreDelta;
-
-      this.addEvent("civilianKilled", player, entity, 0, scoreDelta);
-
-      player.smashing = false;
-      player.smashingForCollision = false;
-      player.smashSnapshotTick = undefined;
-      player.jumpStartY = player.y;
-      return;
-    }
-
-    if (entity.type === "obstacle") {
-      const damage = damagePlayer(player, entity, this.scrollX, this.tick);
-
-      if (damage > 0) {
-        this.addEvent("playerHit", player, entity, damage, 0);
-      }
-    }
+      scrollX: this.scrollX,
+      players: this.players.values(),
+      entities: this.entities,
+      events: this.events,
+    });
   }
 
   private spawnAhead(): void {
-    while (this.nextSpawnX < this.scrollX + GAME_CONFIG.worldWidth * 1.8) {
-      const config = this.rng.pick(SPAWNABLES);
-      const isMovingEntity = "minMoveSpeed" in config;
-      const moveSpeed = isMovingEntity ? this.rng.nextInt(config.minMoveSpeed, config.maxMoveSpeed) : 0;
+    const result = spawnAhead({
+      rng: this.rng,
 
-      this.entities.push({
-        id: `${config.kind}-${this.nextEntityIndex++}`,
-        type: getEntityType(config),
-        kind: config.kind,
+      scrollX: this.scrollX,
 
-        x: this.nextSpawnX,
-        y: GAME_CONFIG.groundY - config.height,
-        vx: -moveSpeed,
-        vy: 0,
+      nextSpawnX: this.nextSpawnX,
+      nextEntityIndex: this.nextEntityIndex,
+    });
 
-        width: config.width,
-        height: config.height,
+    this.entities.push(...result.entities);
 
-        damage: config.damage,
-        score: "score" in config ? config.score : 0,
-        alive: true,
-      });
-
-      this.nextSpawnX += this.rng.nextInt(GAME_CONFIG.spawnDistanceMin, GAME_CONFIG.spawnDistanceMax);
-    }
-  }
-
-  private cleanupEntities(): void {
-    const minX = this.scrollX - 300;
-    this.entities = this.entities.filter((entity) => entity.x > minX);
-  }
-
-  private resolveEnemyCivilianCollisions(): void {
-    for (const enemy of this.entities) {
-      if (enemy.type !== "enemy" || !enemy.alive) {
-        continue;
-      }
-
-      for (const civilian of this.entities) {
-        if (civilian.type !== "civilian" || !civilian.alive || !intersects(enemy, civilian)) {
-          continue;
-        }
-
-        civilian.alive = false;
-
-        const players = [...this.players.values()];
-        const scoreDelta = players.length === 0 ? 0 : -civilian.score / players.length;
-
-        for (const player of players) {
-          player.score += scoreDelta;
-        }
-
-        this.addEvent("civilianKilledByEnemy", undefined, civilian, 0, scoreDelta);
-      }
-    }
+    this.nextSpawnX = result.nextSpawnX;
+    this.nextEntityIndex = result.nextEntityIndex;
   }
 
   private hasAlivePlayers(): boolean {
     return [...this.players.values()].some((player) => player.alive);
   }
 
-  private recordEntityHistory(): void {
-    this.entityHistory.push({
-      tick: this.tick,
-      scrollX: this.scrollX,
-      entities: new Map(
-        this.entities.map((entity) => [
-          entity.id,
-          {
-            x: entity.x,
-            y: entity.y,
-            width: entity.width,
-            height: entity.height,
-          },
-        ]),
-      ),
-    });
-
-    const minTick = this.tick - MAX_ENTITY_HISTORY_TICKS;
-
-    while (this.entityHistory[0] !== undefined && this.entityHistory[0].tick < minTick) {
-      this.entityHistory.shift();
-    }
-  }
-
-  private intersectsCompensatedEntity(player: Player, entity: Entity): boolean {
-    if (!player.smashingForCollision || player.smashSnapshotTick === undefined) {
-      return false;
-    }
-
-    const frame = this.getEntityHistoryFrame(player.smashSnapshotTick);
-    const entityBounds = frame?.entities.get(entity.id);
-
-    if (frame === undefined || entityBounds === undefined) {
-      return false;
-    }
-
-    return intersects(
-      {
-        x: player.x + frame.scrollX,
-        y: player.y,
-        width: player.width,
-        height: player.height,
-      },
-      entityBounds,
+  private addEvent(type: GameEvent["type"], player: Player | undefined, entity: Entity, damage: number, scoreDelta: number): void {
+    this.events.push(
+      createGameEvent({
+        id: `event-${this.tick}-${this.nextEventIndex++}`,
+        tick: this.tick,
+        type,
+        player,
+        entity,
+        damage,
+        scoreDelta,
+      }),
     );
   }
-
-  private getEntityHistoryFrame(snapshotTick: number): EntityHistoryFrame | undefined {
-    const targetTick = clamp(Math.floor(snapshotTick), this.tick - MAX_ENTITY_HISTORY_TICKS, this.tick);
-
-    let closestFrame: EntityHistoryFrame | undefined;
-
-    for (const frame of this.entityHistory) {
-      if (frame.tick > targetTick) {
-        break;
-      }
-
-      closestFrame = frame;
-    }
-
-    return closestFrame;
-  }
-
-  private addEvent(type: GameEvent["type"], player: Player | undefined, entity: Entity, damage: number, scoreDelta: number): void {
-    const event: GameEvent = {
-      id: `event-${this.tick}-${this.nextEventIndex++}`,
-      tick: this.tick,
-      type,
-      entityId: entity.id,
-      entityType: entity.type,
-      entityKind: entity.kind,
-      x: entity.x,
-      y: entity.y,
-      damage,
-      scoreDelta,
-    };
-
-    if (player !== undefined) {
-      event.playerId = player.playerId;
-    }
-
-    this.events.push(event);
-  }
-}
-
-function normalizeInput(input: PlayerInput): PlayerInput {
-  return {
-    left: input.left === true,
-    right: input.right === true,
-    jump: input.jump === true,
-  };
-}
-
-function normalizeSnapshotTick(snapshotTick: number | undefined): number | undefined {
-  if (snapshotTick === undefined || !Number.isFinite(snapshotTick)) {
-    return undefined;
-  }
-
-  return Math.max(0, Math.floor(snapshotTick));
-}
-
-function normalizeInputSeq(inputSeq: number | undefined, fallback: number): number {
-  if (inputSeq === undefined || !Number.isFinite(inputSeq)) {
-    return fallback;
-  }
-
-  return Math.max(fallback, Math.floor(inputSeq));
-}
-
-function getSweptBounds(from: Bounds, to: Bounds): Bounds {
-  const left = Math.min(from.x, to.x);
-  const top = Math.min(from.y, to.y);
-  const right = Math.max(from.x + from.width, to.x + to.width);
-  const bottom = Math.max(from.y + from.height, to.y + to.height);
-
-  return {
-    x: left,
-    y: top,
-    width: right - left,
-    height: bottom - top,
-  };
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
-
-function damagePlayer(player: Player, entity: Entity, scrollX: number, tick: number): number {
-  if (isPlayerInvulnerable(player, tick) || player.damagedByEntityIds.has(entity.id)) {
-    return 0;
-  }
-
-  player.damagedByEntityIds.add(entity.id);
-
-  const damage = entity.damage;
-
-  player.hp = Math.max(0, player.hp - entity.damage);
-  player.alive = player.hp > 0;
-
-  if (!player.alive) {
-    player.lockedWorldX = player.x + scrollX;
-    player.vx = 0;
-    player.smashing = false;
-    player.smashingForCollision = false;
-    player.smashSnapshotTick = undefined;
-  }
-
-  return damage;
-}
-
-function updateDeadPlayer(player: Player, dt: number): void {
-  if (player.y + player.height >= GAME_CONFIG.groundY) {
-    player.y = GAME_CONFIG.groundY - player.height;
-    player.vy = 0;
-    player.grounded = true;
-    return;
-  }
-
-  player.vy += GAME_CONFIG.gravity * dt;
-  player.y += player.vy * dt;
-
-  if (player.y + player.height >= GAME_CONFIG.groundY) {
-    player.y = GAME_CONFIG.groundY - player.height;
-    player.vy = 0;
-    player.grounded = true;
-  }
-}
-
-function getPlayerSnapshotX(player: Player, scrollX: number): number {
-  return player.lockedWorldX === undefined ? player.x : player.lockedWorldX - scrollX;
-}
-
-function getEntityType(config: (typeof SPAWNABLES)[number]): Entity["type"] {
-  if (CIVILIAN_KINDS.has(config.kind)) {
-    return "civilian";
-  }
-
-  if (ENEMY_KINDS.has(config.kind)) {
-    return "enemy";
-  }
-
-  return "obstacle";
-}
-
-function isPlayerInvulnerable(player: Player, tick: number): boolean {
-  return player.alive && tick < player.invulnerableUntilTick;
 }

@@ -10,8 +10,6 @@ export class PlayerRenderer {
 
   public draw(ctx: CanvasRenderingContext2D, snapshot: GameSnapshot, player: PlayerSnapshot, isLocal: boolean): void {
     const image = assets.get(`/portraits/${player.kind}.png`);
-    const landingImage = assets.get(this.landingEffect.getImagePath());
-
     const shouldBlinkOff = player.invulnerable && Math.floor(snapshot.tick / 2) % 2 === 0;
 
     this.landingEffect.update({
@@ -55,9 +53,7 @@ export class PlayerRenderer {
 
     ctx.restore();
 
-    if (landingImage.complete && landingImage.naturalWidth > 0) {
-      this.landingEffect.draw(ctx, landingImage, player.id);
-    }
+    this.landingEffect.draw(ctx, player.id);
 
     if (DRAW_SPRITE_BORDERS) {
       drawSpriteBorder(ctx, player.x, player.y, player.width, player.height);

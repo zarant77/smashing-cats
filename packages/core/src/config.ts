@@ -1,9 +1,15 @@
 import type { EntityKind } from "@smashing-cats/protocol";
+
 import charactersData from "./config/characters.json" with { type: "json" };
 import civiliansData from "./config/civilians.json" with { type: "json" };
 import enemiesData from "./config/enemies.json" with { type: "json" };
 import gameData from "./config/game.json" with { type: "json" };
 import obstaclesData from "./config/obstacles.json" with { type: "json" };
+
+export type LocalizedText = {
+  en: string;
+  uk: string;
+};
 
 export type GameConfig = {
   tickRate: number;
@@ -18,12 +24,18 @@ export type GameConfig = {
 
 export type CharacterConfig = {
   kind: EntityKind;
+  name: LocalizedText;
+
   width: number;
   height: number;
+
   hp: number;
+
   spawnInvulnerabilitySeconds: number;
+
   moveSpeed: number;
   jumpForce: number;
+
   smashSpeed: number;
   bounceSpeed: number;
   smashMinJumpProgress: number;
@@ -34,7 +46,7 @@ type CharacterCommonConfig = Pick<
   "width" | "height" | "spawnInvulnerabilitySeconds" | "smashSpeed" | "bounceSpeed" | "smashMinJumpProgress"
 >;
 
-type CharacterSpecificConfig = Pick<CharacterConfig, "kind" | "hp" | "moveSpeed" | "jumpForce">;
+type CharacterSpecificConfig = Pick<CharacterConfig, "kind" | "name" | "hp" | "moveSpeed" | "jumpForce">;
 
 type CharactersConfigFile = {
   common: CharacterCommonConfig;
@@ -43,28 +55,36 @@ type CharactersConfigFile = {
 
 export type EnemyConfig = {
   kind: EntityKind;
+
   width: number;
   height: number;
+
   damage: number;
   score: number;
+
   minMoveSpeed: number;
   maxMoveSpeed: number;
 };
 
 export type CivilianConfig = {
   kind: EntityKind;
+
   width: number;
   height: number;
+
   damage: number;
   score: number;
+
   minMoveSpeed: number;
   maxMoveSpeed: number;
 };
 
 export type ObstacleConfig = {
   kind: EntityKind;
+
   width: number;
   height: number;
+
   damage: number;
 };
 
