@@ -156,13 +156,48 @@
       ],
     };
 
+    const MESSAGE_CHANGE_INTERVAL_MS = 4_000;
+
     const locale = localStorage.getItem("smashing-cats-locale");
-    const messages = (locale === "uk") ? LOADING_MESSAGES.uk : LOADING_MESSAGES.en;
+    const normalizedLocale = locale === "uk" ? "uk" : "en";
+
+    const messages = LOADING_MESSAGES[normalizedLocale];
+
     const loadingSubtitle = document.querySelector(".loading-subtitle");
 
-    loadingSubtitle.textContent = messages[Math.floor(Math.random() * messages.length)];
-    document.title = (locale === "uk") ? "Руйн!вні Коти" : "Smash!ng Cats";
-    document.documentElement.lang = locale === "uk" ? "uk" : "en";
+    let currentIndex = -1;
+
+    function getRandomIndex() {
+      if (messages.length <= 1) {
+        return 0;
+      }
+
+      let nextIndex = currentIndex;
+
+      while (nextIndex === currentIndex) {
+        nextIndex = Math.floor(Math.random() * messages.length);
+      }
+
+      return nextIndex;
+    }
+
+    function updateLoadingMessage() {
+      currentIndex = getRandomIndex();
+
+      loadingSubtitle.textContent = messages[currentIndex];
+    }
+
+    updateLoadingMessage();
+
+    window.setInterval(() => {
+      updateLoadingMessage();
+    }, MESSAGE_CHANGE_INTERVAL_MS);
+
+    document.title = normalizedLocale === "uk"
+      ? "Руйн!вні Коти"
+      : "Smash!ng Cats";
+
+    document.documentElement.lang = normalizedLocale;
   </script>
 
   <script type="module" src="/src/main.ts"></script>
