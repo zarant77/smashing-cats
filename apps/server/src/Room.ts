@@ -13,19 +13,31 @@ type Client = {
   socket: WebSocket;
 };
 
+type RoomOptions = {
+  onEmpty: () => void;
+};
+
 const FULL_SNAPSHOT_INTERVAL_TICKS = TICK_RATE * 60;
 
 export class Room {
   private readonly game = new Game(1337);
   private readonly clients = new Map<string, Client>();
+  private readonly onEmpty: () => void;
+
   private interval: NodeJS.Timeout | undefined;
   private nextClientNumber = 1;
   private lastSnapshot: GameSnapshot | undefined;
   private ticksSinceFullSnapshot = 0;
 
+  public constructor(options: RoomOptions) {
+    this.onEmpty = options.onEmpty;
+  }
+
   public addClient(socket: WebSocket): void {
     const id = `p${this.nextClientNumber++}`;
     this.clients.set(id, { id, socket });
+
+    this.start();
 
     this.send(socket, {
       type: "welcome",
@@ -43,17 +55,39 @@ export class Room {
     });
 
     socket.on("close", () => {
-      this.clients.delete(id);
-      this.game.removePlayer(id);
+      this.removeClient(id);
+    });
+
+    socket.on("error", () => {
+      this.removeClient(id);
     });
   }
 
-  public start(): void {
+  public stop(): void {
+    if (this.interval === undefined) {
+      return;
+    }
+
+    clearInterval(this.interval);
+    this.interval = undefined;
+  }
+
+  public isEmpty(): boolean {
+    return this.clients.size === 0;
+  }
+
+  private start(): void {
     if (this.interval !== undefined) {
       return;
     }
 
     this.interval = setInterval(() => {
+      if (this.clients.size === 0) {
+        this.stop();
+        this.onEmpty();
+        return;
+      }
+
       this.game.update(FIXED_DT);
 
       const snapshot = this.game.createSnapshot();
@@ -79,6 +113,22 @@ export class Room {
       this.lastSnapshot = snapshot;
       this.ticksSinceFullSnapshot += 1;
     }, 1000 / TICK_RATE);
+  }
+
+  private removeClient(playerId: string): void {
+    if (!this.clients.has(playerId)) {
+      return;
+    }
+
+    this.clients.delete(playerId);
+    this.game.removePlayer(playerId);
+
+    if (this.clients.size > 0) {
+      return;
+    }
+
+    this.stop();
+    this.onEmpty();
   }
 
   private shouldSendFullSnapshot(): boolean {

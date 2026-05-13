@@ -17,9 +17,9 @@ import { SnapshotInterpolator } from "./interpolation.js";
 import { receiveWithSimulatedLag, sendWithSimulatedLag } from "./networkDebug.js";
 import { LocalPlayerPredictor } from "./prediction.js";
 import { SnapshotStore } from "./snapshot/SnapshotStore.js";
-import { Hud } from "./ui/Hud.js";
 import { CharacterSelect } from "./ui/CharacterSelect.js";
 import { GameOverPopup } from "./ui/GameOverPopup.js";
+import { Hud } from "./ui/Hud.js";
 import { createView, parseViewKind } from "./views/createView.js";
 import type { GameView } from "./views/types.js";
 
@@ -66,14 +66,42 @@ async function bootstrap(): Promise<void> {
   let wasJumpPressed = false;
   let wasSmashing = false;
 
-  const interpolator = new SnapshotInterpolator();
-  const snapshotStore = new SnapshotStore();
-  const predictor = new LocalPlayerPredictor();
-  const audioEventPlayer = new AudioEventPlayer();
-  const socket = new WebSocket(import.meta.env.VITE_WS_URL ?? "ws://localhost:8080");
+  let interpolator = new SnapshotInterpolator();
+  let snapshotStore = new SnapshotStore();
+  let predictor = new LocalPlayerPredictor();
+  let audioEventPlayer = new AudioEventPlayer();
+  let socket = createSocket();
 
   const hud = new Hud(uiRoot, t);
-  const gameOverPopup = new GameOverPopup(uiRoot, t);
+
+  const restartGame = (): void => {
+    audioEvents.uiClick();
+
+    hasSelectedCharacter = false;
+    playerId = undefined;
+    inputSeq = 1;
+    wasJumpPressed = false;
+    wasSmashing = false;
+
+    characters = [];
+
+    interpolator = new SnapshotInterpolator();
+    snapshotStore = new SnapshotStore();
+    predictor = new LocalPlayerPredictor();
+    audioEventPlayer = new AudioEventPlayer();
+
+    socket.close();
+    socket = createSocket();
+    bindSocketEvents();
+
+    characterSelect.render(characters, hasSelectedCharacter);
+    hud.render(undefined, undefined);
+    view.render(undefined, undefined);
+  };
+
+  const gameOverPopup = new GameOverPopup(uiRoot, t, {
+    onRestart: restartGame,
+  });
 
   const characterSelect = new CharacterSelect(uiRoot, {
     locale,
@@ -145,54 +173,58 @@ async function bootstrap(): Promise<void> {
     });
   }
 
-  socket.addEventListener("open", () => {
-    socket.send(
-      JSON.stringify(
-        toMiniClientMessage({
-          type: "join",
-          name: "Cat",
-        }),
-      ),
-    );
+  function bindSocketEvents(): void {
+    socket.addEventListener("open", () => {
+      socket.send(
+        JSON.stringify(
+          toMiniClientMessage({
+            type: "join",
+            name: "Cat",
+          }),
+        ),
+      );
 
-    void matchCode;
-  });
+      void matchCode;
+    });
 
-  socket.addEventListener("message", (event) => {
-    const message = parseServerMessage(event.data);
+    socket.addEventListener("message", (event) => {
+      const message = parseServerMessage(event.data);
 
-    if (message === undefined) {
-      return;
-    }
+      if (message === undefined) {
+        return;
+      }
 
-    if (message.type === "welcome") {
-      playerId = message.playerId;
-      characters = message.characters;
-      characterSelect.render(characters, hasSelectedCharacter);
-      return;
-    }
+      if (message.type === "welcome") {
+        playerId = message.playerId;
+        characters = message.characters;
+        characterSelect.render(characters, hasSelectedCharacter);
+        return;
+      }
 
-    if (message.type === "snapshot") {
-      receiveWithSimulatedLag(() => {
-        const snapshot = snapshotStore.setFullSnapshot(message.snapshot);
-        interpolator.add(snapshot);
-      });
-
-      return;
-    }
-
-    if (message.type === "delta") {
-      receiveWithSimulatedLag(() => {
-        const snapshot = snapshotStore.applyDelta(message.delta);
-
-        if (snapshot !== undefined) {
+      if (message.type === "snapshot") {
+        receiveWithSimulatedLag(() => {
+          const snapshot = snapshotStore.setFullSnapshot(message.snapshot);
           interpolator.add(snapshot);
-        }
-      });
+        });
 
-      return;
-    }
-  });
+        return;
+      }
+
+      if (message.type === "delta") {
+        receiveWithSimulatedLag(() => {
+          const snapshot = snapshotStore.applyDelta(message.delta);
+
+          if (snapshot !== undefined) {
+            interpolator.add(snapshot);
+          }
+        });
+
+        return;
+      }
+    });
+  }
+
+  bindSocketEvents();
 
   function frame(): void {
     const input = readInput();
@@ -222,6 +254,7 @@ async function bootstrap(): Promise<void> {
     }
 
     const snapshot = predictor.apply(interpolator.get(playerId), interpolator.getLatest(), playerId, currentInputSeq, input, characters);
+
     const localPlayer = snapshot?.players.find((player) => player.playerId === playerId);
 
     if (jumpPressed && hasSelectedCharacter && localPlayer !== undefined) {
@@ -296,6 +329,10 @@ class AudioEventPlayer {
         return;
     }
   }
+}
+
+function createSocket(): WebSocket {
+  return new WebSocket(import.meta.env.VITE_WS_URL ?? "ws://localhost:8080");
 }
 
 function ensureMatchCode(params: URLSearchParams): string {

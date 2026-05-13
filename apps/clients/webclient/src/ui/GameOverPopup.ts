@@ -1,13 +1,20 @@
 import type { EntityKind, GameSnapshot, PlayerId } from "@smashing-cats/protocol";
 import type { Translator } from "../i18n.js";
 
+type GameOverPopupOptions = {
+  onRestart: () => void;
+};
+
 export class GameOverPopup {
   private readonly element: HTMLDivElement;
   private readonly t: Translator;
+  private readonly onRestart: () => void;
+
   private visible = false;
 
-  public constructor(root: HTMLElement, t: Translator) {
+  public constructor(root: HTMLElement, t: Translator, options: GameOverPopupOptions) {
     this.t = t;
+    this.onRestart = options.onRestart;
 
     this.element = document.createElement("div");
     this.element.className = "game-over-popup";
@@ -36,29 +43,29 @@ export class GameOverPopup {
     this.element.hidden = false;
 
     this.element.innerHTML = `
-    <div class="game-over-card">
-      <h2>${this.t("gameOverTitle")}</h2>
+      <div class="game-over-card">
+        <h2>${this.t("gameOverTitle")}</h2>
 
-      <img
-        class="game-over-cat"
-        src="/portraits/${kind}.png"
-        alt="${kind}"
-      />
+        <img
+          class="game-over-cat"
+          src="/portraits/${kind}.png"
+          alt="${kind}"
+        />
 
-      <div class="game-over-score">
-        ${this.t("score")}: <strong>${score}</strong>
+        <div class="game-over-score">
+          ${this.t("score")}: <strong>${score}</strong>
+        </div>
+
+        <button class="game-over-restart" type="button">
+          ${this.t("restart")}
+        </button>
       </div>
-
-      <button class="game-over-restart" type="button">
-        ${this.t("restart")}
-      </button>
-    </div>
-  `;
+    `;
 
     const restartButton = this.element.querySelector<HTMLButtonElement>(".game-over-restart");
 
     restartButton?.addEventListener("click", () => {
-      window.location.reload();
+      this.onRestart();
     });
   }
 
@@ -68,6 +75,7 @@ export class GameOverPopup {
     }
 
     this.visible = false;
+
     this.element.hidden = true;
     this.element.replaceChildren();
   }
