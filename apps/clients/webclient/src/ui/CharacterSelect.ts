@@ -1,5 +1,6 @@
 import type { CharacterDefinition, EntityKind } from "@smashing-cats/protocol";
 import type { Locale, Translator } from "../i18n.js";
+import { musicEvents } from "../audio/audio.js";
 
 type CharacterSelectOptions = {
   locale: Locale;
@@ -33,7 +34,10 @@ export class CharacterSelect {
     this.locale = options.locale;
     this.t = options.t;
     this.preferredCharacterKind = options.initialCharacterKind;
-    this.onSelect = options.onSelect;
+    this.onSelect = (characterKind) => {
+      musicEvents.gameplay();
+      options.onSelect(characterKind);
+    };
 
     this.element = document.createElement("div");
     this.element.className = "character-select";

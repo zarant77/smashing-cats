@@ -3,11 +3,14 @@ import {
   toMiniClientMessage,
   type CharacterDefinition,
   type EntityKind,
+  type GameEvent,
+  type GameSnapshot,
   type InputMessage,
   type PlayerId,
   type ServerToClientMessage,
 } from "@smashing-cats/protocol";
 import { preloadAssets } from "./assets/assets.js";
+import { audioEvents, initAudio } from "./audio/audio.js";
 import { createTranslator, parseLocale } from "./i18n.js";
 import { readInput } from "./input.js";
 import { SnapshotInterpolator } from "./interpolation.js";
@@ -26,6 +29,7 @@ void bootstrap();
 
 async function bootstrap(): Promise<void> {
   await preloadAssets();
+  await initAudio();
 
   const loadingScreen = document.querySelector("#loading");
   loadingScreen?.remove();
@@ -59,10 +63,13 @@ async function bootstrap(): Promise<void> {
   let hasSelectedCharacter = false;
   let playerId: PlayerId | undefined;
   let inputSeq = 1;
+  let wasJumpPressed = false;
+  let wasSmashing = false;
 
   const interpolator = new SnapshotInterpolator();
   const snapshotStore = new SnapshotStore();
   const predictor = new LocalPlayerPredictor();
+  const audioEventPlayer = new AudioEventPlayer();
   const socket = new WebSocket(import.meta.env.VITE_WS_URL ?? "ws://localhost:8080");
 
   const hud = new Hud(uiRoot, t);
@@ -76,6 +83,8 @@ async function bootstrap(): Promise<void> {
       if (socket.readyState !== WebSocket.OPEN || playerId === undefined) {
         return;
       }
+
+      audioEvents.uiClick();
 
       selectedCharacterKind = characterKind;
       localStorage.setItem("smashing-cats-character", characterKind);
@@ -103,6 +112,8 @@ async function bootstrap(): Promise<void> {
     engineSelect.value = viewKind;
 
     engineSelect.addEventListener("change", () => {
+      audioEvents.uiClick();
+
       viewKind = parseViewKind(engineSelect.value);
       localStorage.setItem("smashing-cats-view", viewKind);
 
@@ -115,6 +126,8 @@ async function bootstrap(): Promise<void> {
 
   for (const button of localeButtons) {
     button.addEventListener("click", () => {
+      audioEvents.uiClick();
+
       locale = parseLocale(button.dataset.locale ?? null);
       t = createTranslator(locale);
 
@@ -185,6 +198,9 @@ async function bootstrap(): Promise<void> {
     const input = readInput();
     const currentInputSeq = inputSeq++;
 
+    const jumpPressed = input.jump && !wasJumpPressed;
+    wasJumpPressed = input.jump;
+
     if (socket.readyState === WebSocket.OPEN && playerId !== undefined && hasSelectedCharacter) {
       const snapshotTick = interpolator.getRenderedTick();
 
@@ -206,6 +222,19 @@ async function bootstrap(): Promise<void> {
     }
 
     const snapshot = predictor.apply(interpolator.get(playerId), interpolator.getLatest(), playerId, currentInputSeq, input, characters);
+    const localPlayer = snapshot?.players.find((player) => player.playerId === playerId);
+
+    if (jumpPressed && hasSelectedCharacter && localPlayer !== undefined) {
+      if (localPlayer.smashing && !wasSmashing) {
+        audioEvents.playerSmash();
+      } else {
+        audioEvents.playerJump();
+      }
+    }
+
+    wasSmashing = localPlayer?.smashing ?? false;
+
+    audioEventPlayer.play(snapshot, playerId);
 
     view.render(snapshot, playerId);
     hud.render(snapshot, playerId);
@@ -215,6 +244,58 @@ async function bootstrap(): Promise<void> {
   }
 
   frame();
+}
+
+class AudioEventPlayer {
+  private readonly playedEventIds = new Set<string>();
+
+  public play(snapshot: GameSnapshot | undefined, localPlayerId: PlayerId | undefined): void {
+    if (snapshot === undefined) {
+      return;
+    }
+
+    for (const event of snapshot.events) {
+      if (this.playedEventIds.has(event.id)) {
+        continue;
+      }
+
+      this.playedEventIds.add(event.id);
+      this.playEvent(event, snapshot, localPlayerId);
+    }
+
+    if (this.playedEventIds.size > 300) {
+      this.playedEventIds.clear();
+    }
+  }
+
+  private playEvent(event: GameEvent, snapshot: GameSnapshot, localPlayerId: PlayerId | undefined): void {
+    switch (event.type) {
+      case "playerHit": {
+        if (event.playerId !== localPlayerId) {
+          return;
+        }
+
+        const player = snapshot.players.find((item) => item.playerId === localPlayerId);
+
+        if (player !== undefined && !player.alive) {
+          audioEvents.playerDie();
+          return;
+        }
+
+        audioEvents.playerHurt();
+        return;
+      }
+
+      case "enemyKilled":
+        audioEvents.enemyDie();
+        return;
+
+      case "civilianKilled":
+      case "civilianKilledByEnemy":
+        audioEvents.civilianDie();
+        return;
+    }
+  }
 }
 
 function ensureMatchCode(params: URLSearchParams): string {
