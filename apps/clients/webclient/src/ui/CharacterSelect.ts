@@ -300,5 +300,5 @@ function clampIndex(index: number, length: number): number {
 }
 
 function getCharacterImageSrc(character: CharacterDefinition): string {
-  return `/portraits/${character.kind}.png`;
+  return `/players/${character.kind}.png`;
 }

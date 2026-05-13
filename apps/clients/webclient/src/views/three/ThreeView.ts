@@ -2,31 +2,30 @@ import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
 import * as THREE from "three";
 import type { Locale, Translator } from "../../i18n.js";
 import type { GameView } from "../types.js";
-
-const DEFAULT_WIDTH = 960;
-const DEFAULT_HEIGHT = 540;
-
-const CAMERA_FOV = 45;
-const CAMERA_NEAR = 0.1;
-const CAMERA_FAR = 5000;
-
-const GROUND_THICKNESS = 24;
-const GROUND_DEPTH = 420;
+import { Animation } from "./Animation.js";
+import { CameraController, type CameraMode } from "./CameraController.js";
+import { getEntityColor, getPlayerColor } from "./colors.js";
+import { DEFAULT_HEIGHT, DEFAULT_WIDTH, GROUND_DEPTH, GROUND_THICKNESS } from "./constants.js";
+import { getWorldY } from "./coordinates.js";
+import { getEntityModelPath, getPlayerModelPath } from "./modelPaths.js";
+import { ModelCache } from "./ModelCache.js";
+import { type SceneObject, ObjectRegistry } from "./ObjectRegistry.js";
 
 export class ThreeView implements GameView {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly scene = new THREE.Scene();
-  private readonly camera = new THREE.PerspectiveCamera(CAMERA_FOV, 1, CAMERA_NEAR, CAMERA_FAR);
-  private readonly objects = new Map<string, THREE.Mesh>();
-  private readonly root: HTMLElement;
+  private readonly camera = new CameraController();
+  private readonly models = new ModelCache();
+  private readonly registry: ObjectRegistry;
+  private readonly animation = new Animation();
 
   private t: Translator = (key) => key;
 
-  public constructor(root: HTMLElement) {
-    this.root = root;
+  public constructor(private readonly root: HTMLElement) {
     this.root.replaceChildren();
 
     this.scene.background = new THREE.Color(0x87ceeb);
+    this.registry = new ObjectRegistry(this.scene);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(window.devicePixelRatio);
@@ -35,46 +34,57 @@ export class ThreeView implements GameView {
     this.setupLights();
 
     window.addEventListener("resize", this.resize);
+    window.addEventListener("keydown", this.handleKeyDown);
+
     this.resize();
   }
 
   public render(snapshot: GameSnapshot | undefined, playerId: PlayerId | undefined): void {
     this.resize();
 
+    const width = this.root.clientWidth || DEFAULT_WIDTH;
+    const height = this.root.clientHeight || DEFAULT_HEIGHT;
+
+    this.camera.update(width, height);
+
     if (snapshot === undefined) {
-      this.renderer.render(this.scene, this.camera);
+      this.renderer.render(this.scene, this.camera.camera);
       return;
     }
 
-    this.updateCamera(snapshot);
     this.drawGround();
     this.drawEntities(snapshot);
     this.drawPlayers(snapshot, playerId);
     this.cleanup(snapshot);
 
-    this.renderer.render(this.scene, this.camera);
+    this.renderer.render(this.scene, this.camera.camera);
   }
 
   public setLocale(_locale: Locale, t: Translator): void {
     this.t = t;
   }
 
+  public setCameraMode(mode: CameraMode): void {
+    this.camera.setMode(mode);
+  }
+
+  public toggleCameraMode(): void {
+    this.camera.toggle();
+  }
+
   public destroy(): void {
     window.removeEventListener("resize", this.resize);
+    window.removeEventListener("keydown", this.handleKeyDown);
 
-    for (const object of this.objects.values()) {
-      this.disposeObject(object);
-    }
-
-    this.objects.clear();
+    this.registry.disposeAll();
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }
 
   private setupLights(): void {
-    this.scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    this.scene.add(new THREE.AmbientLight(0xffffff, 0.65));
 
-    const sunLight = new THREE.DirectionalLight(0xffffff, 1.4);
+    const sunLight = new THREE.DirectionalLight(0xffffff, 1.45);
     sunLight.position.set(300, 500, 700);
     this.scene.add(sunLight);
   }
@@ -84,65 +94,74 @@ export class ThreeView implements GameView {
     const height = this.root.clientHeight || DEFAULT_HEIGHT;
 
     this.renderer.setSize(width, height, false);
-
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
+    this.camera.resize(width, height);
   };
 
-  private updateCamera(snapshot: GameSnapshot): void {
-    const width = this.root.clientWidth || DEFAULT_WIDTH;
-    const focusX = width / 2;
-
-    this.camera.position.set(focusX, 260, 760);
-    this.camera.lookAt(focusX, 80, 0);
-  }
+  private readonly handleKeyDown = (event: KeyboardEvent): void => {
+    if (event.code === "KeyC") {
+      this.toggleCameraMode();
+    }
+  };
 
   private drawGround(): void {
     const width = this.root.clientWidth || DEFAULT_WIDTH;
+    const object = this.registry.get("ground", 0x79b851);
 
-    const ground = this.getBox("ground", 0x79b851);
+    object.root.position.set(width / 2, -GROUND_THICKNESS / 2, 0);
+    object.root.rotation.set(0, 0, 0);
+    object.root.scale.set(1, 1, 1);
 
-    ground.scale.set(width * 2, GROUND_THICKNESS, GROUND_DEPTH);
-    ground.position.set(width / 2, -GROUND_THICKNESS / 2, 0);
+    object.fallback.scale.set(width * 2, GROUND_THICKNESS, GROUND_DEPTH);
   }
 
   private drawEntities(snapshot: GameSnapshot): void {
     for (const entity of snapshot.entities) {
-      const object = this.getBox(`entity:${entity.id}`, this.getEntityColor(entity.type, entity.alive));
+      const color = getEntityColor(entity.type, entity.alive);
+      const object = this.registry.get(`entity:${entity.id}`, color);
       const depth = entity.type === "obstacle" ? 90 : 50;
-
       const x = entity.x - snapshot.world.scrollX + entity.width / 2;
 
-      this.setGameBox(object, entity.width, entity.height, depth, x, entity.y, snapshot.world.groundY);
+      this.setGameObjectSize(object, entity.width, entity.height, depth);
+
+      if (entity.type === "obstacle") {
+        object.root.position.set(x, getWorldY(entity.y, entity.height, snapshot.world.groundY), 0);
+        object.root.rotation.set(0, 0, 0);
+        object.root.scale.set(1, 1, 1);
+      } else {
+        this.animation.applyEntity(object, entity.id, x, entity.y, entity.width, entity.height, snapshot.world.groundY, entity.alive);
+      }
+
+      void this.registry.attachModel(object, getEntityModelPath(entity.type, entity.kind), (path) => this.models.load(path));
     }
   }
 
   private drawPlayers(snapshot: GameSnapshot, playerId: PlayerId | undefined): void {
     for (const player of snapshot.players) {
       const isLocal = player.playerId === playerId;
-      const color = player.alive ? (isLocal ? 0xffcc33 : 0xf58ad4) : 0x555555;
-
-      const object = this.getBox(`player:${player.playerId}`, color);
+      const color = getPlayerColor(isLocal, player.alive);
+      const object = this.registry.get(`player:${player.playerId}`, color);
       const x = player.x + player.width / 2;
 
-      this.setGameBox(object, player.width, player.height, 70, x, player.y, snapshot.world.groundY);
+      this.setGameObjectSize(object, player.width, player.height, 70);
+      this.animation.applyPlayer(object, player, x, snapshot.world.groundY);
+
+      void this.registry.attachModel(object, getPlayerModelPath(player.kind), (path) => this.models.load(path));
     }
   }
 
-  private setGameBox(
-    object: THREE.Mesh,
-    width: number,
-    height: number,
-    depth: number,
-    centerX: number,
-    topY: number,
-    groundY: number,
-  ): void {
-    const centerScreenY = topY + height / 2;
-    const worldY = groundY - centerScreenY;
+  private setGameObjectSize(object: SceneObject, width: number, height: number, depth: number): void {
+    object.fallback.scale.set(width, height, depth);
 
-    object.scale.set(width, height, depth);
-    object.position.set(centerX, worldY, 0);
+    if (object.model === undefined) {
+      return;
+    }
+
+    if (object.model.userData["fitted"] === true) {
+      return;
+    }
+
+    this.registry.fitModelToBox(object.model, width, height, depth);
+    object.model.userData["fitted"] = true;
   }
 
   private cleanup(snapshot: GameSnapshot): void {
@@ -156,75 +175,6 @@ export class ThreeView implements GameView {
       activeKeys.add(`player:${player.playerId}`);
     }
 
-    for (const [key, object] of this.objects) {
-      if (activeKeys.has(key)) {
-        continue;
-      }
-
-      this.disposeObject(object);
-      this.objects.delete(key);
-    }
-  }
-
-  private getBox(key: string, color: number): THREE.Mesh {
-    const existing = this.objects.get(key);
-
-    if (existing !== undefined) {
-      this.setObjectColor(existing, color);
-      return existing;
-    }
-
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
-    const material = new THREE.MeshStandardMaterial({
-      color,
-      roughness: 0.65,
-      metalness: 0.08,
-    });
-
-    const object = new THREE.Mesh(geometry, material);
-
-    this.scene.add(object);
-    this.objects.set(key, object);
-
-    return object;
-  }
-
-  private setObjectColor(object: THREE.Mesh, color: number): void {
-    const material = object.material;
-
-    if (material instanceof THREE.MeshStandardMaterial) {
-      material.color.setHex(color);
-    }
-  }
-
-  private disposeObject(object: THREE.Mesh): void {
-    this.scene.remove(object);
-    object.geometry.dispose();
-
-    if (Array.isArray(object.material)) {
-      for (const material of object.material) {
-        material.dispose();
-      }
-
-      return;
-    }
-
-    object.material.dispose();
-  }
-
-  private getEntityColor(type: string, alive: boolean): number {
-    if (!alive) {
-      return 0x555555;
-    }
-
-    if (type === "obstacle") {
-      return 0x1e7f3e;
-    }
-
-    if (type === "civilian") {
-      return 0x4aa3df;
-    }
-
-    return 0x8b3a3a;
+    this.registry.cleanup(activeKeys);
   }
 }

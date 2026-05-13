@@ -48,7 +48,7 @@ export class GameOverPopup {
 
         <img
           class="game-over-cat"
-          src="/portraits/${kind}.png"
+          src="/players/${kind}.png"
           alt="${kind}"
         />
 

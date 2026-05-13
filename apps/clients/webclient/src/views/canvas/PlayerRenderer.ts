@@ -9,7 +9,7 @@ export class PlayerRenderer {
   private readonly landingEffect = new LandingEffect();
 
   public draw(ctx: CanvasRenderingContext2D, snapshot: GameSnapshot, player: PlayerSnapshot, isLocal: boolean): void {
-    const image = assets.get(`/portraits/${player.kind}.png`);
+    const image = assets.get(`/players/${player.kind}.png`);
     const shouldBlinkOff = player.invulnerable && Math.floor(snapshot.tick / 2) % 2 === 0;
 
     this.landingEffect.update({

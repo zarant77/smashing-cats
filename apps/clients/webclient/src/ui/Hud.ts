@@ -37,7 +37,7 @@ export class Hud {
         item.innerHTML = `
           <img
             class="hud-player-portrait"
-            src="/portraits/${player.kind}.png"
+            src="/players/${player.kind}.png"
             alt="${player.kind}"
           />
 
