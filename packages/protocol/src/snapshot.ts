@@ -69,6 +69,7 @@ export type EntityPatch = {
 
 export type PlayerPatch = EntityPatch & {
   playerId: PlayerId;
+  score?: number;
   hp?: number;
   invulnerable?: boolean;
   grounded?: boolean;

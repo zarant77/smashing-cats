@@ -67,6 +67,7 @@ function getUpdatedPlayers(previous: PlayerSnapshot[], next: PlayerSnapshot[]): 
     assignIfChanged(patch, "vx", oldPlayer.vx, player.vx);
     assignIfChanged(patch, "vy", oldPlayer.vy, player.vy);
     assignIfChanged(patch, "alive", oldPlayer.alive, player.alive);
+    assignIfChanged(patch, "score", oldPlayer.score, player.score);
     assignIfChanged(patch, "hp", oldPlayer.hp, player.hp);
     assignIfChanged(patch, "invulnerable", oldPlayer.invulnerable, player.invulnerable);
     assignIfChanged(patch, "grounded", oldPlayer.grounded, player.grounded);
@@ -155,6 +156,7 @@ function hasEntityPatchChanges(patch: EntityPatch): boolean {
 function hasPlayerPatchChanges(patch: PlayerPatch): boolean {
   return (
     hasEntityPatchChanges(patch) ||
+    patch.score !== undefined ||
     patch.hp !== undefined ||
     patch.invulnerable !== undefined ||
     patch.grounded !== undefined ||
