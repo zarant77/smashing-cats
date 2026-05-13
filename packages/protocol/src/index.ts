@@ -118,6 +118,41 @@ export type GameSnapshot = {
   events: GameEvent[];
 };
 
+export type EntityPatch = {
+  id: EntityId;
+  x?: number;
+  y?: number;
+  vx?: number;
+  vy?: number;
+  alive?: boolean;
+};
+
+export type PlayerPatch = EntityPatch & {
+  playerId: PlayerId;
+  hp?: number;
+  invulnerable?: boolean;
+  grounded?: boolean;
+  smashing?: boolean;
+  jumpStartY?: number;
+  wasJumpPressed?: boolean;
+  lastProcessedInputSeq?: number;
+};
+
+export type DeltaSnapshot = {
+  tick: number;
+  scrollX?: number;
+
+  addedPlayers?: PlayerSnapshot[];
+  updatedPlayers?: PlayerPatch[];
+  removedPlayerIds?: PlayerId[];
+
+  addedEntities?: EntitySnapshot[];
+  updatedEntities?: EntityPatch[];
+  removedEntityIds?: EntityId[];
+
+  events?: GameEvent[];
+};
+
 export type WelcomeMessage = {
   type: "welcome";
   playerId: PlayerId;
@@ -129,4 +164,9 @@ export type SnapshotMessage = {
   snapshot: GameSnapshot;
 };
 
-export type ServerToClientMessage = WelcomeMessage | SnapshotMessage;
+export type DeltaSnapshotMessage = {
+  type: "delta";
+  delta: DeltaSnapshot;
+};
+
+export type ServerToClientMessage = WelcomeMessage | SnapshotMessage | DeltaSnapshotMessage;

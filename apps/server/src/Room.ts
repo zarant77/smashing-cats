@@ -1,5 +1,5 @@
 import { CHARACTERS, FIXED_DT, Game, TICK_RATE } from "@smashing-cats/core";
-import type { ClientToServerMessage, ServerToClientMessage } from "@smashing-cats/protocol";
+import type { ClientToServerMessage, GameSnapshot, ServerToClientMessage } from "@smashing-cats/protocol";
 import type { WebSocket } from "ws";
 
 type Client = {
@@ -7,11 +7,15 @@ type Client = {
   socket: WebSocket;
 };
 
+const FULL_SNAPSHOT_INTERVAL_TICKS = TICK_RATE * 60;
+
 export class Room {
   private readonly game = new Game(1337);
   private readonly clients = new Map<string, Client>();
   private interval: NodeJS.Timeout | undefined;
   private nextClientNumber = 1;
+  private lastSnapshot: GameSnapshot | undefined;
+  private ticksSinceFullSnapshot = 0;
 
   public addClient(socket: WebSocket): void {
     const id = `p${this.nextClientNumber++}`;
@@ -21,6 +25,11 @@ export class Room {
       type: "welcome",
       playerId: id,
       characters: CHARACTERS,
+    });
+
+    this.send(socket, {
+      type: "snapshot",
+      snapshot: this.game.createSnapshot(),
     });
 
     socket.on("message", (raw) => {
@@ -41,11 +50,33 @@ export class Room {
     this.interval = setInterval(() => {
       this.game.update(FIXED_DT);
 
-      this.broadcast({
-        type: "snapshot",
-        snapshot: this.game.createSnapshot(),
-      });
+      const snapshot = this.game.createSnapshot();
+
+      if (this.shouldSendFullSnapshot()) {
+        this.broadcast({
+          type: "snapshot",
+          snapshot,
+        });
+
+        this.lastSnapshot = snapshot;
+        this.ticksSinceFullSnapshot = 0;
+        return;
+      }
+
+      if (this.lastSnapshot !== undefined) {
+        this.broadcast({
+          type: "delta",
+          delta: this.game.createDeltaSnapshot(this.lastSnapshot),
+        });
+      }
+
+      this.lastSnapshot = snapshot;
+      this.ticksSinceFullSnapshot += 1;
     }, 1000 / TICK_RATE);
+  }
+
+  private shouldSendFullSnapshot(): boolean {
+    return this.lastSnapshot === undefined || this.ticksSinceFullSnapshot >= FULL_SNAPSHOT_INTERVAL_TICKS;
   }
 
   private handleMessage(playerId: string, raw: string): void {

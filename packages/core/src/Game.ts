@@ -1,4 +1,4 @@
-import type { EntityKind, GameEvent, GameSnapshot, PlayerId, PlayerInput } from "@smashing-cats/protocol";
+import type { DeltaSnapshot, EntityKind, GameEvent, GameSnapshot, PlayerId, PlayerInput } from "@smashing-cats/protocol";
 import type { Entity, Player } from "./types.js";
 import { type CharacterConfig, GAME_CONFIG, getCharacterConfig } from "./config.js";
 import { Random } from "./Random.js";
@@ -13,6 +13,7 @@ import { applyPlayerInput } from "./input/applyPlayerInput.js";
 import { updatePlayers } from "./player/playerSystem.js";
 import { createPlayer } from "./player/playerFactory.js";
 import { createGameSnapshot } from "./snapshot/snapshotFactory.js";
+import { createDeltaSnapshot } from "./snapshot/deltaSnapshotFactory.js";
 
 export class Game {
   private readonly seed: number;
@@ -148,6 +149,10 @@ export class Game {
       entities: this.entities,
       events: this.events,
     });
+  }
+
+  public createDeltaSnapshot(previousSnapshot: GameSnapshot): DeltaSnapshot {
+    return createDeltaSnapshot(previousSnapshot, this.createSnapshot());
   }
 
   private spawnAhead(): void {

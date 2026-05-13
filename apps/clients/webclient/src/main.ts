@@ -5,6 +5,7 @@ import { readInput } from "./input.js";
 import { SnapshotInterpolator } from "./interpolation.js";
 import { receiveWithSimulatedLag, sendWithSimulatedLag } from "./networkDebug.js";
 import { LocalPlayerPredictor } from "./prediction.js";
+import { SnapshotStore } from "./snapshot/SnapshotStore.js";
 import { Hud } from "./ui/Hud.js";
 import { CharacterSelect } from "./ui/CharacterSelect.js";
 import { GameOverPopup } from "./ui/GameOverPopup.js";
@@ -52,6 +53,7 @@ async function bootstrap(): Promise<void> {
   let inputSeq = 1;
 
   const interpolator = new SnapshotInterpolator();
+  const snapshotStore = new SnapshotStore();
   const predictor = new LocalPlayerPredictor();
   const socket = new WebSocket(import.meta.env.VITE_WS_URL ?? "ws://localhost:8080");
 
@@ -146,8 +148,23 @@ async function bootstrap(): Promise<void> {
 
     if (message.type === "snapshot") {
       receiveWithSimulatedLag(() => {
-        interpolator.add(message.snapshot);
+        const snapshot = snapshotStore.setFullSnapshot(message.snapshot);
+        interpolator.add(snapshot);
       });
+
+      return;
+    }
+
+    if (message.type === "delta") {
+      receiveWithSimulatedLag(() => {
+        const snapshot = snapshotStore.applyDelta(message.delta);
+
+        if (snapshot !== undefined) {
+          interpolator.add(snapshot);
+        }
+      });
+
+      return;
     }
   });
 
