@@ -1,10 +1,9 @@
 import type { EntitySnapshot, GameSnapshot } from "@smashing-cats/protocol";
+import { assets } from "../../assets/assets.js";
 import { DRAW_SPRITE_BORDERS, drawSpriteBorder } from "./debug.js";
-import { ImageCache } from "./ImageCache.js";
 import { SpriteAnimation } from "./SpriteAnimation.js";
 
 export class EntityRenderer {
-  private readonly images = new ImageCache();
   private readonly animation = new SpriteAnimation();
 
   public draw(ctx: CanvasRenderingContext2D, canvasWidth: number, snapshot: GameSnapshot, entity: EntitySnapshot): void {
@@ -14,7 +13,7 @@ export class EntityRenderer {
       return;
     }
 
-    const image = this.images.get(getEntityImagePath(entity));
+    const image = assets.get(getEntityImagePath(entity));
     const shouldAnimate = entity.type !== "obstacle";
 
     const transform = shouldAnimate

@@ -6,6 +6,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Smashing Cats</title>
   <link rel="icon" href="/favicon.png" type="image/png" />
+  <style>
+    #loading {
+      position: fixed;
+      inset: 0;
+
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+
+      background: #10131a;
+
+      z-index: 9999;
+
+      font-family: Arial, sans-serif;
+    }
+
+    .loading-title {
+      font-size: 42px;
+      font-weight: 900;
+
+      color: white;
+    }
+
+    .loading-subtitle {
+      font-size: 18px;
+
+      color: rgba(255, 255, 255, 0.7);
+    }
+  </style>
 </head>
 
 <body>
@@ -25,6 +56,10 @@
   <div id="game-shell">
     <div id="game-root"></div>
     <div id="ui-root"></div>
+  </div>
+  <div id="loading">
+    <div class="loading-title">SMASHING CATS</div>
+    <div class="loading-subtitle">Loading...</div>
   </div>
   <script type="module" src="/src/main.ts"></script>
 </body>

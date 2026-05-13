@@ -1,5 +1,5 @@
 import type { GameSnapshot } from "@smashing-cats/protocol";
-import { ImageCache } from "./ImageCache.js";
+import { assets } from "../../assets/assets.js";
 
 type ParallaxLayer = {
   path: string;
@@ -16,8 +16,6 @@ const LAYERS: ParallaxLayer[] = [
 ];
 
 export class BackgroundRenderer {
-  private readonly images = new ImageCache();
-
   public draw(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, snapshot: GameSnapshot): void {
     ctx.fillStyle = "#87ceeb";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -28,9 +26,9 @@ export class BackgroundRenderer {
   }
 
   private drawLayer(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, snapshot: GameSnapshot, layer: ParallaxLayer): void {
-    const image = this.images.get(layer.path);
+    const image = assets.get(layer.path);
 
-    if (!image.complete || image.naturalWidth <= 0) {
+    if (!image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
       return;
     }
 

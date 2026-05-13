@@ -1,3 +1,5 @@
+import { assets } from "../../assets/assets.js";
+
 const LANDING_EFFECT_MS = 200;
 const LANDING_EFFECT_PATH = "/effects/smash.png";
 const OFFSET_X = 20;
@@ -41,7 +43,13 @@ export class LandingEffect {
     state.wasSmashing = input.smashing || (!input.grounded && state.wasSmashing);
   }
 
-  public draw(ctx: CanvasRenderingContext2D, image: HTMLImageElement, id: string): void {
+  public draw(ctx: CanvasRenderingContext2D, id: string): void {
+    const image = assets.get(LANDING_EFFECT_PATH);
+
+    if (!image.complete || image.naturalWidth <= 0) {
+      return;
+    }
+
     const state = this.states.get(id);
 
     if (!state) {
@@ -87,6 +95,7 @@ export class LandingEffect {
     };
 
     this.states.set(input.id, state);
+
     return state;
   }
 }

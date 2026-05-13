@@ -1,15 +1,13 @@
 import type { GameSnapshot } from "@smashing-cats/protocol";
-import { ImageCache } from "./ImageCache.js";
+import { assets } from "../../assets/assets.js";
 
 const TILE_PATH = "/environments/ground.png";
 const TILE_WIDTH = 400;
 const GROUND_OFFSET_Y = -20;
 
 export class GroundRenderer {
-  private readonly images = new ImageCache();
-
   public draw(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, snapshot: GameSnapshot): void {
-    const image = this.images.get(TILE_PATH);
+    const image = assets.get(TILE_PATH);
 
     const groundY = snapshot.world.groundY + GROUND_OFFSET_Y;
 
@@ -42,7 +40,6 @@ export class GroundRenderer {
 
   private drawFallback(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, groundY: number): void {
     ctx.fillStyle = "#79b851";
-
     ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
   }
 }
