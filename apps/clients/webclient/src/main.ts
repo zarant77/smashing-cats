@@ -26,6 +26,7 @@ const engineSelect = document.querySelector<HTMLSelectElement>("#engine-select")
 const localeSelect = document.querySelector<HTMLSelectElement>("#locale-select");
 
 const params = new URLSearchParams(window.location.search);
+const matchCode = ensureMatchCode(params);
 
 let locale = parseLocale(params.get("locale") ?? localStorage.getItem("smashing-cats-locale"));
 let t = createTranslator(locale);
@@ -111,7 +112,13 @@ if (localeSelect !== null) {
 }
 
 socket.addEventListener("open", () => {
-  socket.send(JSON.stringify({ type: "join", name: "Cat" }));
+  socket.send(
+    JSON.stringify({
+      type: "join",
+      name: "Cat",
+      matchCode,
+    }),
+  );
 });
 
 socket.addEventListener("message", (event) => {
@@ -161,6 +168,36 @@ function frame(): void {
 }
 
 frame();
+
+function ensureMatchCode(params: URLSearchParams): string {
+  const existingMatchCode = params.get("match");
+
+  if (existingMatchCode !== null && existingMatchCode.trim() !== "") {
+    return existingMatchCode;
+  }
+
+  const nextMatchCode = generateMatchCode();
+
+  params.set("match", nextMatchCode);
+
+  const nextUrl = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
+  window.history.replaceState(null, "", nextUrl);
+
+  return nextMatchCode;
+}
+
+function generateMatchCode(): string {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const length = 6;
+
+  let code = "";
+
+  for (let i = 0; i < length; i++) {
+    code += alphabet[Math.floor(Math.random() * alphabet.length)];
+  }
+
+  return code;
+}
 
 function applyStaticTranslations(): void {
   document.documentElement.lang = locale;

@@ -1,8 +1,8 @@
 import type { GameSnapshot, PlayerSnapshot } from "@smashing-cats/protocol";
 import { DRAW_SPRITE_BORDERS, drawSpriteBorder } from "./debug.js";
 import { ImageCache } from "./ImageCache.js";
-import { SpriteAnimation } from "./SpriteAnimation.js";
 import { LandingEffect } from "./LandingEffect.js";
+import { SpriteAnimation } from "./SpriteAnimation.js";
 
 export class PlayerRenderer {
   private readonly portraits = new ImageCache();
@@ -11,9 +11,9 @@ export class PlayerRenderer {
 
   public draw(ctx: CanvasRenderingContext2D, snapshot: GameSnapshot, player: PlayerSnapshot, isLocal: boolean): void {
     const image = this.portraits.get(`/portraits/${player.kind}.png`);
-    const shouldBlinkOff = player.invulnerable && Math.floor(snapshot.tick / 2) % 2 === 0;
-
     const landingImage = this.portraits.get(this.landingEffect.getImagePath());
+
+    const shouldBlinkOff = player.invulnerable && Math.floor(snapshot.tick / 2) % 2 === 0;
 
     this.landingEffect.update({
       id: player.id,
@@ -22,6 +22,7 @@ export class PlayerRenderer {
       width: player.width,
       height: player.height,
       grounded: player.grounded,
+      smashing: player.smashing,
     });
 
     const transform = this.animation.getTransform({

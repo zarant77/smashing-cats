@@ -1,30 +1,44 @@
 const LANDING_EFFECT_MS = 200;
 const LANDING_EFFECT_PATH = "/effects/smash.png";
-const OFFSET_X = 40;
+const OFFSET_X = 20;
 const OFFSET_Y = -20;
 const WIDTH = 64 * 3;
 const HEIGHT = 23 * 3;
 
 type LandingEffectState = {
   wasGrounded: boolean;
+  wasSmashing: boolean;
   effectStartedAt: number;
   x: number;
   y: number;
 };
 
+type LandingEffectInput = {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  grounded: boolean;
+  smashing: boolean;
+};
+
 export class LandingEffect {
   private readonly states = new Map<string, LandingEffectState>();
 
-  public update(input: { id: string; x: number; y: number; width: number; height: number; grounded: boolean }): void {
+  public update(input: LandingEffectInput): void {
     const state = this.getState(input);
 
-    if (!state.wasGrounded && input.grounded) {
+    const justLanded = !state.wasGrounded && input.grounded;
+
+    if (justLanded && state.wasSmashing) {
       state.effectStartedAt = performance.now();
       state.x = input.x + input.width / 2 + OFFSET_X;
       state.y = input.y + input.height + OFFSET_Y;
     }
 
     state.wasGrounded = input.grounded;
+    state.wasSmashing = input.smashing || (!input.grounded && state.wasSmashing);
   }
 
   public draw(ctx: CanvasRenderingContext2D, image: HTMLImageElement, id: string): void {
@@ -57,7 +71,7 @@ export class LandingEffect {
     return LANDING_EFFECT_PATH;
   }
 
-  private getState(input: { id: string; x: number; y: number; width: number; height: number; grounded: boolean }): LandingEffectState {
+  private getState(input: LandingEffectInput): LandingEffectState {
     const existing = this.states.get(input.id);
 
     if (existing) {
@@ -66,6 +80,7 @@ export class LandingEffect {
 
     const state: LandingEffectState = {
       wasGrounded: input.grounded,
+      wasSmashing: input.smashing,
       effectStartedAt: -Infinity,
       x: input.x + input.width / 2 + OFFSET_X,
       y: input.y + input.height + OFFSET_Y,
