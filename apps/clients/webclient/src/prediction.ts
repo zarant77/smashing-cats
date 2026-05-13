@@ -6,6 +6,10 @@ const FALLBACK_GRAVITY = 1700;
 const MAX_DT = 1 / 30;
 const MAX_PENDING_INPUTS = 120;
 
+const IGNORE_POSITION_ERROR = 4;
+const SNAP_POSITION_ERROR = 80;
+const SMOOTH_CORRECTION_FACTOR = 0.18;
+
 type PendingInput = {
   inputSeq: number;
   input: PlayerInput;
@@ -17,6 +21,8 @@ export class LocalPlayerPredictor {
   private playerId: PlayerId | undefined;
   private pendingInputs: PendingInput[] = [];
   private lastUpdatedAt: number | undefined;
+  private lastAuthoritativeTick: number | undefined;
+  private lastAuthoritativeInputSeq: number | undefined;
 
   public apply(
     snapshot: GameSnapshot | undefined,
@@ -51,11 +57,17 @@ export class LocalPlayerPredictor {
       this.playerId = playerId;
       this.pendingInputs = [];
       this.lastUpdatedAt = now;
+      this.lastAuthoritativeTick = latest.tick;
+      this.lastAuthoritativeInputSeq = authoritativePlayer.lastProcessedInputSeq;
     }
 
     const dt = this.getDeltaTime(now);
 
-    this.reconcile(authoritativePlayer, character, latest);
+    if (this.hasNewAuthoritativeState(latest.tick, authoritativePlayer.lastProcessedInputSeq)) {
+      this.reconcile(authoritativePlayer, character, latest);
+      this.lastAuthoritativeTick = latest.tick;
+      this.lastAuthoritativeInputSeq = authoritativePlayer.lastProcessedInputSeq;
+    }
 
     this.applyInput(inputSeq, input, character, latest, dt);
 
@@ -67,6 +79,10 @@ export class LocalPlayerPredictor {
 
   public getPlayerState(): PlayerMovementState | undefined {
     return this.state;
+  }
+
+  private hasNewAuthoritativeState(tick: number, inputSeq: number): boolean {
+    return this.lastAuthoritativeTick !== tick || this.lastAuthoritativeInputSeq !== inputSeq;
   }
 
   private applyInput(inputSeq: number, input: PlayerInput, character: CharacterDefinition, snapshot: GameSnapshot, dt: number): void {
@@ -94,11 +110,50 @@ export class LocalPlayerPredictor {
 
     this.pendingInputs = this.pendingInputs.filter((pendingInput) => pendingInput.inputSeq > authoritativePlayer.lastProcessedInputSeq);
 
-    this.state = createMovementState(authoritativePlayer);
+    const reconciledState = createMovementState(authoritativePlayer);
 
     for (const pendingInput of this.pendingInputs) {
-      simulatePlayerMovement(this.state, pendingInput.input, character, createGameConfig(snapshot.world), pendingInput.dt);
+      simulatePlayerMovement(reconciledState, pendingInput.input, character, createGameConfig(snapshot.world), pendingInput.dt);
     }
+
+    this.applyReconciledState(reconciledState);
+  }
+
+  private applyReconciledState(reconciledState: PlayerMovementState): void {
+    if (this.state === undefined) {
+      this.state = reconciledState;
+      return;
+    }
+
+    const dx = reconciledState.x - this.state.x;
+    const dy = reconciledState.y - this.state.y;
+    const distance = Math.hypot(dx, dy);
+
+    if (distance <= IGNORE_POSITION_ERROR) {
+      this.state.vx = reconciledState.vx;
+      this.state.vy = reconciledState.vy;
+      this.state.grounded = reconciledState.grounded;
+      this.state.smashing = reconciledState.smashing;
+      this.state.smashingForCollision = reconciledState.smashingForCollision;
+      this.state.jumpStartY = reconciledState.jumpStartY;
+      this.state.wasJumpPressed = reconciledState.wasJumpPressed;
+      return;
+    }
+
+    if (distance >= SNAP_POSITION_ERROR) {
+      this.state = reconciledState;
+      return;
+    }
+
+    this.state.x += dx * SMOOTH_CORRECTION_FACTOR;
+    this.state.y += dy * SMOOTH_CORRECTION_FACTOR;
+    this.state.vx = reconciledState.vx;
+    this.state.vy = reconciledState.vy;
+    this.state.grounded = reconciledState.grounded;
+    this.state.smashing = reconciledState.smashing;
+    this.state.smashingForCollision = reconciledState.smashingForCollision;
+    this.state.jumpStartY = reconciledState.jumpStartY;
+    this.state.wasJumpPressed = reconciledState.wasJumpPressed;
   }
 
   private getDeltaTime(now: number): number {
@@ -132,6 +187,8 @@ export class LocalPlayerPredictor {
     this.playerId = undefined;
     this.pendingInputs = [];
     this.lastUpdatedAt = undefined;
+    this.lastAuthoritativeTick = undefined;
+    this.lastAuthoritativeInputSeq = undefined;
   }
 }
 
