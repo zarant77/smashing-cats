@@ -24,6 +24,8 @@ export const en = {
   musicOff: "Music off",
   startScreenHint: "Controls: ↑/↓ select cat | Tab focus | Enter start | Ctrl+C quit",
   gameScreenHint: "A/D or ←/→ move | W/Space/↑ jump | ESC back | Ctrl+C quit",
+  rotateDeviceTitle: "Rotate your device",
+  rotateDeviceDescription: "This game is best played in landscape mode",
 
   batcat: "Batcat",
   ironcat: "Ironcat",

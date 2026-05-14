@@ -24,6 +24,8 @@ export const uk = {
   musicOff: "Музику вимкнено",
   startScreenHint: "Керування: ↑/↓ вибір кота | Tab фокус | Enter почати | Ctrl+C вийти з гри",
   gameScreenHint: "Керування: A/D або ←/→ рух | W/S/Пробіл/↑ стрибок | ESC назад | Ctrl+C вийти з гри",
+  rotateDeviceTitle: "Переверніть девайс",
+  rotateDeviceDescription: "Грати зручно тільки в landscape",
 
   batcat: "КажанКіт",
   ironcat: "Залізна Котина",

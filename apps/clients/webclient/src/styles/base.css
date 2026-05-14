@@ -1,16 +1,19 @@
 html,
 body {
   width: 100%;
+  min-width: 320px;
   height: 100%;
   margin: 0;
   -webkit-user-select: none;
   user-select: none;
+  overscroll-behavior: none;
 }
 
 body {
   overflow: hidden;
   font-family: system-ui, sans-serif;
   background: #20242a;
+  touch-action: none;
 }
 
 button,
@@ -18,7 +21,15 @@ select {
   font: inherit;
 }
 
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
 label {
   color: #ffffff;
   font-size: 13px;
+}
+
+:root {
+  --ui-scale: clamp(0.62, min(1vw, 1.8vh), 1);
 }

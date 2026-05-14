@@ -71,3 +71,71 @@
   transform: translateY(-1px);
   filter: brightness(1.08);
 }
+
+@media (max-width: 520px) {
+  .game-over-popup {
+    padding: 16px;
+    box-sizing: border-box;
+  }
+
+  .game-over-card {
+    width: 100%;
+    max-width: 340px;
+
+    gap: 14px;
+    padding: 22px;
+
+    border-radius: 24px;
+  }
+
+  .game-over-card h2 {
+    font-size: 24px;
+  }
+
+  .game-over-cat {
+    width: min(160px, 42vw);
+    height: min(160px, 42vw);
+  }
+
+  .game-over-score {
+    font-size: 19px;
+  }
+
+  .game-over-restart {
+    width: 100%;
+  }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .game-over-card {
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      "cat title"
+      "cat score"
+      "cat button";
+
+    justify-items: start;
+
+    width: min(520px, calc(100vw - 32px));
+    padding: 18px 22px;
+  }
+
+  .game-over-card h2 {
+    grid-area: title;
+  }
+
+  .game-over-cat {
+    grid-area: cat;
+
+    width: min(140px, 28vh);
+    height: min(140px, 28vh);
+  }
+
+  .game-over-score {
+    grid-area: score;
+  }
+
+  .game-over-restart {
+    grid-area: button;
+  }
+}

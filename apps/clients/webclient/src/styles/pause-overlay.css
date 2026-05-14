@@ -22,3 +22,16 @@
 .pause-overlay[hidden] {
   display: none;
 }
+
+@media (max-width: 520px) {
+  .pause-overlay {
+    font-size: clamp(42px, 15vw, 72px);
+    letter-spacing: 0.1em;
+  }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .pause-overlay {
+    font-size: clamp(42px, 14vh, 76px);
+  }
+}

@@ -3,6 +3,7 @@
 
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
 
   overflow: hidden;
 }
@@ -22,6 +23,8 @@
 
   width: 100%;
   height: 100%;
+
+  touch-action: none;
 }
 
 #ui-root {
@@ -43,5 +46,5 @@
   background: #87ceeb;
   color: #111111;
 
-  font-size: 24px;
+  font-size: clamp(18px, 4vw, 24px);
 }

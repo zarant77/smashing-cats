@@ -19,6 +19,7 @@ import { audio, audioEvents, initAudio, musicEvents } from "./audio/audio.js";
 import { consumePauseToggle, isPaused, readInput } from "./input.js";
 import { PauseOverlay } from "./ui/PauseOverlay.js";
 import { CharacterSelect } from "./ui/CharacterSelect.js";
+import { TouchControls } from "./ui/TouchControls.js";
 import { GameOverPopup } from "./ui/GameOverPopup.js";
 import { Hud } from "./ui/Hud.js";
 import { createView, parseViewKind } from "./views/createView.js";
@@ -113,6 +114,8 @@ async function bootstrap(): Promise<void> {
     view.render(undefined, undefined);
     pauseOverlay.render(undefined, undefined);
   };
+
+  const touchControls = TouchControls.isTouchDevice() ? new TouchControls(uiRoot) : undefined;
 
   const gameOverPopup = new GameOverPopup(uiRoot, t, {
     onRestart: restartGame,
@@ -261,7 +264,15 @@ async function bootstrap(): Promise<void> {
       });
     }
 
-    const input = readInput();
+    const keyboardInput = readInput();
+    const touchInput = touchControls?.getInput();
+
+    const input = {
+      left: keyboardInput.left || touchInput?.left === true,
+      right: keyboardInput.right || touchInput?.right === true,
+      jump: keyboardInput.jump || touchInput?.jump === true,
+    };
+
     const currentInputSeq = inputSeq++;
 
     const jumpPressed = input.jump && !wasJumpPressed;
@@ -409,11 +420,7 @@ function applyStaticTranslations(locale: string, t: (key: string) => string): vo
   document.documentElement.lang = locale;
 
   for (const element of document.querySelectorAll<HTMLElement>("[data-i18n]")) {
-    const key = element.dataset.i18n;
-
-    if (key === "engine" || key === "locale") {
-      element.textContent = t(key);
-    }
+    element.textContent = t(element.dataset.i18n ?? "");
   }
 }
 
