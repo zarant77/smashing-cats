@@ -12,6 +12,7 @@
     "build:server": "pnpm --filter @smashing-cats/server build",
     "build:web": "pnpm --filter @smashing-cats/web-client build",
     "build:cli": "pnpm --filter @smashing-cats/cli-client build",
+    "start": "pnpm start:server & pnpm start:web",
     "start:server": "pnpm --filter @smashing-cats/server start",
     "start:web": "pnpm --filter @smashing-cats/web-client start",
     "start:cli": "pnpm --filter @smashing-cats/cli-client start",

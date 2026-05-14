@@ -43,10 +43,6 @@ export class CanvasView implements GameView {
     const ctx = this.context;
 
     resizeCanvasToRoot(this.canvas, this.root);
-    this.screenShake.update(snapshot);
-    this.floatingTexts.update(snapshot);
-
-    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     if (snapshot === undefined) {
       ctx.fillStyle = "#87ceeb";
@@ -54,6 +50,11 @@ export class CanvasView implements GameView {
       this.drawCenteredText(this.t("connecting"));
       return;
     }
+
+    this.screenShake.update(snapshot);
+    this.floatingTexts.update(snapshot);
+
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     this.background.draw(ctx, this.canvas, snapshot);
 
