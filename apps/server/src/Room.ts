@@ -37,6 +37,7 @@ export class Room {
   private readonly onEmpty: () => void;
 
   private interval: NodeJS.Timeout | undefined;
+  private lastPingTime = 0;
   private nextClientNumber = 1;
 
   public constructor(options: RoomOptions) {
@@ -105,16 +106,24 @@ export class Room {
         return;
       }
 
-      for (const [playerId, client] of this.clients) {
-        if (!client.alive) {
-          client.socket.terminate();
-          this.removeClient(playerId);
+      const now = Date.now();
 
-          continue;
+      if (now - this.lastPingTime >= 10_000) {
+        this.lastPingTime = now;
+
+        for (const [playerId, client] of this.clients) {
+          if (!client.alive) {
+            console.log(`[room] ping timeout ${playerId}`);
+
+            client.socket.terminate();
+            this.removeClient(playerId);
+
+            continue;
+          }
+
+          client.alive = false;
+          client.socket.ping();
         }
-
-        client.alive = false;
-        client.socket.ping();
       }
 
       for (const match of this.matches.values()) {
