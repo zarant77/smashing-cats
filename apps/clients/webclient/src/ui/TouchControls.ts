@@ -37,6 +37,7 @@ export class TouchControls {
   }
 
   public static isTouchDevice(): boolean {
+    // return "ontouchstart" in window || navigator.maxTouchPoints > 0;
     return navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches;
   }
 

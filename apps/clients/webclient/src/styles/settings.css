@@ -217,3 +217,11 @@
 .audio-toggle.muted {
   opacity: 0.7;
 }
+
+.settings-overlay button.active {
+  border-color: rgba(255, 204, 51, 0.8);
+
+  box-shadow:
+    0 0 16px rgba(255, 204, 51, 0.35),
+    inset 0 0 12px rgba(255, 204, 51, 0.15);
+}

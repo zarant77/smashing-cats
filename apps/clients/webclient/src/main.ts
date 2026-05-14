@@ -53,6 +53,7 @@ async function bootstrap(): Promise<void> {
   const localeButtons = document.querySelectorAll<HTMLButtonElement>("[data-locale]");
   const soundToggle = document.querySelector<HTMLButtonElement>("#sound-toggle");
   const musicToggle = document.querySelector<HTMLButtonElement>("#music-toggle");
+  const fullscreenToggle = document.querySelector<HTMLButtonElement>("#fullscreen-toggle");
 
   const params = new URLSearchParams(window.location.search);
 
@@ -152,6 +153,32 @@ async function bootstrap(): Promise<void> {
   applyStaticTranslations(locale, t);
   updateLocaleButtons(localeButtons, locale);
   updateAudioButtons(soundToggle, musicToggle, soundsEnabled, musicEnabled, t);
+  updateFullscreenButton(fullscreenToggle);
+
+  document.addEventListener("fullscreenchange", () => updateFullscreenButton(fullscreenToggle));
+
+  function requestFullscreenFromUserGesture(): void {
+    if (document.fullscreenElement !== null) {
+      return;
+    }
+
+    document.documentElement.requestFullscreen().catch((error: unknown) => {
+      console.error("Fullscreen failed", error);
+    });
+  }
+
+  if (TouchControls.isTouchDevice()) {
+    window.addEventListener(
+      "pointerup",
+      () => {
+        requestFullscreenFromUserGesture();
+      },
+      {
+        once: true,
+        capture: true,
+      },
+    );
+  }
 
   if (engineSelect !== null) {
     engineSelect.value = viewKind;
@@ -190,6 +217,15 @@ async function bootstrap(): Promise<void> {
     musicEvents.gameplay();
 
     updateAudioButtons(soundToggle, musicToggle, soundsEnabled, musicEnabled, t);
+  });
+
+  fullscreenToggle?.addEventListener("click", async () => {
+    if (document.fullscreenElement === null) {
+      await document.documentElement.requestFullscreen();
+      return;
+    }
+
+    await document.exitFullscreen();
   });
 
   for (const button of localeButtons) {
@@ -460,4 +496,8 @@ function updateAudioButtons(
     musicToggle.title = musicEnabled ? t("musicOn") : t("musicOff");
     musicToggle.setAttribute("aria-label", musicEnabled ? t("musicOn") : t("musicOff"));
   }
+}
+
+function updateFullscreenButton(fullscreenToggle: HTMLButtonElement | null): void {
+  fullscreenToggle?.classList.toggle("active", document.fullscreenElement !== null);
 }
