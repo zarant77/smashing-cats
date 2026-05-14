@@ -46,6 +46,7 @@ export function createPlayer({ playerId, characterConfig, index, tick, groundY, 
     maxHp: characterConfig.hp,
     invulnerableUntilTick: tick + Math.ceil(characterConfig.spawnInvulnerabilitySeconds * tickRate),
 
+    paused: false,
     grounded: true,
     smashing: false,
     smashingForCollision: false,

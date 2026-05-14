@@ -1,6 +1,6 @@
 import {
-  normalizeServerMessage,
-  toMiniClientMessage,
+  normalizeMessage,
+  minifyMessage,
   type CharacterDefinition,
   type EntityKind,
   type GameEvent,
@@ -8,6 +8,7 @@ import {
   type InputMessage,
   type PlayerId,
   type ServerToClientMessage,
+  ClientToServerMessage,
 } from "@smashing-cats/protocol";
 import { SnapshotStore } from "@smashing-cats/core";
 import { createTranslator } from "@smashing-cats/i18n";
@@ -15,8 +16,8 @@ import { SnapshotInterpolator, LocalPlayerPredictor } from "@smashing-cats/clien
 
 import { preloadAssets } from "./assets/assets.js";
 import { audio, audioEvents, initAudio, musicEvents } from "./audio/audio.js";
-import { readInput } from "./input.js";
-import { receiveWithSimulatedLag, sendWithSimulatedLag } from "./networkDebug.js";
+import { consumePauseToggle, isPaused, readInput } from "./input.js";
+import { PauseOverlay } from "./ui/PauseOverlay.js";
 import { CharacterSelect } from "./ui/CharacterSelect.js";
 import { GameOverPopup } from "./ui/GameOverPopup.js";
 import { Hud } from "./ui/Hud.js";
@@ -53,7 +54,6 @@ async function bootstrap(): Promise<void> {
   const musicToggle = document.querySelector<HTMLButtonElement>("#music-toggle");
 
   const params = new URLSearchParams(window.location.search);
-  const matchCode = ensureMatchCode(params);
 
   let locale = params.get("locale") ?? localStorage.getItem("smashing-cats-locale") ?? "en";
   let t = createTranslator(locale);
@@ -84,6 +84,9 @@ async function bootstrap(): Promise<void> {
   let socket = createSocket();
 
   const hud = new Hud(uiRoot, t);
+  const pauseOverlay = new PauseOverlay(uiRoot, t);
+
+  const send = (msg: ClientToServerMessage) => socket.send(minifyMessage(msg));
 
   const restartGame = (): void => {
     audioEvents.uiClick();
@@ -108,6 +111,7 @@ async function bootstrap(): Promise<void> {
     characterSelect.render(characters, hasSelectedCharacter);
     hud.render(undefined, undefined);
     view.render(undefined, undefined);
+    pauseOverlay.render(undefined, undefined);
   };
 
   const gameOverPopup = new GameOverPopup(uiRoot, t, {
@@ -133,14 +137,11 @@ async function bootstrap(): Promise<void> {
       hasSelectedCharacter = true;
       characterSelect.render(characters, hasSelectedCharacter);
 
-      socket.send(
-        JSON.stringify(
-          toMiniClientMessage({
-            type: "selectCharacter",
-            characterKind,
-          }),
-        ),
-      );
+      send({
+        type: "selectCharacter",
+        characterKind,
+        matchCode: ensureMatchCode(params),
+      });
     },
   });
 
@@ -212,14 +213,7 @@ async function bootstrap(): Promise<void> {
 
   function bindSocketEvents(): void {
     socket.addEventListener("open", () => {
-      socket.send(
-        JSON.stringify(
-          toMiniClientMessage({
-            type: "join",
-            name: "Cat",
-          }),
-        ),
-      );
+      send({ type: "join" });
     });
 
     socket.addEventListener("message", (event) => {
@@ -237,22 +231,18 @@ async function bootstrap(): Promise<void> {
       }
 
       if (message.type === "snapshot") {
-        receiveWithSimulatedLag(() => {
-          const snapshot = snapshotStore.setFullSnapshot(message.snapshot);
-          interpolator.add(snapshot);
-        });
+        const snapshot = snapshotStore.setFullSnapshot(message.snapshot);
+        interpolator.add(snapshot);
 
         return;
       }
 
       if (message.type === "delta") {
-        receiveWithSimulatedLag(() => {
-          const snapshot = snapshotStore.applyDelta(message.delta);
+        const snapshot = snapshotStore.applyDelta(message.delta);
 
-          if (snapshot !== undefined) {
-            interpolator.add(snapshot);
-          }
-        });
+        if (snapshot !== undefined) {
+          interpolator.add(snapshot);
+        }
 
         return;
       }
@@ -262,13 +252,22 @@ async function bootstrap(): Promise<void> {
   bindSocketEvents();
 
   function frame(): void {
+    const canSend = socket.readyState === WebSocket.OPEN && playerId !== undefined && hasSelectedCharacter;
+
+    if (consumePauseToggle() && canSend) {
+      send({
+        type: "pause",
+        paused: isPaused(),
+      });
+    }
+
     const input = readInput();
     const currentInputSeq = inputSeq++;
 
     const jumpPressed = input.jump && !wasJumpPressed;
     wasJumpPressed = input.jump;
 
-    if (socket.readyState === WebSocket.OPEN && playerId !== undefined && hasSelectedCharacter) {
+    if (canSend && !isPaused()) {
       const snapshotTick = interpolator.getRenderedTick();
 
       const inputMessage: InputMessage =
@@ -285,14 +284,19 @@ async function bootstrap(): Promise<void> {
               input,
             };
 
-      sendWithSimulatedLag(socket, JSON.stringify(toMiniClientMessage(inputMessage)));
+      send(inputMessage);
     }
 
-    const snapshot = predictor.apply(interpolator.get(playerId), interpolator.getLatest(), playerId, currentInputSeq, input, characters);
+    const interpolatedSnapshot = interpolator.get(playerId);
+    const latestSnapshot = interpolator.getLatest();
 
-    const localPlayer = snapshot?.players.find((player) => player.playerId === playerId);
+    const localPlayer = latestSnapshot?.players.find((player) => player.playerId === playerId);
 
-    if (jumpPressed && hasSelectedCharacter && localPlayer !== undefined) {
+    const snapshot =
+      localPlayer?.paused === true
+        ? interpolatedSnapshot
+        : predictor.apply(interpolatedSnapshot, latestSnapshot, playerId, currentInputSeq, input, characters);
+    if (jumpPressed && hasSelectedCharacter && localPlayer !== undefined && !isPaused()) {
       if (localPlayer.smashing && !wasSmashing) {
         audioEvents.playerSmash();
       } else {
@@ -306,6 +310,7 @@ async function bootstrap(): Promise<void> {
 
     view.render(snapshot, playerId);
     hud.render(snapshot, playerId);
+    pauseOverlay.render(snapshot, playerId);
     gameOverPopup.render(snapshot, playerId);
 
     requestAnimationFrame(frame);
@@ -418,7 +423,7 @@ function parseServerMessage(data: unknown): ServerToClientMessage | undefined {
   }
 
   try {
-    return normalizeServerMessage(JSON.parse(data));
+    return normalizeMessage(JSON.parse(data)) as ServerToClientMessage;
   } catch {
     return undefined;
   }

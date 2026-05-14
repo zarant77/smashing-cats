@@ -10,11 +10,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@smashing-cats/client-netcode": "workspace:*",
     "@smashing-cats/core": "workspace:*",
     "@smashing-cats/i18n": "workspace:*",
     "@smashing-cats/protocol": "workspace:*",
-    "@smashing-cats/client-netcode": "workspace:*",
     "blessed": "^0.1.81",
+    "clipboardy": "^5.3.1",
     "commander": "^14.0.3",
     "ws": "^8.20.1"
   },

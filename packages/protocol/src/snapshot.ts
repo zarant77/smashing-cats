@@ -21,6 +21,7 @@ export type PlayerSnapshot = EntitySnapshot & {
   hp: number;
   maxHp: number;
   invulnerable: boolean;
+  paused: boolean;
   grounded: boolean;
   smashing: boolean;
   jumpStartY: number;
@@ -65,6 +66,7 @@ export type EntityPatch = {
   vx?: number;
   vy?: number;
   alive?: boolean;
+  paused?: boolean;
 };
 
 export type PlayerPatch = EntityPatch & {

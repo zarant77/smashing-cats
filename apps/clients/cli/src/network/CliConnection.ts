@@ -1,13 +1,14 @@
 import WebSocket, { type RawData } from "ws";
 import {
-  normalizeServerMessage,
-  toMiniClientMessage,
+  normalizeMessage,
+  minifyMessage,
   type CharacterDefinition,
   type EntityKind,
   type GameSnapshot,
   type InputMessage,
   type PlayerId,
   type ServerToClientMessage,
+  type ClientToServerMessage,
 } from "@smashing-cats/protocol";
 import { SnapshotStore } from "@smashing-cats/core";
 
@@ -20,7 +21,7 @@ export type PlayerInput = {
 type CliConnectionOptions = {
   serverUrl: string;
   characterKind: EntityKind;
-  sessionCode: string;
+  matchCode: string;
 
   onWelcome: (playerId: PlayerId, characters: CharacterDefinition[]) => void;
   onSnapshot: (snapshot: GameSnapshot) => void;
@@ -44,12 +45,7 @@ export class CliConnection {
     this.socket.on("open", () => {
       this.options.onStatus("Connected");
 
-      this.send(
-        toMiniClientMessage({
-          type: "join",
-          name: "Cat",
-        }),
-      );
+      this.send({ type: "join" });
     });
 
     this.socket.on("message", (data: RawData) => {
@@ -72,12 +68,11 @@ export class CliConnection {
 
     this.hasSelectedCharacter = true;
 
-    this.send(
-      toMiniClientMessage({
-        type: "selectCharacter",
-        characterKind: this.options.characterKind,
-      }),
-    );
+    this.send({
+      type: "selectCharacter",
+      characterKind: this.options.characterKind,
+      matchCode: this.options.matchCode,
+    });
   }
 
   public sendInput(inputSeq: number, input: PlayerInput, snapshotTick?: number): void {
@@ -99,7 +94,18 @@ export class CliConnection {
             input,
           };
 
-    this.send(toMiniClientMessage(message));
+    this.send(message);
+  }
+
+  public sendPause(paused: boolean): void {
+    if (this.socket?.readyState !== WebSocket.OPEN || this.playerId === undefined || !this.hasSelectedCharacter) {
+      return;
+    }
+
+    this.send({
+      type: "pause",
+      paused,
+    });
   }
 
   public close(): void {
@@ -143,13 +149,13 @@ export class CliConnection {
     }
 
     try {
-      return normalizeServerMessage(JSON.parse(data));
+      return normalizeMessage(JSON.parse(data)) as ServerToClientMessage;
     } catch {
       return undefined;
     }
   }
 
   private send(message: unknown): void {
-    this.socket?.send(JSON.stringify(message));
+    this.socket?.send(minifyMessage(message as ClientToServerMessage));
   }
 }

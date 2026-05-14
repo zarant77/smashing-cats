@@ -1,13 +1,7 @@
 {
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": "src",
-    "outDir": "dist",
     "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },
-  "references": [
-    { "path": "../../../packages/core" },
-    { "path": "../../../packages/protocol" }
-  ],
   "include": ["src", "vite-env.d.ts"]
 }

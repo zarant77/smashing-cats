@@ -49,7 +49,7 @@ export class AppController {
         screen: this.screen,
         serverUrl: this.options.serverUrl,
         characterKind: options.characterKind,
-        sessionCode: options.sessionCode,
+        matchCode: options.matchCode,
         t: this.options.t,
         onExit: () => {
           this.showStartScreen();

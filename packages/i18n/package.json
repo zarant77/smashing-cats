@@ -3,11 +3,6 @@
   "version": "0.1.0",
   "type": "module",
   "private": true,
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput"
-  },
   "exports": {
     ".": "./src/index.ts"
   }

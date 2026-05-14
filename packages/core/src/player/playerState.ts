@@ -47,5 +47,5 @@ export function getPlayerSnapshotX(player: Player, scrollX: number): number {
 }
 
 export function isPlayerInvulnerable(player: Player, tick: number): boolean {
-  return player.alive && tick < player.invulnerableUntilTick;
+  return player.alive && (player.paused || tick < player.invulnerableUntilTick);
 }

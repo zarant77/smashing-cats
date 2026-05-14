@@ -12,16 +12,20 @@ export type InputMessage = {
 
 export type JoinMessage = {
   type: "join";
-  name?: string;
 };
 
 export type SelectCharacterMessage = {
   type: "selectCharacter";
   characterKind: EntityKind;
-  name?: string;
+  matchCode: string;
 };
 
-export type ClientToServerMessage = JoinMessage | SelectCharacterMessage | InputMessage;
+export type PauseMessage = {
+  type: "pause";
+  paused: boolean;
+};
+
+export type ClientToServerMessage = JoinMessage | SelectCharacterMessage | InputMessage | PauseMessage;
 
 export type WelcomeMessage = {
   type: "welcome";

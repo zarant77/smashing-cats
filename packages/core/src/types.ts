@@ -32,6 +32,7 @@ export type Player = Entity & {
 
   invulnerableUntilTick: number;
 
+  paused: boolean;
   grounded: boolean;
   smashing: boolean;
   smashingForCollision: boolean;

@@ -1,4 +1,5 @@
 import blessed from "blessed";
+import clipboard from "clipboardy";
 import type { Translator } from "@smashing-cats/i18n";
 import type { CharacterDefinition, EntityKind, GameSnapshot, PlayerId, PlayerSnapshot } from "@smashing-cats/protocol";
 import { LocalPlayerPredictor, SnapshotInterpolator } from "@smashing-cats/client-netcode";
@@ -12,7 +13,7 @@ type GameScreenOptions = {
   screen: blessed.Widgets.Screen;
   serverUrl: string;
   characterKind: EntityKind;
-  sessionCode: string;
+  matchCode: string;
   t: Translator;
   onExit: () => void;
   onRestart: () => void;
@@ -37,6 +38,8 @@ export class GameScreen implements Screen {
 
   private characters: CharacterDefinition[] = [];
   private inputSeq = 1;
+
+  private paused = false;
 
   private input: PlayerInput = {
     left: false,
@@ -127,8 +130,7 @@ export class GameScreen implements Screen {
 
   private bindEvents(): void {
     this.root.key(["escape"], () => {
-      terminalBell.ui();
-      this.options.onExit();
+      this.togglePause();
     });
 
     this.root.key(["C-c"], () => {
@@ -149,18 +151,23 @@ export class GameScreen implements Screen {
       this.input.jump = true;
       terminalBell.jump();
     });
+
+    this.status.on("click", async () => {
+      await clipboard.write(this.options.matchCode);
+      terminalBell.ui();
+    });
   }
 
   private connect(): void {
     this.connection = new CliConnection({
       serverUrl: this.options.serverUrl,
       characterKind: this.options.characterKind,
-      sessionCode: this.options.sessionCode,
+      matchCode: this.options.matchCode,
 
       onWelcome: (playerId, characters) => {
         this.playerId = playerId;
         this.characters = characters;
-        this.setStatus(`Player: ${playerId} | Cat: ${this.options.t(this.options.characterKind)}`);
+        this.setStatus(this.options.matchCode);
       },
 
       onSnapshot: (snapshot: GameSnapshot) => {
@@ -168,7 +175,7 @@ export class GameScreen implements Screen {
       },
 
       onStatus: (message) => {
-        this.setStatus(message);
+        this.setStatus(this.options.matchCode, message);
       },
     });
 
@@ -177,7 +184,7 @@ export class GameScreen implements Screen {
 
   private startInputLoop(): void {
     this.inputTimer = setInterval(() => {
-      if (this.gameOverOverlay !== undefined) {
+      if (this.gameOverOverlay !== undefined || this.paused) {
         return;
       }
 
@@ -204,7 +211,8 @@ export class GameScreen implements Screen {
         this.characters,
       );
 
-      this.viewport.setContent(this.renderer.render(snapshot, this.playerId, this.options.t));
+      const content = this.renderer.render(snapshot, this.playerId, this.options.t);
+      this.viewport.setContent(this.paused ? this.withPauseOverlay(content) : content);
 
       if (snapshot !== undefined) {
         this.handleSnapshotSounds(snapshot);
@@ -296,8 +304,53 @@ export class GameScreen implements Screen {
     this.renderTimer = undefined;
   }
 
-  private setStatus(message: string): void {
-    this.status.setContent(` ${message}`);
+  private setStatus(matchCode: string, message?: string): void {
+    let statusContent = `${this.options.t("matchCode")}: ${matchCode}`;
+
+    if (message !== undefined) {
+      statusContent += ` | ${message}`;
+    }
+
+    this.status.setContent(statusContent);
     this.options.screen.render();
+  }
+
+  private togglePause(): void {
+    if (this.gameOverOverlay !== undefined) {
+      return;
+    }
+
+    this.paused = !this.paused;
+
+    this.input = {
+      left: false,
+      right: false,
+      jump: false,
+    };
+
+    this.connection?.sendPause(this.paused);
+    terminalBell.ui();
+  }
+
+  private withPauseOverlay(content: string): string {
+    const lines = content.split("\n");
+
+    if (lines.length === 0) {
+      return content;
+    }
+
+    const label = "{bold}{yellow-fg}PAUSE{/yellow-fg}{/bold}";
+    const plainLabel = "PAUSE";
+
+    const y = Math.floor(lines.length / 2);
+    const width = Math.max(...lines.map((line) => line.length));
+    const x = Math.max(0, Math.floor((width - plainLabel.length) / 2));
+
+    const line = lines[y] ?? "";
+    const paddedLine = line.padEnd(width, " ");
+
+    lines[y] = `${paddedLine.slice(0, x)}${label}${paddedLine.slice(x + plainLabel.length)}`;
+
+    return lines.join("\n");
   }
 }

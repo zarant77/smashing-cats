@@ -70,6 +70,7 @@ function getUpdatedPlayers(previous: PlayerSnapshot[], next: PlayerSnapshot[]): 
     assignIfChanged(patch, "score", oldPlayer.score, player.score);
     assignIfChanged(patch, "hp", oldPlayer.hp, player.hp);
     assignIfChanged(patch, "invulnerable", oldPlayer.invulnerable, player.invulnerable);
+    assignIfChanged(patch, "paused", oldPlayer.paused, player.paused);
     assignIfChanged(patch, "grounded", oldPlayer.grounded, player.grounded);
     assignIfChanged(patch, "smashing", oldPlayer.smashing, player.smashing);
     assignIfChanged(patch, "lastProcessedInputSeq", oldPlayer.lastProcessedInputSeq, player.lastProcessedInputSeq);

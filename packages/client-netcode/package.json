@@ -4,9 +4,7 @@
   "type": "module",
   "private": true,
   "exports": {
-    ".": "./src/index.ts",
-    "./interpolation": "./src/interpolation.ts",
-    "./prediction": "./src/prediction.ts"
+    ".": "./src/index.ts"
   },
   "dependencies": {
     "@smashing-cats/core": "workspace:*",

@@ -14,7 +14,7 @@ type StartScreenOptions = {
 
 export type StartGameOptions = {
   characterKind: EntityKind;
-  sessionCode: string;
+  matchCode: string;
 };
 
 type FocusTarget = "cats" | "session" | "start";
@@ -75,7 +75,7 @@ export class StartScreen implements Screen {
       left: 4,
       width: 30,
       height: 1,
-      content: this.options.t("sessionCode"),
+      content: this.options.t("matchCode"),
       style: { fg: "white" },
     });
 
@@ -222,19 +222,25 @@ export class StartScreen implements Screen {
     this.options.screen.render();
   }
 
-  private getSessionCode(): string {
+  private getMatchCode(): string {
     return this.sessionInput
       .getValue()
       .toUpperCase()
-      .replace(/[^0-9A-F]/g, "");
+      .replace(/[^0-9A-Z]/g, "");
   }
 
   private startGame(): void {
     const character = this.characterList.getSelectedCharacter();
 
+    let matchCode = this.getMatchCode();
+
+    if (matchCode.length === 0) {
+      matchCode = Math.random().toString(16).slice(2, 8).toUpperCase();
+    }
+
     this.options.onStart({
       characterKind: character.kind,
-      sessionCode: this.getSessionCode(),
+      matchCode,
     });
   }
 

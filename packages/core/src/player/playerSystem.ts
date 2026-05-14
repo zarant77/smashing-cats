@@ -20,6 +20,16 @@ export function updatePlayers({ players, dt }: UpdatePlayersOptions): void {
       continue;
     }
 
+    if (player.paused) {
+      player.vx = 0;
+      player.vy = 0;
+      player.smashing = false;
+      player.smashingForCollision = false;
+      player.smashSnapshotTick = undefined;
+      player.lastProcessedInputSeq = player.lastReceivedInputSeq;
+      continue;
+    }
+
     const characterConfig = getCharacterConfig(player.kind);
 
     const result = simulatePlayerMovement(

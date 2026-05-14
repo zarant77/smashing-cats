@@ -59,6 +59,7 @@ function createPlayerSnapshots({ players, scrollX, tick }: { players: Iterable<P
     maxHp: player.maxHp,
     invulnerable: isPlayerInvulnerable(player, tick),
 
+    paused: player.paused,
     grounded: player.grounded,
     smashing: player.smashing,
     jumpStartY: player.jumpStartY,

@@ -15,6 +15,8 @@ import { createPlayer } from "./player/playerFactory.js";
 import { createGameSnapshot } from "./snapshot/snapshotFactory.js";
 import { createDeltaSnapshot } from "./snapshot/deltaSnapshotFactory.js";
 
+const UNPAUSE_INVULNERABILITY_SECONDS = 2;
+
 export class Game {
   private readonly seed: number;
   private readonly rng: Random;
@@ -67,7 +69,7 @@ export class Game {
   public setInput(playerId: PlayerId, input: PlayerInput, snapshotTick: number | undefined, inputSeq: number | undefined): void {
     const player = this.players.get(playerId);
 
-    if (player === undefined || !player.alive) {
+    if (player === undefined || !player.alive || player.paused) {
       return;
     }
 
@@ -77,6 +79,36 @@ export class Game {
       snapshotTick,
       inputSeq,
     });
+  }
+
+  public setPaused(playerId: PlayerId, paused: boolean): void {
+    const player = this.players.get(playerId);
+
+    if (player === undefined || !player.alive || player.paused === paused) {
+      return;
+    }
+
+    player.paused = paused;
+
+    player.vx = 0;
+    player.vy = 0;
+
+    player.smashing = false;
+    player.smashingForCollision = false;
+    player.smashSnapshotTick = undefined;
+
+    player.lastInput = {
+      left: false,
+      right: false,
+      jump: false,
+    };
+
+    if (paused) {
+      player.invulnerableUntilTick = Number.POSITIVE_INFINITY;
+      return;
+    }
+
+    player.invulnerableUntilTick = this.tick + Math.ceil(UNPAUSE_INVULNERABILITY_SECONDS * GAME_CONFIG.tickRate);
   }
 
   public update(dt: number): void {
