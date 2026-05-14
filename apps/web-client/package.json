@@ -1,10 +1,10 @@
 {
-  "name": "@smashing-cats/webclient",
+  "name": "@smashing-cats/web-client",
   "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc -p tsconfig.json && vite build",
+    "build": "vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "preview": "vite preview",
     "start": "node server.js"

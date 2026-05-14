@@ -3,18 +3,10 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "ignoreDeprecations": "6.0",
     "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
-    "paths": {
-      "@smashing-cats/protocol": ["packages/protocol/src/index.ts"]
-    },
     "declaration": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "declarationMap": true,
+    "composite": true
   }
 }
