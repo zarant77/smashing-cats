@@ -13,6 +13,7 @@
     "@smashing-cats/core": "workspace:*",
     "@smashing-cats/protocol": "workspace:*",
     "@smashing-cats/i18n": "workspace:*",
+    "@smashing-cats/client-netcode": "workspace:*",
     "phaser": "^4.1.0",
     "three": "^0.184.0",
     "vite": "^8.0.12"

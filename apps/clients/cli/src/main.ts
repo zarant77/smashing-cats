@@ -1,23 +1,25 @@
+import { Command } from "commander";
+
 import { createTranslator } from "@smashing-cats/i18n";
 import { AppController } from "./AppController.js";
 
-function getArgValue(name: string): string | undefined {
-  const index = process.argv.indexOf(name);
+const program = new Command();
 
-  if (index === -1) {
-    return undefined;
-  }
+program
+  .name("smashing-cats-cli")
+  .option("-s, --server <url>", "WebSocket server URL", "ws://localhost:8080")
+  .option("-l, --locale <locale>", "CLI locale", "en")
+  .parse(process.argv);
 
-  return process.argv[index + 1];
-}
+const options = program.opts<{
+  server: string;
+  locale: string;
+}>();
 
-const serverUrl = process.argv[2]?.startsWith("ws://") || process.argv[2]?.startsWith("wss://") ? process.argv[2] : "ws://localhost:8080";
-
-const locale = getArgValue("--locale") ?? "en";
-const t = createTranslator(locale);
+const t = createTranslator(options.locale);
 
 const app = new AppController({
-  serverUrl,
+  serverUrl: options.server,
   t,
 });
 

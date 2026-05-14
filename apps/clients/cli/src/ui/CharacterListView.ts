@@ -1,5 +1,6 @@
 import blessed from "blessed";
 import type { Translator } from "@smashing-cats/i18n";
+import { terminalBell } from "../audio/TerminalBell.js";
 import { CLI_CHARACTERS, type CliCharacter } from "../config/characters.js";
 
 type CharacterListViewOptions = {
@@ -93,6 +94,7 @@ export class CharacterListView {
   }
 
   private syncSelection(): void {
+    terminalBell.ui();
     this.element.select(this.selectedIndex);
     this.options.onSelect(this.getSelectedCharacter(), this.selectedIndex);
   }

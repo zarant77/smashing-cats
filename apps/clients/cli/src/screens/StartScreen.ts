@@ -3,6 +3,7 @@ import type { Translator } from "@smashing-cats/i18n";
 import type { EntityKind } from "@smashing-cats/protocol";
 import { CharacterListView } from "../ui/CharacterListView.js";
 import { CharacterStatsView } from "../ui/CharacterStatsView.js";
+import { terminalBell } from "../audio/TerminalBell.js";
 import type { Screen } from "./Screen.js";
 
 type StartScreenOptions = {
@@ -164,6 +165,7 @@ export class StartScreen implements Screen {
   }
 
   private selectFocusByOffset(offset: number): void {
+    terminalBell.ui();
     const nextIndex = (this.selectedFocusIndex + offset + this.focusTargets.length) % this.focusTargets.length;
     this.focusBlock(this.focusTargets[nextIndex] ?? "cats");
   }

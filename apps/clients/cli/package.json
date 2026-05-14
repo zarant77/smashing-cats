@@ -13,6 +13,7 @@
     "@smashing-cats/core": "workspace:*",
     "@smashing-cats/i18n": "workspace:*",
     "@smashing-cats/protocol": "workspace:*",
+    "@smashing-cats/client-netcode": "workspace:*",
     "blessed": "^0.1.81",
     "commander": "^14.0.3",
     "ws": "^8.20.1"

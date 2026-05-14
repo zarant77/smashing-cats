@@ -1,8 +1,10 @@
 import blessed from "blessed";
 import type { Translator } from "@smashing-cats/i18n";
-import type { EntityKind, GameSnapshot, PlayerId } from "@smashing-cats/protocol";
+import type { CharacterDefinition, EntityKind, GameSnapshot, PlayerId, PlayerSnapshot } from "@smashing-cats/protocol";
+import { LocalPlayerPredictor, SnapshotInterpolator } from "@smashing-cats/client-netcode";
 import { CliConnection, type PlayerInput } from "../network/CliConnection.js";
 import { GameAsciiRenderer } from "../render/GameAsciiRenderer.js";
+import { terminalBell } from "../audio/TerminalBell.js";
 import { GameOverOverlay } from "./GameOverOverlay.js";
 import type { Screen } from "./Screen.js";
 
@@ -22,10 +24,19 @@ export class GameScreen implements Screen {
   private readonly viewport: blessed.Widgets.BoxElement;
   private readonly renderer = new GameAsciiRenderer();
 
+  private readonly interpolator = new SnapshotInterpolator();
+  private readonly predictor = new LocalPlayerPredictor();
+
   private connection: CliConnection | undefined;
   private inputTimer: NodeJS.Timeout | undefined;
+  private renderTimer: NodeJS.Timeout | undefined;
+
   private playerId: PlayerId | undefined;
+  private previousLocalPlayer: PlayerSnapshot | undefined;
   private gameOverOverlay: GameOverOverlay | undefined;
+
+  private characters: CharacterDefinition[] = [];
+  private inputSeq = 1;
 
   private input: PlayerInput = {
     left: false,
@@ -100,12 +111,14 @@ export class GameScreen implements Screen {
 
     this.connect();
     this.startInputLoop();
+    this.startRenderLoop();
 
     this.options.screen.render();
   }
 
   public destroy(): void {
     this.stopInputLoop();
+    this.stopRenderLoop();
     this.connection?.close();
     this.gameOverOverlay?.destroy();
     this.root.detach();
@@ -114,6 +127,7 @@ export class GameScreen implements Screen {
 
   private bindEvents(): void {
     this.root.key(["escape"], () => {
+      terminalBell.ui();
       this.options.onExit();
     });
 
@@ -123,16 +137,17 @@ export class GameScreen implements Screen {
 
     this.root.key(["left", "a"], () => {
       this.input.left = true;
-      this.input.right = false;
+      terminalBell.move();
     });
 
     this.root.key(["right", "d"], () => {
       this.input.right = true;
-      this.input.left = false;
+      terminalBell.move();
     });
 
     this.root.key(["up", "down", "space", "w", "s"], () => {
       this.input.jump = true;
+      terminalBell.jump();
     });
   }
 
@@ -142,15 +157,14 @@ export class GameScreen implements Screen {
       characterKind: this.options.characterKind,
       sessionCode: this.options.sessionCode,
 
-      onWelcome: (playerId) => {
+      onWelcome: (playerId, characters) => {
         this.playerId = playerId;
+        this.characters = characters;
         this.setStatus(`Player: ${playerId} | Cat: ${this.options.t(this.options.characterKind)}`);
       },
 
       onSnapshot: (snapshot: GameSnapshot) => {
-        this.viewport.setContent(this.renderer.render(snapshot, this.playerId, this.options.t));
-        this.handleGameOver(snapshot);
-        this.options.screen.render();
+        this.interpolator.add(snapshot);
       },
 
       onStatus: (message) => {
@@ -159,6 +173,78 @@ export class GameScreen implements Screen {
     });
 
     this.connection.connect();
+  }
+
+  private startInputLoop(): void {
+    this.inputTimer = setInterval(() => {
+      if (this.gameOverOverlay !== undefined) {
+        return;
+      }
+
+      const currentInputSeq = this.inputSeq++;
+
+      this.connection?.sendInput(currentInputSeq, this.input, this.interpolator.getRenderedTick());
+
+      this.input = {
+        left: false,
+        right: false,
+        jump: false,
+      };
+    }, 1000 / 30);
+  }
+
+  private startRenderLoop(): void {
+    this.renderTimer = setInterval(() => {
+      const snapshot = this.predictor.apply(
+        this.interpolator.get(this.playerId),
+        this.interpolator.getLatest(),
+        this.playerId,
+        this.inputSeq,
+        this.input,
+        this.characters,
+      );
+
+      this.viewport.setContent(this.renderer.render(snapshot, this.playerId, this.options.t));
+
+      if (snapshot !== undefined) {
+        this.handleSnapshotSounds(snapshot);
+        this.handleGameOver(snapshot);
+      }
+
+      this.options.screen.render();
+    }, 1000 / 30);
+  }
+
+  private handleSnapshotSounds(snapshot: GameSnapshot): void {
+    if (this.playerId === undefined || this.gameOverOverlay !== undefined) {
+      return;
+    }
+
+    const player = snapshot.players.find((item) => item.playerId === this.playerId);
+
+    if (player === undefined) {
+      return;
+    }
+
+    if (this.previousLocalPlayer !== undefined) {
+      this.playPlayerDeltaSounds(this.previousLocalPlayer, player);
+    }
+
+    this.previousLocalPlayer = { ...player };
+  }
+
+  private playPlayerDeltaSounds(previous: PlayerSnapshot, current: PlayerSnapshot): void {
+    if (current.hp > previous.hp) {
+      terminalBell.hpUp();
+    } else if (current.hp < previous.hp) {
+      terminalBell.hpDown();
+    }
+
+    if (current.score > previous.score) {
+      terminalBell.scoreUp();
+    } else if (current.score < previous.score) {
+      terminalBell.scoreDown();
+    }
   }
 
   private handleGameOver(snapshot: GameSnapshot): void {
@@ -192,17 +278,6 @@ export class GameScreen implements Screen {
     this.gameOverOverlay.show();
   }
 
-  private startInputLoop(): void {
-    this.inputTimer = setInterval(() => {
-      if (this.gameOverOverlay !== undefined) {
-        return;
-      }
-
-      this.connection?.sendInput(this.input);
-      this.input.jump = false;
-    }, 1000 / 30);
-  }
-
   private stopInputLoop(): void {
     if (this.inputTimer === undefined) {
       return;
@@ -210,6 +285,15 @@ export class GameScreen implements Screen {
 
     clearInterval(this.inputTimer);
     this.inputTimer = undefined;
+  }
+
+  private stopRenderLoop(): void {
+    if (this.renderTimer === undefined) {
+      return;
+    }
+
+    clearInterval(this.renderTimer);
+    this.renderTimer = undefined;
   }
 
   private setStatus(message: string): void {

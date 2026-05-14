@@ -33,7 +33,6 @@ export class CliConnection {
   private socket: WebSocket | undefined;
   private playerId: PlayerId | undefined;
   private hasSelectedCharacter = false;
-  private inputSeq = 1;
 
   public constructor(private readonly options: CliConnectionOptions) {}
 
@@ -81,16 +80,24 @@ export class CliConnection {
     );
   }
 
-  public sendInput(input: PlayerInput): void {
+  public sendInput(inputSeq: number, input: PlayerInput, snapshotTick?: number): void {
     if (this.socket?.readyState !== WebSocket.OPEN || this.playerId === undefined || !this.hasSelectedCharacter) {
       return;
     }
 
-    const message: InputMessage = {
-      type: "input",
-      inputSeq: this.inputSeq++,
-      input,
-    };
+    const message: InputMessage =
+      snapshotTick === undefined
+        ? {
+            type: "input",
+            inputSeq,
+            input,
+          }
+        : {
+            type: "input",
+            inputSeq,
+            snapshotTick,
+            input,
+          };
 
     this.send(toMiniClientMessage(message));
   }

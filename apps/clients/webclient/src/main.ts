@@ -11,13 +11,12 @@ import {
 } from "@smashing-cats/protocol";
 import { SnapshotStore } from "@smashing-cats/core";
 import { createTranslator } from "@smashing-cats/i18n";
+import { SnapshotInterpolator, LocalPlayerPredictor } from "@smashing-cats/client-netcode";
 
 import { preloadAssets } from "./assets/assets.js";
 import { audio, audioEvents, initAudio, musicEvents } from "./audio/audio.js";
 import { readInput } from "./input.js";
-import { SnapshotInterpolator } from "./interpolation.js";
 import { receiveWithSimulatedLag, sendWithSimulatedLag } from "./networkDebug.js";
-import { LocalPlayerPredictor } from "./prediction.js";
 import { CharacterSelect } from "./ui/CharacterSelect.js";
 import { GameOverPopup } from "./ui/GameOverPopup.js";
 import { Hud } from "./ui/Hud.js";
@@ -221,8 +220,6 @@ async function bootstrap(): Promise<void> {
           }),
         ),
       );
-
-      void matchCode;
     });
 
     socket.addEventListener("message", (event) => {
