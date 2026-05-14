@@ -12,6 +12,7 @@ type AppControllerOptions = {
 export class AppController {
   private readonly screen: blessed.Widgets.Screen;
   private currentScreen: Screen | undefined;
+  private lastGameOptions: StartGameOptions | undefined;
 
   public constructor(private readonly options: AppControllerOptions) {
     this.screen = blessed.screen({
@@ -33,7 +34,7 @@ export class AppController {
       new StartScreen({
         screen: this.screen,
         t: this.options.t,
-        onStart: (options) => {
+        onStart: (options: StartGameOptions) => {
           this.startGame(options);
         },
       }),
@@ -41,6 +42,8 @@ export class AppController {
   }
 
   private startGame(options: StartGameOptions): void {
+    this.lastGameOptions = options;
+
     this.setScreen(
       new GameScreen({
         screen: this.screen,
@@ -51,8 +54,20 @@ export class AppController {
         onExit: () => {
           this.showStartScreen();
         },
+        onRestart: () => {
+          this.restartGame();
+        },
       }),
     );
+  }
+
+  private restartGame(): void {
+    if (this.lastGameOptions === undefined) {
+      this.showStartScreen();
+      return;
+    }
+
+    this.startGame(this.lastGameOptions);
   }
 
   private setScreen(screen: Screen): void {

@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
-import type { Locale, Translator } from "@smashing-cats/i18n";
+import type { Translator } from "@smashing-cats/i18n";
 import type { GameView } from "../types.js";
 
 const BASE_WIDTH = 960;
@@ -33,7 +33,7 @@ export class PhaserView implements GameView {
     this.scene.setState(snapshot, playerId);
   }
 
-  public setLocale(_locale: Locale, t: Translator): void {
+  public setLocale(_locale: string, t: Translator): void {
     this.scene.setTranslator(t);
   }
 

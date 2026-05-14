@@ -1,5 +1,5 @@
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
-import type { Locale, Translator } from "@smashing-cats/i18n";
+import type { Translator } from "@smashing-cats/i18n";
 import type { GameView } from "../types.js";
 import { BackgroundRenderer } from "./BackgroundRenderer.js";
 import { EntityRenderer } from "./EntityRenderer.js";
@@ -77,7 +77,7 @@ export class CanvasView implements GameView {
     ctx.restore();
   }
 
-  public setLocale(_locale: Locale, t: Translator): void {
+  public setLocale(_locale: string, t: Translator): void {
     this.t = t;
   }
 

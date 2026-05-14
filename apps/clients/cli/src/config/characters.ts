@@ -1,7 +1,8 @@
+import type { EntityKind } from "@smashing-cats/protocol";
 import charactersData from "@smashing-cats/core/config/characters.json" with { type: "json" };
 
 export type CliCharacter = {
-  kind: string;
+  kind: EntityKind;
   hp: number;
   moveSpeed: number;
   jumpForce: number;

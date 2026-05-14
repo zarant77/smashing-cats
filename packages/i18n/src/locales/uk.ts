@@ -12,6 +12,8 @@ export const uk = {
   points: "оч.",
   connecting: "підключення...",
   placeholder: "заглушка",
+  toMainMenu: "Вийти в головне меню",
+  exit: "Вихід з гри",
   restart: "Перезапустити",
   score: "Рахунок",
   gameOverTitle: "Гра закінчена",
@@ -19,7 +21,8 @@ export const uk = {
   soundsOff: "Звуки вимкнено",
   musicOn: "Музику увімкнено",
   musicOff: "Музику вимкнено",
-  cliHint: "Керування: ↑/↓ вибір кота | Tab фокус | Enter почати | Ctrl+C вийти",
+  startScreenHint: "Керування: ↑/↓ вибір кота | Tab фокус | Enter почати | Ctrl+C вийти з гри",
+  gameScreenHint: "Керування: A/D або ←/→ рух | W/S/Пробіл/↑ стрибок | ESC назад | Ctrl+C вийти з гри",
 
   batcat: "КажанКіт",
   ironcat: "Залізна Котина",

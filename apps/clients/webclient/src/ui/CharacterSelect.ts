@@ -1,9 +1,9 @@
 import type { CharacterDefinition, EntityKind } from "@smashing-cats/protocol";
-import type { Locale, Translator } from "@smashing-cats/i18n";
+import type { Translator } from "@smashing-cats/i18n";
 import { audioEvents } from "../audio/audio.js";
 
 type CharacterSelectOptions = {
-  locale: Locale;
+  locale: string;
   t: Translator;
   initialCharacterKind: EntityKind | undefined;
   onSelect: (characterKind: EntityKind) => void;
@@ -22,7 +22,7 @@ const STAR_COUNT = 5;
 
 export class CharacterSelect {
   private readonly element: HTMLDivElement;
-  private locale: Locale;
+  private locale: string;
   private t: Translator;
   private readonly onSelect: (characterKind: EntityKind) => void;
 
@@ -44,7 +44,7 @@ export class CharacterSelect {
     window.addEventListener("keydown", this.handleKeyDown);
   }
 
-  public setLocale(locale: Locale, t: Translator): void {
+  public setLocale(locale: string, t: Translator): void {
     this.locale = locale;
     this.t = t;
   }

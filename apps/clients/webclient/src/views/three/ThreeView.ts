@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
-import type { Locale, Translator } from "@smashing-cats/i18n";
+import type { Translator } from "@smashing-cats/i18n";
 import type { GameView } from "../types.js";
 import { Animation } from "./Animation.js";
 import { CameraController, type CameraMode } from "./CameraController.js";
@@ -60,7 +60,7 @@ export class ThreeView implements GameView {
     this.renderer.render(this.scene, this.camera.camera);
   }
 
-  public setLocale(_locale: Locale, t: Translator): void {
+  public setLocale(_locale: string, t: Translator): void {
     this.t = t;
   }
 

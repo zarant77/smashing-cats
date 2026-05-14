@@ -193,7 +193,8 @@ async function bootstrap(): Promise<void> {
     button.addEventListener("click", () => {
       audioEvents.uiClick();
 
-      t = createTranslator(button.dataset.locale);
+      locale = button.dataset.locale ?? "en";
+      t = createTranslator(locale);
 
       localStorage.setItem("smashing-cats-locale", locale);
 

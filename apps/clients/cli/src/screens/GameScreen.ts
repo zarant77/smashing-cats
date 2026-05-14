@@ -3,6 +3,7 @@ import type { Translator } from "@smashing-cats/i18n";
 import type { EntityKind, GameSnapshot, PlayerId } from "@smashing-cats/protocol";
 import { CliConnection, type PlayerInput } from "../network/CliConnection.js";
 import { GameAsciiRenderer } from "../render/GameAsciiRenderer.js";
+import { GameOverOverlay } from "./GameOverOverlay.js";
 import type { Screen } from "./Screen.js";
 
 type GameScreenOptions = {
@@ -12,6 +13,7 @@ type GameScreenOptions = {
   sessionCode: string;
   t: Translator;
   onExit: () => void;
+  onRestart: () => void;
 };
 
 export class GameScreen implements Screen {
@@ -23,6 +25,7 @@ export class GameScreen implements Screen {
   private connection: CliConnection | undefined;
   private inputTimer: NodeJS.Timeout | undefined;
   private playerId: PlayerId | undefined;
+  private gameOverOverlay: GameOverOverlay | undefined;
 
   private input: PlayerInput = {
     left: false,
@@ -82,7 +85,7 @@ export class GameScreen implements Screen {
       width: "100%",
       height: 2,
       tags: true,
-      content: "A/D or ←/→ move | W/Space/↑ jump | ESC back | Q quit",
+      content: this.options.t("gameScreenHint"),
       style: {
         fg: "gray",
       },
@@ -104,6 +107,7 @@ export class GameScreen implements Screen {
   public destroy(): void {
     this.stopInputLoop();
     this.connection?.close();
+    this.gameOverOverlay?.destroy();
     this.root.detach();
     this.options.screen.render();
   }
@@ -113,27 +117,22 @@ export class GameScreen implements Screen {
       this.options.onExit();
     });
 
-    this.root.key(["q", "C-c"], () => {
+    this.root.key(["C-c"], () => {
       process.exit(0);
     });
 
-    this.root.key(["a", "left"], () => {
+    this.root.key(["left", "a"], () => {
       this.input.left = true;
       this.input.right = false;
     });
 
-    this.root.key(["d", "right"], () => {
+    this.root.key(["right", "d"], () => {
       this.input.right = true;
       this.input.left = false;
     });
 
-    this.root.key(["w", "space", "up"], () => {
+    this.root.key(["up", "down", "space", "w", "s"], () => {
       this.input.jump = true;
-    });
-
-    this.root.key(["s", "down"], () => {
-      this.input.left = false;
-      this.input.right = false;
     });
   }
 
@@ -149,7 +148,8 @@ export class GameScreen implements Screen {
       },
 
       onSnapshot: (snapshot: GameSnapshot) => {
-        this.viewport.setContent(this.renderer.render(snapshot, this.playerId));
+        this.viewport.setContent(this.renderer.render(snapshot, this.playerId, this.options.t));
+        this.handleGameOver(snapshot);
         this.options.screen.render();
       },
 
@@ -161,15 +161,45 @@ export class GameScreen implements Screen {
     this.connection.connect();
   }
 
+  private handleGameOver(snapshot: GameSnapshot): void {
+    if (this.playerId === undefined || this.gameOverOverlay !== undefined) {
+      return;
+    }
+
+    const player = snapshot.players.find((item) => item.playerId === this.playerId);
+
+    if (player === undefined || player.hp > 0) {
+      return;
+    }
+
+    this.showGameOverOverlay(player.score);
+  }
+
+  private showGameOverOverlay(score: number): void {
+    this.gameOverOverlay = new GameOverOverlay({
+      parent: this.root,
+      screen: this.options.screen,
+      score,
+      t: this.options.t,
+      onRestart: () => {
+        this.options.onRestart();
+      },
+      onExit: () => {
+        this.options.onExit();
+      },
+    });
+
+    this.gameOverOverlay.show();
+  }
+
   private startInputLoop(): void {
     this.inputTimer = setInterval(() => {
-      this.connection?.sendInput(this.input);
+      if (this.gameOverOverlay !== undefined) {
+        return;
+      }
 
-      this.input = {
-        left: false,
-        right: false,
-        jump: false,
-      };
+      this.connection?.sendInput(this.input);
+      this.input.jump = false;
     }, 1000 / 30);
   }
 

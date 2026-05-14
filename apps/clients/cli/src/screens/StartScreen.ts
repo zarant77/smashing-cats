@@ -1,8 +1,9 @@
 import blessed from "blessed";
 import type { Translator } from "@smashing-cats/i18n";
-import { CLI_CHARACTERS } from "../config/characters.js";
+import type { EntityKind } from "@smashing-cats/protocol";
+import { CharacterListView } from "../ui/CharacterListView.js";
+import { CharacterStatsView } from "../ui/CharacterStatsView.js";
 import type { Screen } from "./Screen.js";
-import { stars } from "../ui/stars.js";
 
 type StartScreenOptions = {
   screen: blessed.Widgets.Screen;
@@ -11,29 +12,21 @@ type StartScreenOptions = {
 };
 
 export type StartGameOptions = {
-  characterKind: string;
+  characterKind: EntityKind;
   sessionCode: string;
-};
-
-type Character = {
-  kind: string;
-  hp: number;
-  moveSpeed: number;
-  jumpForce: number;
 };
 
 type FocusTarget = "cats" | "session" | "start";
 
 export class StartScreen implements Screen {
   private readonly root: blessed.Widgets.BoxElement;
-  private readonly list: blessed.Widgets.ListElement;
+  private readonly characterList: CharacterListView;
+  private readonly statsView = new CharacterStatsView();
   private readonly details: blessed.Widgets.BoxElement;
   private readonly sessionInput: blessed.Widgets.TextboxElement;
   private readonly startButton: blessed.Widgets.ButtonElement;
 
   private readonly focusTargets: FocusTarget[] = ["cats", "session", "start"];
-
-  private selectedIndex = 0;
   private selectedFocusIndex = 0;
 
   public constructor(private readonly options: StartScreenOptions) {
@@ -43,10 +36,7 @@ export class StartScreen implements Screen {
       width: "100%",
       height: "100%",
       tags: true,
-      style: {
-        bg: "black",
-        fg: "white",
-      },
+      style: { bg: "black", fg: "white" },
     });
 
     blessed.box({
@@ -57,35 +47,14 @@ export class StartScreen implements Screen {
       height: 1,
       tags: true,
       content: `{bold}${this.options.t("title")}{/bold}`,
-      style: {
-        fg: "yellow",
-      },
+      style: { fg: "yellow" },
     });
 
-    this.list = blessed.list({
+    this.characterList = new CharacterListView({
       parent: this.root,
-      top: 4,
-      left: 4,
-      width: 28,
-      height: 12,
-      label: ` ${this.options.t("chooseCat")} `,
-      border: "line",
-      keys: true,
-      mouse: true,
-      vi: true,
-      items: CLI_CHARACTERS.map((character) => this.options.t(character.kind)),
-      style: {
-        selected: {
-          bg: "blue",
-          fg: "white",
-        },
-        item: {
-          fg: "white",
-        },
-        border: {
-          fg: "cyan",
-        },
-      },
+      t: this.options.t,
+      onFocus: () => this.focusBlock("cats"),
+      onSelect: () => this.updateDetails(),
     });
 
     this.details = blessed.box({
@@ -96,11 +65,7 @@ export class StartScreen implements Screen {
       height: 12,
       border: "line",
       tags: true,
-      style: {
-        border: {
-          fg: "cyan",
-        },
-      },
+      style: { border: { fg: "cyan" } },
     });
 
     blessed.text({
@@ -110,9 +75,7 @@ export class StartScreen implements Screen {
       width: 30,
       height: 1,
       content: this.options.t("sessionCode"),
-      style: {
-        fg: "white",
-      },
+      style: { fg: "white" },
     });
 
     this.sessionInput = blessed.textbox({
@@ -125,11 +88,7 @@ export class StartScreen implements Screen {
       inputOnFocus: false,
       mouse: true,
       keys: true,
-      style: {
-        border: {
-          fg: "cyan",
-        },
-      },
+      style: { border: { fg: "cyan" } },
     });
 
     this.startButton = blessed.button({
@@ -147,13 +106,7 @@ export class StartScreen implements Screen {
       style: {
         bg: "green",
         fg: "black",
-        focus: {
-          bg: "green",
-          fg: "black",
-        },
-        border: {
-          fg: "green",
-        },
+        border: { fg: "green" },
       },
     });
 
@@ -164,10 +117,8 @@ export class StartScreen implements Screen {
       width: "90%",
       height: 2,
       tags: true,
-      content: this.options.t("cliHint"),
-      style: {
-        fg: "gray",
-      },
+      content: this.options.t("startScreenHint"),
+      style: { fg: "gray" },
     });
 
     this.bindEvents();
@@ -176,7 +127,7 @@ export class StartScreen implements Screen {
 
   public show(): void {
     this.options.screen.append(this.root);
-    this.focusBlockByIndex(this.selectedFocusIndex);
+    this.focusBlock("cats");
   }
 
   public destroy(): void {
@@ -187,99 +138,34 @@ export class StartScreen implements Screen {
   private bindEvents(): void {
     this.options.screen.on("keypress", (ch: string | undefined, key: blessed.Widgets.Events.IKeyEventArg) => {
       if (key.name === "tab") {
-        this.focusNextBlock();
+        this.selectFocusByOffset(1);
         return;
       }
 
-      if (key.name === "S-tab") {
-        this.focusPreviousBlock();
-        return;
+      if (this.getCurrentFocusTarget() === "session") {
+        this.handleSessionInputKey(ch, key);
       }
-
-      if (this.getCurrentFocusTarget() !== "session") {
-        return;
-      }
-
-      this.handleSessionInputKey(ch, key);
     });
 
-    this.root.key(["q", "C-c"], () => {
-      process.exit(0);
-    });
+    this.root.key(["C-c"], () => process.exit(0));
 
     this.root.key(["enter"], () => {
-      if (this.getCurrentFocusTarget() === "session") {
-        return;
+      if (this.getCurrentFocusTarget() !== "session") {
+        this.startGame();
       }
-
-      this.startGame();
     });
 
-    this.list.on("mousedown", () => {
-      this.focusBlock("cats");
-    });
+    this.sessionInput.on("mousedown", () => this.focusBlock("session"));
+    this.sessionInput.on("click", () => this.focusBlock("session"));
 
-    this.sessionInput.on("mousedown", () => {
-      this.focusBlock("session");
-    });
-
-    this.startButton.on("mousedown", () => {
-      this.focusBlock("start");
-    });
-
-    this.list.on("click", () => {
-      this.focusBlock("cats");
-    });
-
-    this.sessionInput.on("click", () => {
-      this.focusBlock("session");
-    });
-
-    this.startButton.on("click", () => {
-      this.focusBlock("start");
-    });
-
-    this.list.on("select", (_, index) => {
-      this.selectedIndex = index;
-      this.updateDetails();
-    });
-
-    this.list.key(["up", "k"], () => {
-      this.selectCharacterByOffset(-1);
-    });
-
-    this.list.key(["down", "j"], () => {
-      this.selectCharacterByOffset(1);
-    });
-
-    this.startButton.on("press", () => {
-      this.startGame();
-    });
-  }
-
-  private focusNextBlock(): void {
-    this.selectFocusByOffset(1);
-  }
-
-  private focusPreviousBlock(): void {
-    this.selectFocusByOffset(-1);
+    this.startButton.on("mousedown", () => this.focusBlock("start"));
+    this.startButton.on("click", () => this.focusBlock("start"));
+    this.startButton.on("press", () => this.startGame());
   }
 
   private selectFocusByOffset(offset: number): void {
     const nextIndex = (this.selectedFocusIndex + offset + this.focusTargets.length) % this.focusTargets.length;
-
-    this.focusBlockByIndex(nextIndex);
-  }
-
-  private focusBlockByIndex(index: number): void {
-    const target = this.focusTargets[index];
-
-    if (target === undefined) {
-      return;
-    }
-
-    this.selectedFocusIndex = index;
-    this.focusBlock(target);
+    this.focusBlock(this.focusTargets[nextIndex] ?? "cats");
   }
 
   private focusBlock(target: FocusTarget): void {
@@ -290,61 +176,25 @@ export class StartScreen implements Screen {
     }
 
     this.selectedFocusIndex = index;
-    this.setActiveBorders(target);
+
+    this.characterList.setActive(target === "cats");
+    this.sessionInput.style.border = { fg: target === "session" ? "yellow" : "cyan" };
+    this.startButton.style.border = { fg: target === "start" ? "yellow" : "green" };
+    this.startButton.style.bg = target === "start" ? "yellow" : "green";
 
     if (target === "cats") {
-      this.list.focus();
-    }
-
-    if (target === "session") {
+      this.characterList.focus();
+    } else if (target === "session") {
       this.sessionInput.focus();
-    }
-
-    if (target === "start") {
+    } else {
       this.root.focus();
     }
 
     this.options.screen.render();
   }
 
-  private setActiveBorders(target: FocusTarget): void {
-    this.list.style.border = {
-      fg: target === "cats" ? "yellow" : "cyan",
-    };
-
-    this.sessionInput.style.border = {
-      fg: target === "session" ? "yellow" : "cyan",
-    };
-
-    this.startButton.style.border = {
-      fg: target === "start" ? "yellow" : "green",
-    };
-
-    this.startButton.style.bg = target === "start" ? "yellow" : "green";
-    this.startButton.style.fg = "black";
-
-    this.details.style.border = {
-      fg: "cyan",
-    };
-
-    this.options.screen.render();
-  }
-
   private getCurrentFocusTarget(): FocusTarget {
-    const target = this.focusTargets[this.selectedFocusIndex];
-
-    if (target === undefined) {
-      throw new Error("Focus target not found");
-    }
-
-    return target;
-  }
-
-  private selectCharacterByOffset(offset: number): void {
-    const nextIndex = (this.selectedIndex + offset + CLI_CHARACTERS.length) % CLI_CHARACTERS.length;
-
-    this.selectedIndex = nextIndex;
-    this.updateDetails();
+    return this.focusTargets[this.selectedFocusIndex] ?? "cats";
   }
 
   private handleSessionInputKey(ch: string | undefined, key: blessed.Widgets.Events.IKeyEventArg): void {
@@ -360,14 +210,9 @@ export class StartScreen implements Screen {
       return;
     }
 
-    if (ch === undefined) {
-      return;
-    }
+    const value = ch?.toUpperCase();
 
-    const value = ch.toUpperCase();
-
-    if (!/^[0-9A-F]$/.test(value)) {
-      this.options.screen.render();
+    if (value === undefined || !/^[0-9A-F]$/.test(value)) {
       return;
     }
 
@@ -383,7 +228,7 @@ export class StartScreen implements Screen {
   }
 
   private startGame(): void {
-    const character = this.getSelectedCharacter();
+    const character = this.characterList.getSelectedCharacter();
 
     this.options.onStart({
       characterKind: character.kind,
@@ -392,42 +237,10 @@ export class StartScreen implements Screen {
   }
 
   private updateDetails(): void {
-    const character = this.getSelectedCharacter();
+    const character = this.characterList.getSelectedCharacter();
 
     this.details.setLabel(` ${this.options.t(character.kind)} `);
-
-    this.details.setContent(
-      [
-        ` ${this.options.t("hp")}`,
-        ` ${stars(character.hp)}`,
-        "",
-        ` ${this.options.t("speed")}`,
-        ` ${stars(this.normalizeSpeed(character.moveSpeed))}`,
-        "",
-        ` ${this.options.t("jump")}`,
-        ` ${stars(this.normalizeJump(character.jumpForce))}`,
-      ].join("\n"),
-    );
-
-    this.list.select(this.selectedIndex);
+    this.details.setContent(this.statsView.render(character, this.options.t));
     this.options.screen.render();
-  }
-
-  private getSelectedCharacter(): Character {
-    const character = CLI_CHARACTERS[this.selectedIndex];
-
-    if (character === undefined) {
-      throw new Error("Character not found");
-    }
-
-    return character;
-  }
-
-  private normalizeSpeed(value: number): number {
-    return Math.ceil(value / 100);
-  }
-
-  private normalizeJump(value: number): number {
-    return Math.ceil(value / 250);
   }
 }

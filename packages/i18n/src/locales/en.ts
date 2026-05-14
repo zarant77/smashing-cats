@@ -12,6 +12,8 @@ export const en = {
   points: "pts",
   connecting: "connecting...",
   placeholder: "placeholder",
+  toMainMenu: "Exit to main menu",
+  exit: "Exit game",
   restart: "Restart",
   score: "Score",
   gameOverTitle: "Game Over",
@@ -19,7 +21,8 @@ export const en = {
   soundsOff: "Sounds off",
   musicOn: "Music on",
   musicOff: "Music off",
-  cliHint: "Controls: ↑/↓ select cat | Tab focus | Enter start | Ctrl+C quit",
+  startScreenHint: "Controls: ↑/↓ select cat | Tab focus | Enter start | Ctrl+C quit",
+  gameScreenHint: "A/D or ←/→ move | W/Space/↑ jump | ESC back | Ctrl+C quit",
 
   batcat: "Batcat",
   ironcat: "Ironcat",
