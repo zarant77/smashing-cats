@@ -1,6 +1,6 @@
-import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
 import * as THREE from "three";
-import type { Locale, Translator } from "../../i18n.js";
+import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
+import type { Locale, Translator } from "@smashing-cats/i18n";
 import type { GameView } from "../types.js";
 import { Animation } from "./Animation.js";
 import { CameraController, type CameraMode } from "./CameraController.js";

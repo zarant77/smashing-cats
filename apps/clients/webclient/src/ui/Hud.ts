@@ -1,5 +1,5 @@
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
-import type { Translator } from "../i18n.js";
+import type { Translator } from "@smashing-cats/i18n";
 
 export class Hud {
   private readonly element: HTMLDivElement;

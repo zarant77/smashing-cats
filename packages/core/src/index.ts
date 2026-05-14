@@ -3,6 +3,7 @@ export { intersects } from "./collision/collisions.js";
 export { Game } from "./Game.js";
 export { Random } from "./Random.js";
 export { simulatePlayerMovement } from "./movement.js";
+export * from "./snapshot/SnapshotStore.js";
 export type { PlayerMovementState } from "./movement.js";
 export type { CharacterConfig, CivilianConfig, EnemyConfig, GameConfig, ObstacleConfig } from "./config.js";
 export type { Bounds } from "./collision/collisions.js";

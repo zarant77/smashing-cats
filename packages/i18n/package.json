@@ -1,5 +1,5 @@
 {
-  "name": "@smashing-cats/core",
+  "name": "@smashing-cats/i18n",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
@@ -13,10 +13,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    },
-    "./config/characters.json": "./src/config/characters.json"
-  },
-  "dependencies": {
-    "@smashing-cats/protocol": "workspace:*"
+    }
   }
 }

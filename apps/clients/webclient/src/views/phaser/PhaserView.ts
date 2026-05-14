@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
-import type { Locale, Translator } from "../../i18n.js";
+import type { Locale, Translator } from "@smashing-cats/i18n";
 import type { GameView } from "../types.js";
 
 const BASE_WIDTH = 960;

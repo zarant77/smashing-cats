@@ -1,5 +1,5 @@
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
-import type { Locale, Translator } from "../../i18n.js";
+import type { Locale, Translator } from "@smashing-cats/i18n";
 import type { GameView } from "../types.js";
 import { BackgroundRenderer } from "./BackgroundRenderer.js";
 import { EntityRenderer } from "./EntityRenderer.js";

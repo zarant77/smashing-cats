@@ -4,17 +4,23 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm -r --parallel dev",
+    "dev": "pnpm run dev:server & pnpm run dev:webclient",
+    "dev:server": "pnpm --filter @smashing-cats/server dev",
+    "dev:webclient": "pnpm --filter @smashing-cats/webclient dev",
+    "dev:cli": "pnpm --filter @smashing-cats/cli dev",
     "build": "pnpm -r build",
     "build:server": "tsc -b --force packages/protocol packages/core apps/server",
     "build:webclient": "tsc -b --force packages/protocol packages/core apps/clients/webclient && pnpm --filter @smashing-cats/webclient exec vite build",
+    "build:cli": "tsc -b --force packages/protocol apps/clients/cli",
     "start:server": "pnpm --filter @smashing-cats/server start",
     "start:webclient": "pnpm --filter @smashing-cats/webclient start",
+    "start:cli": "pnpm --filter @smashing-cats/cli start",
     "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {
-    "@types/node": "^22.10.2",
-    "typescript": "^5.7.2"
+    "@types/node": "^25.7.0",
+    "typescript": "^6.0.3",
+    "tsx": "^4.21.0"
   },
-  "packageManager": "pnpm@10.0.0"
+  "packageManager": "pnpm@11.1.1"
 }

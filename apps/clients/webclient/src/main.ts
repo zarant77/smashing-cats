@@ -9,14 +9,15 @@ import {
   type PlayerId,
   type ServerToClientMessage,
 } from "@smashing-cats/protocol";
+import { SnapshotStore } from "@smashing-cats/core";
+import { createTranslator } from "@smashing-cats/i18n";
+
 import { preloadAssets } from "./assets/assets.js";
 import { audio, audioEvents, initAudio, musicEvents } from "./audio/audio.js";
-import { createTranslator, parseLocale } from "./i18n.js";
 import { readInput } from "./input.js";
 import { SnapshotInterpolator } from "./interpolation.js";
 import { receiveWithSimulatedLag, sendWithSimulatedLag } from "./networkDebug.js";
 import { LocalPlayerPredictor } from "./prediction.js";
-import { SnapshotStore } from "./snapshot/SnapshotStore.js";
 import { CharacterSelect } from "./ui/CharacterSelect.js";
 import { GameOverPopup } from "./ui/GameOverPopup.js";
 import { Hud } from "./ui/Hud.js";
@@ -55,7 +56,7 @@ async function bootstrap(): Promise<void> {
   const params = new URLSearchParams(window.location.search);
   const matchCode = ensureMatchCode(params);
 
-  let locale = parseLocale(params.get("locale") ?? localStorage.getItem("smashing-cats-locale"));
+  let locale = params.get("locale") ?? localStorage.getItem("smashing-cats-locale") ?? "en";
   let t = createTranslator(locale);
 
   let soundsEnabled = localStorage.getItem(SOUNDS_ENABLED_KEY) !== "false";
@@ -192,8 +193,7 @@ async function bootstrap(): Promise<void> {
     button.addEventListener("click", () => {
       audioEvents.uiClick();
 
-      locale = parseLocale(button.dataset.locale ?? null);
-      t = createTranslator(locale);
+      t = createTranslator(button.dataset.locale);
 
       localStorage.setItem("smashing-cats-locale", locale);
 

@@ -1,5 +1,5 @@
 import type { CharacterDefinition, EntityKind } from "@smashing-cats/protocol";
-import type { Locale, Translator } from "../i18n.js";
+import type { Locale, Translator } from "@smashing-cats/i18n";
 import { audioEvents } from "../audio/audio.js";
 
 type CharacterSelectOptions = {

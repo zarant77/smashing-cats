@@ -1,5 +1,5 @@
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
-import type { Locale, Translator } from "../i18n.js";
+import type { Locale, Translator } from "@smashing-cats/i18n";
 
 export type ViewKind = "canvas" | "phaser" | "three";
 
