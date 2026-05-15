@@ -273,7 +273,6 @@ async function bootstrap(): Promise<void> {
       if (message.type === "snapshot") {
         const snapshot = snapshotStore.setFullSnapshot(message.snapshot);
         interpolator.add(snapshot);
-
         return;
       }
 

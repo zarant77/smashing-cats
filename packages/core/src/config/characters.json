@@ -6,7 +6,13 @@
     "smashSpeed": 2000,
     "bounceSpeed": -360,
     "smashMinJumpProgress": 0.5,
-    "spawnInvulnerabilitySeconds": 2
+    "spawnInvulnerabilitySeconds": 2,
+    "animations": {
+      "idle": "bounce",
+      "jump": "jump",
+      "attack": "smash",
+      "death": "fall"
+    }
   },
   "characters": [
     { "kind": "batcat", "hp": 4, "moveSpeed": 250, "jumpForce": 1000 },

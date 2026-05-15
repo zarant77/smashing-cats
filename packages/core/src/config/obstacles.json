@@ -3,12 +3,18 @@
     "kind": "cactus",
     "size": [80, 128],
     "hurt": [20, 0, -15],
-    "damage": 1
+    "damage": 1,
+    "animations": {
+      "idle": "swing"
+    }
   },
   {
     "kind": "cactus",
     "size": [80, 80],
     "hurt": [20, 0, 0],
-    "damage": 1
+    "damage": 1,
+    "animations": {
+      "idle": "swing"
+    }
   }
 ]

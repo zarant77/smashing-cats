@@ -31,7 +31,6 @@ export function spawnAhead({ rng, scrollX, nextSpawnX, nextEntityIndex }: SpawnA
 
   while (spawnX < scrollX + GAME_CONFIG.worldWidth * 1.8) {
     const config = rng.pick(SPAWNABLES);
-
     const moveSpeed = isMovingConfig(config) ? rng.nextInt(config.minMoveSpeed, config.maxMoveSpeed) : 0;
 
     entities.push(

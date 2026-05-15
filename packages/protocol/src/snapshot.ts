@@ -1,6 +1,13 @@
 import type { EntityId, EntityKind, EntityType, PlayerId } from "./entity.js";
 import { HurtCircle, Size, SmashBox } from "./geometry.js";
 
+export type AnimationSet = {
+  idle?: string;
+  jump?: string;
+  attack?: string;
+  death?: string;
+};
+
 export type EntitySnapshot = {
   id: EntityId;
   type: EntityType;
@@ -14,6 +21,7 @@ export type EntitySnapshot = {
   damage: number;
   score: number;
   alive: boolean;
+  animations?: AnimationSet;
 };
 
 export type PlayerSnapshot = EntitySnapshot & {

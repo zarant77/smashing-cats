@@ -1,4 +1,14 @@
-import type { EntityId, EntityKind, EntityType, HurtCircle, Size, SmashBox, PlayerId, PlayerInput } from "@smashing-cats/protocol";
+import type {
+  AnimationSet,
+  EntityId,
+  EntityKind,
+  EntityType,
+  HurtCircle,
+  PlayerId,
+  PlayerInput,
+  Size,
+  SmashBox,
+} from "@smashing-cats/protocol";
 
 export type Vec2 = {
   x: number;
@@ -20,6 +30,8 @@ export type Entity = {
 
   damage: number;
   score: number;
+
+  animations?: AnimationSet;
 
   alive: boolean;
 };

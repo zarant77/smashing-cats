@@ -55,6 +55,7 @@ function createPlayerSnapshots({ players, scrollX, tick }: { players: Iterable<P
     damage: player.damage,
     score: player.score,
     alive: player.alive,
+    animations: player.animations,
 
     hp: player.hp,
     maxHp: player.maxHp,
@@ -87,5 +88,6 @@ function createEntitySnapshots(entities: Entity[]): EntitySnapshot[] {
     damage: entity.damage,
     score: entity.score,
     alive: entity.alive,
+    animations: entity.animations,
   }));
 }

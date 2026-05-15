@@ -7,7 +7,11 @@
     "score": 100,
     "minMoveSpeed": 100,
     "maxMoveSpeed": 150,
-    "lane": 0
+    "laneY": 0,
+    "animations": {
+      "idle": "walk",
+      "death": "squish"
+    }
   },
   {
     "kind": "boar",
@@ -17,7 +21,11 @@
     "score": 75,
     "minMoveSpeed": 200,
     "maxMoveSpeed": 300,
-    "lane": 0
+    "laneY": 0,
+    "animations": {
+      "idle": "walk",
+      "death": "squish"
+    }
   },
   {
     "kind": "rat",
@@ -27,6 +35,24 @@
     "score": 50,
     "minMoveSpeed": 300,
     "maxMoveSpeed": 400,
-    "lane": 0
+    "laneY": 0,
+    "animations": {
+      "idle": "walk",
+      "death": "squish"
+    }
+  },
+  {
+    "kind": "bird",
+    "size": [90, 60],
+    "hurt": [18, 0, 0],
+    "damage": 1,
+    "score": 50,
+    "minMoveSpeed": 300,
+    "maxMoveSpeed": 400,
+    "laneY": -150,
+    "animations": {
+      "idle": "fly",
+      "death": "flyToScreen"
+    }
   }
 ]

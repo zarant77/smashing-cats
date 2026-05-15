@@ -1,7 +1,8 @@
 import type { GameSnapshot, PlayerSnapshot } from "@smashing-cats/protocol";
+import { GAME_CONFIG } from "@smashing-cats/core";
 import { assets } from "../../assets/assets.js";
 import { drawDebugShape } from "./DebugShapeRenderer.js";
-import { LandingEffect } from "./LandingEffect.js";
+import type { EffectRenderer } from "./EffectRenderer.js";
 import { SpriteAnimation } from "./SpriteAnimation.js";
 import type { RenderViewport } from "./viewport.js";
 
@@ -11,44 +12,53 @@ type DeathState = {
   y: number;
 };
 
+type SmashLandingState = {
+  wasGrounded: boolean;
+  wasSmashing: boolean;
+};
+
 const DEATH_JUMP_VELOCITY = -520;
 const DEATH_GRAVITY = 1400;
 const DEATH_DRIFT_X = 120;
 const DEATH_ROTATION_SPEED = -7;
 
+const SMASH_EFFECT_PATH = "/effects/smash.png";
+const SMASH_EFFECT_DURATION_MS = 200;
+
+const SMASH_EFFECT_OFFSET_X = 20;
+const SMASH_EFFECT_OFFSET_Y = -20;
+
+const SMASH_EFFECT_WIDTH = 64 * 3;
+const SMASH_EFFECT_HEIGHT = 23 * 3;
+
 export class PlayerRenderer {
   private readonly animation = new SpriteAnimation();
-  private readonly landingEffect = new LandingEffect();
   private readonly deathStates = new Map<string, DeathState>();
+  private readonly smashLandingStates = new Map<string, SmashLandingState>();
 
   public constructor(private readonly debug: boolean) {}
 
   public draw(
     ctx: CanvasRenderingContext2D,
+    canvasWidth: number,
     viewport: RenderViewport,
     snapshot: GameSnapshot,
     player: PlayerSnapshot,
     isLocal: boolean,
+    effects: EffectRenderer,
   ): void {
     const [worldWidth, worldHeight] = player.size;
 
     const screenX = viewport.worldToScreenSize(player.x);
     const screenY = viewport.worldToScreenY(player.y);
+
     const width = viewport.worldToScreenSize(worldWidth);
     const height = viewport.worldToScreenSize(worldHeight);
 
     const image = assets.get(`/players/${player.kind}.png`);
     const shouldBlinkOff = player.invulnerable && Math.floor(snapshot.tick / 2) % 2 === 0;
 
-    this.landingEffect.update({
-      id: player.id,
-      x: player.x,
-      y: player.y,
-      width: worldWidth,
-      height: worldHeight,
-      grounded: player.grounded,
-      smashing: player.smashing,
-    });
+    this.updateSmashLandingEffect(player, effects, screenX, screenY, width, height, viewport.scale);
 
     if (!player.alive) {
       this.drawDeadPlayer(ctx, viewport, player, image, screenX, screenY, width, height, isLocal);
@@ -63,13 +73,18 @@ export class PlayerRenderer {
       y: screenY,
       width,
       height,
+      groundY: GAME_CONFIG.groundY,
+      entityY: player.y + player.size[1],
       alive: player.alive,
       hp: player.hp,
       velocityX: player.vx,
       moving: player.alive && player.grounded && !player.smashing,
       jumping: !player.grounded,
       smashing: player.smashing,
+      animations: player.animations,
       scale: viewport.scale,
+      screenWidth: canvasWidth,
+      screenHeight: ctx.canvas.height,
     });
 
     ctx.save();
@@ -89,11 +104,42 @@ export class PlayerRenderer {
 
     ctx.restore();
 
-    this.landingEffect.draw(ctx, viewport, player.id);
-
     if (this.debug) {
       drawDebugShape(ctx, screenX, screenY, player.size, player.hurt, player.smash, viewport);
     }
+  }
+
+  private updateSmashLandingEffect(
+    player: PlayerSnapshot,
+    effects: EffectRenderer,
+    screenX: number,
+    screenY: number,
+    width: number,
+    height: number,
+    scale: number,
+  ): void {
+    const state = this.getSmashLandingState(player);
+
+    const justLanded = !state.wasGrounded && player.grounded;
+
+    if (justLanded && state.wasSmashing) {
+      effects.add({
+        imagePath: SMASH_EFFECT_PATH,
+        x: screenX + width / 2 + SMASH_EFFECT_OFFSET_X * scale,
+        y: screenY + height + SMASH_EFFECT_OFFSET_Y * scale,
+        startedAt: performance.now(),
+        durationMs: SMASH_EFFECT_DURATION_MS,
+        width: SMASH_EFFECT_WIDTH,
+        height: SMASH_EFFECT_HEIGHT,
+        scale,
+        grow: 0.35 * scale,
+        space: "screen",
+        fadeOut: true,
+      });
+    }
+
+    state.wasGrounded = player.grounded;
+    state.wasSmashing = player.smashing || (!player.grounded && state.wasSmashing);
   }
 
   private drawDeadPlayer(
@@ -136,7 +182,7 @@ export class PlayerRenderer {
   private getDeathState(id: string, x: number, y: number): DeathState {
     const existing = this.deathStates.get(id);
 
-    if (existing) {
+    if (existing !== undefined) {
       return existing;
     }
 
@@ -147,6 +193,23 @@ export class PlayerRenderer {
     };
 
     this.deathStates.set(id, state);
+
+    return state;
+  }
+
+  private getSmashLandingState(player: PlayerSnapshot): SmashLandingState {
+    const existing = this.smashLandingStates.get(player.id);
+
+    if (existing !== undefined) {
+      return existing;
+    }
+
+    const state: SmashLandingState = {
+      wasGrounded: player.grounded,
+      wasSmashing: player.smashing,
+    };
+
+    this.smashLandingStates.set(player.id, state);
 
     return state;
   }

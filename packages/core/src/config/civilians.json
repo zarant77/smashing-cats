@@ -6,7 +6,11 @@
     "damage": 0,
     "score": 100,
     "minMoveSpeed": 50,
-    "maxMoveSpeed": 70
+    "maxMoveSpeed": 70,
+    "animations": {
+      "idle": "walk",
+      "death": "squish"
+    }
   },
   {
     "kind": "dido",
@@ -15,6 +19,10 @@
     "damage": 0,
     "score": 100,
     "minMoveSpeed": 50,
-    "maxMoveSpeed": 70
+    "maxMoveSpeed": 70,
+    "animations": {
+      "idle": "walk",
+      "death": "squish"
+    }
   }
 ]

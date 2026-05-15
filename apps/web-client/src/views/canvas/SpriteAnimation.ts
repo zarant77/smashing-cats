@@ -1,61 +1,50 @@
-type TransformInput = {
-  id: string;
+import { hashToUnit, lerp } from "./animations/animationMath.js";
+import {
+  DEFAULT_IMPACT,
+  type AnimationEffectSpawn,
+  type AnimationImpact,
+  type AnimationState,
+  type Transform,
+  type TransformInput,
+} from "./animations/animationTypes.js";
+import { getBounceImpact } from "./animations/getBounceImpact.js";
+import { getDamageImpact } from "./animations/getDamageImpact.js";
+import { getFlyingDeathImpact } from "./animations/getFlyingDeathImpact.js";
+import { getGroundDeathImpact } from "./animations/getGroundDeathImpact.js";
+import { getSwingImpact } from "./animations/getSwingImpact.js";
+import { getWalkImpact } from "./animations/getWalkImpact.js";
 
-  x: number;
-  y: number;
+type AnimationHandler = (now: number, state: AnimationState, input: TransformInput) => AnimationImpact;
 
-  width: number;
-  height: number;
+const DEFAULT_IDLE_ANIMATION = "bounce";
+const DEFAULT_JUMP_ANIMATION = "jump";
+const DEFAULT_ATTACK_ANIMATION = "smash";
+const DEFAULT_DEATH_ANIMATION = "squish";
 
-  alive: boolean;
-  hp: number;
+const ANIMATIONS: Record<string, AnimationHandler> = {
+  none: () => DEFAULT_IMPACT,
 
-  moving: boolean;
-  jumping: boolean;
-  smashing: boolean;
+  walk: (now, _state, input) => getWalkImpact(now, input),
 
-  scale: number;
+  bounce: (now, _state, input) => getBounceImpact(now, input),
 
-  velocityX?: number;
-};
+  swing: (now, _state, input) => getSwingImpact(now, input),
 
-type AnimationState = {
-  hp: number;
-  damagedAt: number;
-};
+  fly: (now, _state, input) => getWalkImpact(now, input),
 
-type Transform = {
-  x: number;
-  y: number;
+  jump: () => ({
+    ...DEFAULT_IMPACT,
+    rotation: -0.15,
+  }),
 
-  scaleX: number;
-  scaleY: number;
+  smash: () => ({
+    ...DEFAULT_IMPACT,
+    rotation: 0.35,
+  }),
 
-  rotation: number;
-};
+  squish: (now, state, input) => getGroundDeathImpact(now, state, input),
 
-type AnimationImpact = {
-  x: number;
-  y: number;
-  scaleX: number;
-  scaleY: number;
-};
-
-const DAMAGE_SHAKE_MS = 500;
-
-const DAMAGE_SHAKE_POWER_X = 7;
-const DAMAGE_SHAKE_POWER_Y = 5;
-const DAMAGE_SQUASH_POWER = 0.18;
-
-const WALK_BOB_POWER_Y = 4;
-const WALK_SQUASH_POWER = 0.09;
-const WALK_SPEED = 0.005;
-
-const DEFAULT_IMPACT: AnimationImpact = {
-  x: 0,
-  y: 0,
-  scaleX: 1,
-  scaleY: 1,
+  flyToScreen: (now, state, input) => getFlyingDeathImpact(now, state, input),
 };
 
 export class SpriteAnimation {
@@ -65,27 +54,45 @@ export class SpriteAnimation {
     const now = performance.now();
     const state = this.getState(input, now);
 
-    const damage = this.getDamageImpact(now, state.damagedAt, input.scale);
-    const walk = this.getWalkImpact(now, input);
+    const damage = getDamageImpact(now, state.damagedAt, input.scale);
+    const animation = this.getAnimationImpact(now, state, input);
 
     return {
-      x: input.x + input.width / 2 + damage.x + walk.x,
-      y: input.y + input.height / 2 + damage.y + walk.y,
+      x: input.x + input.width / 2 + damage.x + animation.x,
+      y: input.y + input.height / 2 + damage.y + animation.y,
 
-      scaleX: damage.scaleX * walk.scaleX,
-      scaleY: damage.scaleY * walk.scaleY,
+      scaleX: damage.scaleX * animation.scaleX,
+      scaleY: damage.scaleY * animation.scaleY,
 
-      rotation: this.getRotation(input),
+      rotation: damage.rotation + animation.rotation,
+
+      spawnEffects: mergeSpawnEffects(damage.spawnEffects, animation.spawnEffects),
     };
   }
 
   private getState(input: TransformInput, now: number): AnimationState {
+    const currentX = input.x + input.width / 2;
+    const currentY = input.y + input.height / 2;
+
     const existing = this.states.get(input.id);
 
     if (existing === undefined) {
+      const target = createDeathTarget(input);
+
       const created: AnimationState = {
         hp: input.hp,
+        alive: input.alive,
+
         damagedAt: -Infinity,
+        diedAt: input.alive ? -Infinity : now,
+
+        deathStartX: currentX,
+        deathStartY: currentY,
+
+        deathTargetX: target.x,
+        deathTargetY: target.y,
+
+        spawnedEffectKeys: new Set<string>(),
       };
 
       this.states.set(input.id, created);
@@ -97,59 +104,72 @@ export class SpriteAnimation {
       existing.damagedAt = now;
     }
 
+    if (existing.alive && !input.alive) {
+      const target = createDeathTarget(input);
+
+      existing.diedAt = now;
+
+      existing.deathStartX = currentX;
+      existing.deathStartY = currentY;
+
+      existing.deathTargetX = target.x;
+      existing.deathTargetY = target.y;
+
+      existing.spawnedEffectKeys.clear();
+    }
+
     existing.hp = input.hp;
+    existing.alive = input.alive;
 
     return existing;
   }
 
-  private getRotation(input: TransformInput): number {
-    if (!input.alive) {
-      return 0;
-    }
+  private getAnimationImpact(now: number, state: AnimationState, input: TransformInput): AnimationImpact {
+    const animationName = getAnimationName(input);
+    const handler = ANIMATIONS[animationName];
 
-    if (input.smashing) {
-      return 0.35;
-    }
-
-    if (input.jumping) {
-      return -0.15;
-    }
-
-    return 0;
-  }
-
-  private getDamageImpact(now: number, damagedAt: number, scale: number): AnimationImpact {
-    const elapsed = now - damagedAt;
-
-    if (elapsed < 0 || elapsed > DAMAGE_SHAKE_MS) {
+    if (handler === undefined) {
       return DEFAULT_IMPACT;
     }
 
-    const progress = 1 - elapsed / DAMAGE_SHAKE_MS;
-    const squash = Math.sin(elapsed * 0.12) * DAMAGE_SQUASH_POWER * progress;
+    return handler(now, state, input);
+  }
+}
 
-    return {
-      x: Math.sin(elapsed * 0.11) * DAMAGE_SHAKE_POWER_X * progress * scale,
-      y: Math.cos(elapsed * 0.17) * DAMAGE_SHAKE_POWER_Y * progress * scale,
-
-      scaleX: 1 + squash,
-      scaleY: 1 - squash,
-    };
+function getAnimationName(input: TransformInput): string {
+  if (!input.alive) {
+    return input.animations?.death ?? DEFAULT_DEATH_ANIMATION;
   }
 
-  private getWalkImpact(now: number, input: TransformInput): AnimationImpact {
-    if (!input.alive || !input.moving || input.jumping || input.smashing) {
-      return DEFAULT_IMPACT;
-    }
-
-    const wave = Math.sin(now * WALK_SPEED);
-    const bounce = Math.abs(wave);
-
-    return {
-      x: 0,
-      y: bounce * WALK_BOB_POWER_Y * input.scale,
-      scaleX: 1 - wave * WALK_SQUASH_POWER * 0.5,
-      scaleY: 1 + wave * WALK_SQUASH_POWER,
-    };
+  if (input.smashing) {
+    return input.animations?.attack ?? DEFAULT_ATTACK_ANIMATION;
   }
+
+  if (input.jumping) {
+    return input.animations?.jump ?? DEFAULT_JUMP_ANIMATION;
+  }
+
+  return input.animations?.idle ?? DEFAULT_IDLE_ANIMATION;
+}
+
+function createDeathTarget(input: TransformInput): { x: number; y: number } {
+  const marginX = Math.min(160, input.screenWidth * 0.18);
+  const marginY = Math.min(120, input.screenHeight * 0.18);
+
+  const minX = marginX;
+  const maxX = Math.max(minX, input.screenWidth - marginX);
+
+  const minY = marginY;
+  const maxY = Math.max(minY, input.screenHeight - marginY);
+
+  return {
+    x: lerp(minX, maxX, hashToUnit(`${input.id}:death-target-x`)),
+    y: lerp(minY, maxY, hashToUnit(`${input.id}:death-target-y`)),
+  };
+}
+
+function mergeSpawnEffects(...groups: Array<readonly AnimationEffectSpawn[] | undefined>): readonly AnimationEffectSpawn[] | undefined {
+  const effects = groups.flatMap((group) => group ?? []);
+
+  return effects.length > 0 ? effects : undefined;
 }

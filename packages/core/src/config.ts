@@ -1,4 +1,4 @@
-import type { EntityKind, HurtCircle, Size, SmashBox } from "@smashing-cats/protocol";
+import type { AnimationSet, EntityKind, HurtCircle, Size, SmashBox } from "@smashing-cats/protocol";
 
 import charactersData from "./config/characters.json" with { type: "json" };
 import civiliansData from "./config/civilians.json" with { type: "json" };
@@ -35,11 +35,12 @@ export type CharacterConfig = {
   smashSpeed: number;
   bounceSpeed: number;
   smashMinJumpProgress: number;
+  animations?: AnimationSet;
 };
 
 type CharacterCommonConfig = Pick<
   CharacterConfig,
-  "size" | "hurt" | "smash" | "spawnInvulnerabilitySeconds" | "smashSpeed" | "bounceSpeed" | "smashMinJumpProgress"
+  "size" | "hurt" | "smash" | "spawnInvulnerabilitySeconds" | "smashSpeed" | "bounceSpeed" | "smashMinJumpProgress" | "animations"
 >;
 
 type CharacterSpecificConfig = Pick<CharacterConfig, "kind" | "name" | "hp" | "moveSpeed" | "jumpForce">;
@@ -49,32 +50,28 @@ type CharactersConfigFile = {
   characters: CharacterSpecificConfig[];
 };
 
-export type EnemyConfig = {
+type EntityBaseConfig = {
   kind: EntityKind;
   size: Size;
   hurt: HurtCircle;
   damage: number;
+  laneY?: number;
+  animations?: AnimationSet;
+};
+
+export type EnemyConfig = EntityBaseConfig & {
   score: number;
   minMoveSpeed: number;
   maxMoveSpeed: number;
 };
 
-export type CivilianConfig = {
-  kind: EntityKind;
-  size: Size;
-  hurt: HurtCircle;
-  damage: number;
+export type CivilianConfig = EntityBaseConfig & {
   score: number;
   minMoveSpeed: number;
   maxMoveSpeed: number;
 };
 
-export type ObstacleConfig = {
-  kind: EntityKind;
-  size: Size;
-  hurt: HurtCircle;
-  damage: number;
-};
+export type ObstacleConfig = EntityBaseConfig;
 
 export type SpawnableConfig = ObstacleConfig | EnemyConfig | CivilianConfig;
 

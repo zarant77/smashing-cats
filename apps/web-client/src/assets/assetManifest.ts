@@ -40,6 +40,8 @@ export const IMAGE_ASSETS = [
   "/enemies/orc-dead.png",
   "/enemies/boar.png",
   "/enemies/boar-dead.png",
+  "/enemies/bird.png",
+  "/enemies/bird-dead.png",
 
   // Civilians
   "/civilians/baba.png",
@@ -51,5 +53,6 @@ export const IMAGE_ASSETS = [
   "/obstacles/cactus.png",
 
   // Effects
+  "/effects/screen-crack.png",
   "/effects/smash.png",
 ] as const;

@@ -49,6 +49,8 @@ export function createPlayer({ playerId, characterConfig, index, tick, groundY, 
     hp: characterConfig.hp,
     maxHp: characterConfig.hp,
 
+    animations: characterConfig.animations,
+
     invulnerableUntilTick: tick + Math.ceil(characterConfig.spawnInvulnerabilitySeconds * tickRate),
 
     paused: false,

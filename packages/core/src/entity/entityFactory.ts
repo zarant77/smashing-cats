@@ -12,6 +12,7 @@ type CreateEntityOptions = {
 
 export function createEntity({ config, id, x, moveSpeed }: CreateEntityOptions): Entity {
   const [, height] = config.size;
+  const laneY = config.laneY ?? 0;
 
   return {
     id,
@@ -19,7 +20,7 @@ export function createEntity({ config, id, x, moveSpeed }: CreateEntityOptions):
     kind: config.kind,
 
     x,
-    y: GAME_CONFIG.groundY - height,
+    y: GAME_CONFIG.groundY - height + laneY,
 
     vx: -moveSpeed,
     vy: 0,
@@ -31,6 +32,7 @@ export function createEntity({ config, id, x, moveSpeed }: CreateEntityOptions):
     score: getScore(config),
 
     alive: true,
+    animations: config.animations,
   };
 }
 
