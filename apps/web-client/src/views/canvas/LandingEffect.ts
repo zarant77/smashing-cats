@@ -3,8 +3,10 @@ import type { RenderViewport } from "./viewport.js";
 
 const LANDING_EFFECT_MS = 200;
 const LANDING_EFFECT_PATH = "/effects/smash.png";
+
 const OFFSET_X = 20;
 const OFFSET_Y = -20;
+
 const WIDTH = 64 * 3;
 const HEIGHT = 23 * 3;
 
@@ -47,13 +49,13 @@ export class LandingEffect {
   public draw(ctx: CanvasRenderingContext2D, viewport: RenderViewport, id: string): void {
     const image = assets.get(LANDING_EFFECT_PATH);
 
-    if (!image.complete || image.naturalWidth <= 0) {
+    if (!image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
       return;
     }
 
     const state = this.states.get(id);
 
-    if (!state) {
+    if (state === undefined) {
       return;
     }
 
@@ -69,12 +71,16 @@ export class LandingEffect {
 
     const width = viewport.worldToScreenSize(WIDTH * effectScale);
     const height = viewport.worldToScreenSize(HEIGHT * effectScale);
-    const x = viewport.worldToScreenX(state.x);
+
+    const x = viewport.worldToScreenSize(state.x);
     const y = viewport.worldToScreenY(state.y);
 
     ctx.save();
+
     ctx.globalAlpha = alpha;
+
     ctx.drawImage(image, x - width / 2, y - height / 2, width, height);
+
     ctx.restore();
   }
 
@@ -85,7 +91,7 @@ export class LandingEffect {
   private getState(input: LandingEffectInput): LandingEffectState {
     const existing = this.states.get(input.id);
 
-    if (existing) {
+    if (existing !== undefined) {
       return existing;
     }
 
