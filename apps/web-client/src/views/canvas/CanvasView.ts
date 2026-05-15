@@ -71,7 +71,7 @@ export class CanvasView implements GameView {
       return;
     }
 
-    this.screenShake.update(snapshot);
+    this.screenShake.update(snapshot, playerId);
     this.floatingTexts.update(snapshot);
 
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);

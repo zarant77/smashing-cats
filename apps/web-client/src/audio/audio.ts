@@ -101,7 +101,7 @@ function setupAudioUnlock(): void {
 
     audioUnlocked = true;
 
-    void audio.playMusic("/bgm/bgm1.mp3", 0.4);
+    void audio.playMusic(["/bgm/bgm1.mp3", "/bgm/bgm2.mp3"], 0.4);
 
     window.removeEventListener("pointerdown", unlock);
     window.removeEventListener("keydown", unlock);

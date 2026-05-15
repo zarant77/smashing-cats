@@ -27,6 +27,10 @@ export class EntityRenderer {
           width,
           height,
           alive: entity.alive,
+          hp: entity.alive ? 1 : 0,
+          moving: false,
+          jumping: false,
+          smashing: false,
         })
       : {
           x: screenX + width / 2,

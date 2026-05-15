@@ -34,6 +34,7 @@ export class PlayerRenderer {
       height,
       alive: player.alive,
       hp: player.hp,
+      velocityX: player.vx,
       moving: Math.abs(player.vx) > 1,
       jumping: !player.grounded,
       smashing: player.smashing,

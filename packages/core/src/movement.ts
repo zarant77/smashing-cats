@@ -65,12 +65,16 @@ export function simulatePlayerMovement(
     startedSmash = true;
   }
 
-  player.x += player.vx * dt;
-  player.y += player.vy * dt;
-
   if (!player.grounded) {
     player.vy += gameConfig.gravity * dt;
   }
+
+  if (player.smashing && !player.grounded) {
+    player.vy = Math.max(player.vy, characterConfig.smashSpeed);
+  }
+
+  player.x += player.vx * dt;
+  player.y += player.vy * dt;
 
   player.x = clamp(player.x, 20, gameConfig.width - 20);
 

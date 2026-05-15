@@ -344,15 +344,18 @@ async function bootstrap(): Promise<void> {
       localPlayer?.paused === true
         ? interpolatedSnapshot
         : predictor.apply(interpolatedSnapshot, latestSnapshot, playerId, currentInputSeq, input, characters);
-    if (jumpPressed && hasSelectedCharacter && localPlayer !== undefined && !isPaused()) {
-      if (localPlayer.smashing && !wasSmashing) {
+
+    const predictedPlayer = snapshot?.players.find((player) => player.playerId === playerId);
+
+    if (jumpPressed && hasSelectedCharacter && predictedPlayer !== undefined && !isPaused()) {
+      if (predictedPlayer.smashing && !wasSmashing) {
         audioEvents.playerSmash();
       } else {
         audioEvents.playerJump();
       }
     }
 
-    wasSmashing = localPlayer?.smashing ?? false;
+    wasSmashing = predictedPlayer?.smashing ?? false;
 
     audioEventPlayer.play(snapshot, playerId);
 
