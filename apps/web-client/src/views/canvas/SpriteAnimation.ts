@@ -14,6 +14,8 @@ type TransformInput = {
   jumping: boolean;
   smashing: boolean;
 
+  scale: number;
+
   velocityX?: number;
 };
 
@@ -59,7 +61,7 @@ export class SpriteAnimation {
   public getTransform(input: TransformInput): Transform {
     const now = performance.now();
     const state = this.getState(input, now);
-    const damage = this.getDamageImpact(now, state.damagedAt);
+    const damage = this.getDamageImpact(now, state.damagedAt, input.scale);
 
     return {
       x: input.x + input.width / 2 + damage.x,
@@ -111,7 +113,7 @@ export class SpriteAnimation {
     return 0;
   }
 
-  private getDamageImpact(now: number, damagedAt: number): DamageImpact {
+  private getDamageImpact(now: number, damagedAt: number, scale: number): DamageImpact {
     const elapsed = now - damagedAt;
 
     if (elapsed < 0 || elapsed > DAMAGE_SHAKE_MS) {
@@ -122,8 +124,8 @@ export class SpriteAnimation {
     const squash = Math.sin(elapsed * 0.12) * DAMAGE_SQUASH_POWER * progress;
 
     return {
-      x: Math.sin(elapsed * 0.11) * DAMAGE_SHAKE_POWER_X * progress,
-      y: Math.cos(elapsed * 0.17) * DAMAGE_SHAKE_POWER_Y * progress,
+      x: Math.sin(elapsed * 0.11) * DAMAGE_SHAKE_POWER_X * progress * scale,
+      y: Math.cos(elapsed * 0.17) * DAMAGE_SHAKE_POWER_Y * progress * scale,
 
       scaleX: 1 + squash,
       scaleY: 1 - squash,

@@ -1,33 +1,36 @@
 import type { GameSnapshot } from "@smashing-cats/protocol";
 import { assets } from "../../assets/assets.js";
+import type { RenderViewport } from "./viewport.js";
 
 const TILE_PATH = "/environments/ground.png";
-const TILE_WIDTH = 800;
 
+const DESIGN_TILE_WIDTH = 800;
 const GROUND_OFFSET_Y = -55;
-const DRAW_OFFSET_Y = 0;
 
 export class GroundRenderer {
-  public draw(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, snapshot: GameSnapshot): void {
+  public draw(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, snapshot: GameSnapshot, viewport: RenderViewport): void {
     const image = assets.get(TILE_PATH);
 
-    const groundY = snapshot.world.groundY + GROUND_OFFSET_Y + DRAW_OFFSET_Y;
+    const tileWidth = viewport.worldToScreenSize(DESIGN_TILE_WIDTH);
+    const groundY = viewport.worldToScreenY(snapshot.world.groundY + GROUND_OFFSET_Y);
 
     if (!this.isReady(image)) {
       this.drawFallback(ctx, canvas, groundY);
       return;
     }
 
-    const scale = TILE_WIDTH / image.naturalWidth;
-    const tileHeight = image.naturalHeight * scale;
+    const imageScale = tileWidth / image.naturalWidth;
+    const tileHeight = image.naturalHeight * imageScale;
 
-    const firstTileIndex = Math.floor(snapshot.world.scrollX / TILE_WIDTH);
-    const offsetX = -(snapshot.world.scrollX - firstTileIndex * TILE_WIDTH);
+    const scrollX = snapshot.world.scrollX * viewport.scale;
 
-    for (let tileIndex = firstTileIndex; offsetX + (tileIndex - firstTileIndex) * TILE_WIDTH < canvas.width + TILE_WIDTH; tileIndex++) {
-      const x = offsetX + (tileIndex - firstTileIndex) * TILE_WIDTH;
+    const firstTileIndex = Math.floor(scrollX / tileWidth);
+    const offsetX = -(scrollX - firstTileIndex * tileWidth);
 
-      this.drawTile(ctx, image, x, groundY, tileHeight, tileIndex);
+    for (let tileIndex = firstTileIndex; offsetX + (tileIndex - firstTileIndex) * tileWidth < canvas.width + tileWidth; tileIndex++) {
+      const x = offsetX + (tileIndex - firstTileIndex) * tileWidth;
+
+      this.drawTile(ctx, image, x, groundY, tileWidth, tileHeight, tileIndex);
     }
   }
 
@@ -36,12 +39,13 @@ export class GroundRenderer {
     image: HTMLImageElement,
     x: number,
     y: number,
+    tileWidth: number,
     tileHeight: number,
     tileIndex: number,
   ): void {
     const drawX = Math.round(x);
     const drawY = Math.round(y);
-    const drawWidth = TILE_WIDTH + 1;
+    const drawWidth = Math.ceil(tileWidth) + 1;
     const drawHeight = Math.ceil(tileHeight);
     const shouldMirror = Math.abs(tileIndex) % 2 === 1;
 

@@ -1,4 +1,5 @@
 import type { GameSnapshot, PlayerId, PlayerSnapshot } from "@smashing-cats/protocol";
+import type { RenderViewport } from "./viewport.js";
 
 type FloatingText = {
   id: string;
@@ -36,7 +37,7 @@ export class FloatingTextRenderer {
 
     const now = performance.now();
 
-    for (let index = this.texts.length - 1; index >= 0; index -= 1) {
+    for (let index = this.texts.length - 1; index >= 0; index--) {
       const text = this.texts[index];
 
       if (text === undefined) {
@@ -49,26 +50,29 @@ export class FloatingTextRenderer {
     }
   }
 
-  public draw(ctx: CanvasRenderingContext2D): void {
+  public draw(ctx: CanvasRenderingContext2D, viewport: RenderViewport): void {
     const now = performance.now();
 
     ctx.save();
+
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.font = "700 24px sans-serif";
-    ctx.lineWidth = 4;
+    ctx.font = `700 ${Math.round(viewport.worldToScreenSize(24))}px sans-serif`;
+    ctx.lineWidth = Math.max(2, viewport.worldToScreenSize(4));
 
     for (const text of this.texts) {
       const progress = Math.min(1, (now - text.createdAt) / LIFE_MS);
-      const y = text.y - progress * FLOAT_DISTANCE;
+
+      const x = viewport.worldToScreenSize(text.x);
+      const y = viewport.worldToScreenY(text.y - progress * FLOAT_DISTANCE);
       const alpha = 1 - progress;
 
       ctx.globalAlpha = alpha;
       ctx.strokeStyle = "rgba(0, 0, 0, 0.65)";
       ctx.fillStyle = text.color;
 
-      ctx.strokeText(text.text, text.x, y);
-      ctx.fillText(text.text, text.x, y);
+      ctx.strokeText(text.text, x, y);
+      ctx.fillText(text.text, x, y);
     }
 
     ctx.restore();

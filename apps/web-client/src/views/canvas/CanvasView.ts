@@ -8,7 +8,7 @@ import { GroundRenderer } from "./GroundRenderer.js";
 import { ParticlesRenderer } from "./ParticlesRenderer.js";
 import { PlayerRenderer } from "./PlayerRenderer.js";
 import { ScreenShake } from "./ScreenShake.js";
-import { resizeCanvasToRoot } from "./viewport.js";
+import { createRenderViewport, resizeCanvasToRoot } from "./viewport.js";
 
 export class CanvasView implements GameView {
   private readonly context: CanvasRenderingContext2D;
@@ -56,47 +56,45 @@ export class CanvasView implements GameView {
     resizeCanvasToRoot(this.canvas, this.root);
 
     const now = performance.now();
-
     const rawDelta = (now - this.lastFrameTime) / 1000;
     const deltaTime = Math.min(rawDelta, 0.033);
 
     this.lastFrameTime = now;
+
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     if (snapshot === undefined) {
       ctx.fillStyle = "#87ceeb";
       ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
       this.drawCenteredText(this.t("connecting"));
-
       return;
     }
+
+    const viewport = createRenderViewport(this.canvas, snapshot);
 
     this.screenShake.update(snapshot, playerId);
     this.floatingTexts.update(snapshot);
 
-    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.background.draw(ctx, this.canvas, snapshot, viewport);
 
-    this.background.draw(ctx, this.canvas, snapshot);
-
-    const shake = this.screenShake.getOffset();
+    const shake = this.screenShake.getOffset(viewport.scale);
 
     ctx.save();
-
     ctx.translate(shake.x, shake.y);
 
-    this.ground.draw(ctx, this.canvas, snapshot);
-
-    this.particles.draw(ctx, this.canvas, deltaTime);
+    this.ground.draw(ctx, this.canvas, snapshot, viewport);
+    this.particles.draw(ctx, this.canvas, deltaTime, viewport);
 
     for (const entity of snapshot.entities) {
-      this.entities.draw(ctx, this.canvas.width, snapshot, entity);
+      this.entities.draw(ctx, this.canvas.width, viewport, entity);
     }
 
     for (const player of snapshot.players) {
-      this.players.draw(ctx, snapshot, player, player.playerId === playerId);
+      this.players.draw(ctx, viewport, snapshot, player, player.playerId === playerId);
     }
 
-    this.floatingTexts.draw(ctx);
+    this.floatingTexts.draw(ctx, viewport);
 
     ctx.restore();
   }

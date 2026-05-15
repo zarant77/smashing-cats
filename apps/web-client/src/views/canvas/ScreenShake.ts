@@ -39,22 +39,22 @@ export class ScreenShake {
     }
   }
 
-  private shake(): void {
-    this.shakeUntil = performance.now() + SHAKE_DURATION_MS;
-  }
-
-  public getOffset(): { x: number; y: number } {
+  public getOffset(scale: number): { x: number; y: number } {
     const remaining = this.shakeUntil - performance.now();
 
     if (remaining <= 0) {
       return { x: 0, y: 0 };
     }
 
-    const strength = SHAKE_STRENGTH * (remaining / SHAKE_DURATION_MS);
+    const strength = SHAKE_STRENGTH * scale * (remaining / SHAKE_DURATION_MS);
 
     return {
       x: (Math.random() * 2 - 1) * strength,
       y: (Math.random() * 2 - 1) * strength,
     };
+  }
+
+  private shake(): void {
+    this.shakeUntil = performance.now() + SHAKE_DURATION_MS;
   }
 }

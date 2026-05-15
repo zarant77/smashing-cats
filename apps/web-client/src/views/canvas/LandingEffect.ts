@@ -1,4 +1,5 @@
 import { assets } from "../../assets/assets.js";
+import type { RenderViewport } from "./viewport.js";
 
 const LANDING_EFFECT_MS = 200;
 const LANDING_EFFECT_PATH = "/effects/smash.png";
@@ -43,7 +44,7 @@ export class LandingEffect {
     state.wasSmashing = input.smashing || (!input.grounded && state.wasSmashing);
   }
 
-  public draw(ctx: CanvasRenderingContext2D, id: string): void {
+  public draw(ctx: CanvasRenderingContext2D, viewport: RenderViewport, id: string): void {
     const image = assets.get(LANDING_EFFECT_PATH);
 
     if (!image.complete || image.naturalWidth <= 0) {
@@ -64,14 +65,16 @@ export class LandingEffect {
 
     const progress = elapsed / LANDING_EFFECT_MS;
     const alpha = 1 - progress;
-    const scale = 1 + progress * 0.35;
+    const effectScale = 1 + progress * 0.35;
 
-    const width = WIDTH * scale;
-    const height = HEIGHT * scale;
+    const width = viewport.worldToScreenSize(WIDTH * effectScale);
+    const height = viewport.worldToScreenSize(HEIGHT * effectScale);
+    const x = viewport.worldToScreenX(state.x);
+    const y = viewport.worldToScreenY(state.y);
 
     ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.drawImage(image, state.x - width / 2, state.y - height / 2, width, height);
+    ctx.drawImage(image, x - width / 2, y - height / 2, width, height);
     ctx.restore();
   }
 

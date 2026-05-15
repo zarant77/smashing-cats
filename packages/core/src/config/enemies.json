@@ -6,7 +6,8 @@
     "damage": 1,
     "score": 100,
     "minMoveSpeed": 100,
-    "maxMoveSpeed": 150
+    "maxMoveSpeed": 150,
+    "lane": 0
   },
   {
     "kind": "boar",
@@ -15,7 +16,8 @@
     "damage": 1,
     "score": 75,
     "minMoveSpeed": 200,
-    "maxMoveSpeed": 300
+    "maxMoveSpeed": 300,
+    "lane": 0
   },
   {
     "kind": "rat",
@@ -24,6 +26,7 @@
     "damage": 1,
     "score": 50,
     "minMoveSpeed": 300,
-    "maxMoveSpeed": 400
+    "maxMoveSpeed": 400,
+    "lane": 0
   }
 ]

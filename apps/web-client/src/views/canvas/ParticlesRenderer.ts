@@ -1,4 +1,5 @@
 import { assets } from "../../assets/assets.js";
+import type { RenderViewport } from "./viewport.js";
 
 type Particle = {
   x: number;
@@ -31,6 +32,9 @@ const PARTICLE_SPRITES = [
   "/environments/leaf6.png",
 ] as const;
 
+const WORLD_WIDTH = 1600;
+const WORLD_HEIGHT = 900;
+
 export class ParticlesRenderer {
   private readonly particles: Particle[] = [];
 
@@ -38,39 +42,42 @@ export class ParticlesRenderer {
 
   public constructor(count: number) {
     for (let i = 0; i < count; i++) {
-      this.particles.push(this.createParticle(Math.random() * 1600, Math.random() * 900));
+      this.particles.push(this.createParticle(Math.random() * WORLD_WIDTH, Math.random() * WORLD_HEIGHT));
     }
   }
 
-  public draw(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, deltaTime: number): void {
+  public draw(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, deltaTime: number, viewport: RenderViewport): void {
     this.time += deltaTime;
+
+    const screenWorldRight = canvas.width / viewport.scale;
 
     for (const particle of this.particles) {
       particle.x += particle.speedX * deltaTime;
-
       particle.baseY += particle.speedY * deltaTime;
-
       particle.y = particle.baseY + Math.sin(this.time * particle.swaySpeed + particle.swayOffset) * particle.swayAmount;
-
       particle.rotation += particle.rotationSpeed * deltaTime;
 
-      if (particle.x > canvas.width + particle.size || particle.y > canvas.height + particle.size || particle.y < -particle.size) {
-        Object.assign(particle, this.createParticle(-particle.size, Math.random() * canvas.height * 0.75));
+      if (particle.x > screenWorldRight + particle.size || particle.y > WORLD_HEIGHT + particle.size || particle.y < -particle.size) {
+        Object.assign(particle, this.createParticle(-particle.size, Math.random() * WORLD_HEIGHT * 0.75));
       }
 
-      this.drawParticle(ctx, particle);
+      this.drawParticle(ctx, particle, viewport);
     }
   }
 
-  private drawParticle(ctx: CanvasRenderingContext2D, particle: Particle): void {
+  private drawParticle(ctx: CanvasRenderingContext2D, particle: Particle, viewport: RenderViewport): void {
+    const x = viewport.worldToScreenSize(particle.x);
+    const y = viewport.worldToScreenY(particle.y);
+    const size = viewport.worldToScreenSize(particle.size);
+
     ctx.save();
 
     ctx.globalAlpha = particle.alpha;
 
-    ctx.translate(particle.x, particle.y);
+    ctx.translate(x, y);
     ctx.rotate(particle.rotation);
 
-    ctx.drawImage(particle.image, -particle.size / 2, -particle.size / 2, particle.size, particle.size);
+    ctx.drawImage(particle.image, -size / 2, -size / 2, size, size);
 
     ctx.restore();
   }

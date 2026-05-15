@@ -1,5 +1,6 @@
 import type { GameSnapshot } from "@smashing-cats/protocol";
 import { assets } from "../../assets/assets.js";
+import type { RenderViewport } from "./viewport.js";
 
 type ParallaxLayer = {
   path: string;
@@ -12,27 +13,32 @@ type ParallaxLayer = {
 
 const LAYERS: ParallaxLayer[] = [
   { path: "/environments/sky.png", speed: 0, y: 0, height: 1 },
-  { path: "/environments/mountains.png", speed: 0.05, y: 160, height: 0.35, mirror: true },
-  { path: "/environments/clouds.png", speed: 0.1, y: 20, height: 0.4 },
-  { path: "/environments/fog.png", speed: 0.3, y: 160, height: 0.3, mirror: true },
-  { path: "/environments/forest.png", speed: 0.6, y: 175, height: 0.35, mirror: false },
-  { path: "/environments/forest_front.png", speed: 0.85, y: 360, height: 0.1 },
+  { path: "/environments/mountains.png", speed: 0.05, y: 220, height: 0.4, mirror: true },
+  { path: "/environments/clouds.png", speed: 0.1, y: 0, height: 0.6 },
+  { path: "/environments/fog.png", speed: 0.3, y: 200, height: 0.4, mirror: true },
+  { path: "/environments/forest.png", speed: 0.6, y: 210, height: 0.4 },
+  { path: "/environments/forest_front.png", speed: 0.85, y: 350, height: 0.15 },
 ];
 
 export class BackgroundRenderer {
-  public draw(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, snapshot: GameSnapshot): void {
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
+  public draw(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, snapshot: GameSnapshot, viewport: RenderViewport): void {
+    ctx.imageSmoothingEnabled = false;
 
     ctx.fillStyle = "#87ceeb";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     for (const layer of LAYERS) {
-      this.drawLayer(ctx, canvas, snapshot, layer);
+      this.drawLayer(ctx, canvas, snapshot, viewport, layer);
     }
   }
 
-  private drawLayer(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, snapshot: GameSnapshot, layer: ParallaxLayer): void {
+  private drawLayer(
+    ctx: CanvasRenderingContext2D,
+    canvas: HTMLCanvasElement,
+    snapshot: GameSnapshot,
+    viewport: RenderViewport,
+    layer: ParallaxLayer,
+  ): void {
     const image = assets.get(layer.path);
 
     if (!image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
@@ -40,14 +46,14 @@ export class BackgroundRenderer {
     }
 
     const height = canvas.height * layer.height;
-    const scale = height / image.naturalHeight;
-    const width = image.naturalWidth * scale;
+    const imageScale = height / image.naturalHeight;
+    const width = image.naturalWidth * imageScale;
 
     const drawWidth = Math.ceil(width) + 1;
     const drawHeight = Math.ceil(height);
-    const drawY = Math.round(layer.y);
+    const drawY = Math.round(viewport.worldToScreenSize(layer.y));
 
-    const scroll = snapshot.world.scrollX * layer.speed;
+    const scroll = snapshot.world.scrollX * layer.speed * viewport.scale;
 
     const firstTileIndex = Math.floor(scroll / width);
     const offsetX = -(scroll - firstTileIndex * width);

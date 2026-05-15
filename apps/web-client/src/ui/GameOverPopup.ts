@@ -5,12 +5,17 @@ type GameOverPopupOptions = {
   onRestart: () => void;
 };
 
+const SHOW_DELAY_MS = 2000;
+
 export class GameOverPopup {
   private readonly element: HTMLDivElement;
   private readonly t: Translator;
   private readonly onRestart: () => void;
 
   private visible = false;
+
+  private deadAt: number | undefined;
+  private shownForPlayerId: PlayerId | undefined;
 
   public constructor(root: HTMLElement, t: Translator, options: GameOverPopupOptions) {
     this.t = t;
@@ -27,7 +32,26 @@ export class GameOverPopup {
     const player = snapshot?.players.find((item) => item.playerId === localPlayerId);
 
     if (player === undefined || player.alive) {
+      this.deadAt = undefined;
+      this.shownForPlayerId = undefined;
+
       this.hide();
+
+      return;
+    }
+
+    if (this.shownForPlayerId !== player.playerId) {
+      this.shownForPlayerId = player.playerId;
+      this.deadAt = performance.now();
+    }
+
+    if (this.deadAt === undefined) {
+      return;
+    }
+
+    const elapsed = performance.now() - this.deadAt;
+
+    if (elapsed < SHOW_DELAY_MS) {
       return;
     }
 
