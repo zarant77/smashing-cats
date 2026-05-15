@@ -7,3 +7,7 @@ export type GameView = {
   render(snapshot: GameSnapshot | undefined, playerId: PlayerId | undefined): void;
   setLocale?(locale: string, t: Translator): void;
 };
+
+export type ViewOptions = {
+  debug: boolean;
+};

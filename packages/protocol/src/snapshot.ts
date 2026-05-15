@@ -1,5 +1,9 @@
 import type { EntityId, EntityKind, EntityType, PlayerId } from "./entity.js";
 
+export type Size = readonly [width: number, height: number];
+
+export type HurtCircle = readonly [radius: number, offsetX: number, offsetY: number];
+
 export type EntitySnapshot = {
   id: EntityId;
   type: EntityType;
@@ -8,8 +12,8 @@ export type EntitySnapshot = {
   y: number;
   vx: number;
   vy: number;
-  width: number;
-  height: number;
+  size: Size;
+  hurt: HurtCircle;
   damage: number;
   score: number;
   alive: boolean;

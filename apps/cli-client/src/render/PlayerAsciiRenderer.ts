@@ -15,6 +15,8 @@ export class PlayerAsciiRenderer {
       return;
     }
 
+    const [, height] = player.size;
+
     const blinkVisible = Math.floor(Date.now() / 120) % 2 === 0;
 
     if (player.invulnerable && !blinkVisible) {
@@ -22,7 +24,7 @@ export class PlayerAsciiRenderer {
     }
 
     const x = camera.screenXToColumn(player.x);
-    const bottomY = camera.worldToScreenY(player.y + player.height, groundY);
+    const bottomY = camera.worldToScreenY(player.y + height, groundY);
 
     const sprite = player.playerId === localPlayerId ? LOCAL_PLAYER_SPRITE : OTHER_PLAYER_SPRITE;
 

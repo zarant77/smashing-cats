@@ -1,6 +1,6 @@
 import type { GameSnapshot, PlayerSnapshot } from "@smashing-cats/protocol";
 import { assets } from "../../assets/assets.js";
-import { DRAW_SPRITE_BORDERS, drawSpriteBorder } from "./debug.js";
+import { drawDebugShape } from "./DebugShapeRenderer.js";
 import { LandingEffect } from "./LandingEffect.js";
 import { SpriteAnimation } from "./SpriteAnimation.js";
 
@@ -8,7 +8,11 @@ export class PlayerRenderer {
   private readonly animation = new SpriteAnimation();
   private readonly landingEffect = new LandingEffect();
 
+  public constructor(private readonly debug: boolean) {}
+
   public draw(ctx: CanvasRenderingContext2D, snapshot: GameSnapshot, player: PlayerSnapshot, isLocal: boolean): void {
+    const [width, height] = player.size;
+
     const image = assets.get(`/players/${player.kind}.png`);
     const shouldBlinkOff = player.invulnerable && Math.floor(snapshot.tick / 2) % 2 === 0;
 
@@ -16,8 +20,8 @@ export class PlayerRenderer {
       id: player.id,
       x: player.x,
       y: player.y,
-      width: player.width,
-      height: player.height,
+      width,
+      height,
       grounded: player.grounded,
       smashing: player.smashing,
     });
@@ -26,8 +30,8 @@ export class PlayerRenderer {
       id: player.id,
       x: player.x,
       y: player.y,
-      width: player.width,
-      height: player.height,
+      width,
+      height,
       alive: player.alive,
       hp: player.hp,
       moving: Math.abs(player.vx) > 1,
@@ -44,19 +48,18 @@ export class PlayerRenderer {
     ctx.scale(-transform.scaleX, transform.scaleY);
 
     if (image.complete && image.naturalWidth > 0) {
-      ctx.drawImage(image, -player.width / 2, -player.height / 2, player.width, player.height);
+      ctx.drawImage(image, -width / 2, -height / 2, width, height);
     } else {
       ctx.fillStyle = player.alive ? (isLocal ? "#ffcc33" : "#f58ad4") : "#555555";
-
-      ctx.fillRect(-player.width / 2, -player.height / 2, player.width, player.height);
+      ctx.fillRect(-width / 2, -height / 2, width, height);
     }
 
     ctx.restore();
 
     this.landingEffect.draw(ctx, player.id);
 
-    if (DRAW_SPRITE_BORDERS) {
-      drawSpriteBorder(ctx, player.x, player.y, player.width, player.height);
+    if (this.debug) {
+      drawDebugShape(ctx, player.x, player.y, player.size, player.hurt);
     }
   }
 }

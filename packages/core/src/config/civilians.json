@@ -1,8 +1,17 @@
 [
   {
-    "kind": "granny",
-    "width": 92,
-    "height": 80,
+    "kind": "baba",
+    "size": [92, 80],
+    "hurt": [36, 0, 0],
+    "damage": 0,
+    "score": 100,
+    "minMoveSpeed": 50,
+    "maxMoveSpeed": 70
+  },
+  {
+    "kind": "dido",
+    "size": [92, 80],
+    "hurt": [36, 0, 0],
     "damage": 0,
     "score": 100,
     "minMoveSpeed": 50,

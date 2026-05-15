@@ -1,15 +1,18 @@
 import type { EntitySnapshot, GameSnapshot } from "@smashing-cats/protocol";
 import { assets } from "../../assets/assets.js";
-import { DRAW_SPRITE_BORDERS, drawSpriteBorder } from "./debug.js";
+import { drawDebugShape } from "./DebugShapeRenderer.js";
 import { SpriteAnimation } from "./SpriteAnimation.js";
 
 export class EntityRenderer {
   private readonly animation = new SpriteAnimation();
 
+  public constructor(private readonly debug: boolean) {}
+
   public draw(ctx: CanvasRenderingContext2D, canvasWidth: number, snapshot: GameSnapshot, entity: EntitySnapshot): void {
+    const [width, height] = entity.size;
     const screenX = entity.x - snapshot.world.scrollX;
 
-    if (screenX + entity.width < 0 || screenX > canvasWidth) {
+    if (screenX + width < 0 || screenX > canvasWidth) {
       return;
     }
 
@@ -21,13 +24,13 @@ export class EntityRenderer {
           id: entity.id,
           x: screenX,
           y: entity.y,
-          width: entity.width,
-          height: entity.height,
+          width,
+          height,
           alive: entity.alive,
         })
       : {
-          x: screenX + entity.width / 2,
-          y: entity.y + entity.height / 2,
+          x: screenX + width / 2,
+          y: entity.y + height / 2,
           scaleX: 1,
           scaleY: 1,
           rotation: 0,
@@ -40,16 +43,16 @@ export class EntityRenderer {
     ctx.scale(transform.scaleX, transform.scaleY);
 
     if (image.complete && image.naturalWidth > 0) {
-      ctx.drawImage(image, -entity.width / 2, -entity.height / 2, entity.width, entity.height);
+      ctx.drawImage(image, -width / 2, -height / 2, width, height);
     } else {
       ctx.fillStyle = getEntityFallbackColor(entity);
-      ctx.fillRect(-entity.width / 2, -entity.height / 2, entity.width, entity.height);
+      ctx.fillRect(-width / 2, -height / 2, width, height);
     }
 
     ctx.restore();
 
-    if (DRAW_SPRITE_BORDERS) {
-      drawSpriteBorder(ctx, screenX, entity.y, entity.width, entity.height);
+    if (this.debug) {
+      drawDebugShape(ctx, screenX, entity.y, entity.size, entity.hurt);
     }
   }
 }

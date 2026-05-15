@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
 import type { Translator } from "@smashing-cats/i18n";
-import type { GameView } from "../types.js";
+import type { GameView, ViewOptions } from "../types.js";
 
 const BASE_WIDTH = 960;
 const BASE_HEIGHT = 540;
@@ -10,7 +10,10 @@ export class PhaserView implements GameView {
   private readonly game: Phaser.Game;
   private readonly scene: SmashingCatsScene;
 
-  public constructor(root: HTMLElement) {
+  public constructor(
+    private readonly root: HTMLElement,
+    private readonly options: ViewOptions,
+  ) {
     root.replaceChildren();
 
     this.scene = new SmashingCatsScene();
@@ -90,6 +93,8 @@ class SmashingCatsScene extends Phaser.Scene {
       return;
     }
 
+    this.hideConnectionText();
+
     this.drawGround(graphics, width, height);
     this.drawEntities(graphics, width);
     this.drawPlayers(graphics);
@@ -102,7 +107,7 @@ class SmashingCatsScene extends Phaser.Scene {
     graphics.fillRect(0, groundY, width, height - groundY);
   }
 
-  private drawEntities(graphics: Phaser.GameObjects.Graphics, width: number): void {
+  private drawEntities(graphics: Phaser.GameObjects.Graphics, canvasWidth: number): void {
     const snapshot = this.snapshot;
 
     if (snapshot === undefined) {
@@ -110,14 +115,15 @@ class SmashingCatsScene extends Phaser.Scene {
     }
 
     for (const entity of snapshot.entities) {
+      const [width, height] = entity.size;
       const x = entity.x - snapshot.world.scrollX;
 
-      if (x + entity.width < 0 || x > width) {
+      if (x + width < 0 || x > canvasWidth) {
         continue;
       }
 
       graphics.fillStyle(this.getEntityColor(entity.type, entity.alive));
-      graphics.fillRect(x, entity.y, entity.width, entity.height);
+      graphics.fillRect(x, entity.y, width, height);
     }
   }
 
@@ -129,11 +135,12 @@ class SmashingCatsScene extends Phaser.Scene {
     }
 
     for (const player of snapshot.players) {
+      const [width, height] = player.size;
       const isLocal = player.playerId === this.playerId;
       const color = player.alive ? (isLocal ? 0xffcc33 : 0xf58ad4) : 0x555555;
 
       graphics.fillStyle(color);
-      graphics.fillRect(player.x, player.y, player.width, player.height);
+      graphics.fillRect(player.x, player.y, width, height);
     }
   }
 
@@ -152,6 +159,10 @@ class SmashingCatsScene extends Phaser.Scene {
     this.connectionText.setText(text);
     this.connectionText.setPosition(this.scale.width / 2, this.scale.height / 2);
     this.connectionText.setVisible(true);
+  }
+
+  private hideConnectionText(): void {
+    this.connectionText?.setVisible(false);
   }
 
   private getEntityColor(type: string, alive: boolean): number {

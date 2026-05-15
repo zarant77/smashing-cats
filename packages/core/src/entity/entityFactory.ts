@@ -11,23 +11,29 @@ type CreateEntityOptions = {
 };
 
 export function createEntity({ config, id, x, moveSpeed }: CreateEntityOptions): Entity {
+  const [, height] = config.size;
+
   return {
     id,
     type: getEntityType(config),
     kind: config.kind,
 
     x,
-    y: GAME_CONFIG.groundY - config.height,
+    y: GAME_CONFIG.groundY - height,
 
     vx: -moveSpeed,
     vy: 0,
 
-    width: config.width,
-    height: config.height,
+    size: config.size,
+    hurt: config.hurt,
 
     damage: config.damage,
-    score: "score" in config ? config.score : 0,
+    score: getScore(config),
 
     alive: true,
   };
+}
+
+function getScore(config: (typeof SPAWNABLES)[number]): number {
+  return "score" in config && typeof config.score === "number" ? config.score : 0;
 }

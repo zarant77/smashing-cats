@@ -57,6 +57,7 @@ async function bootstrap(): Promise<void> {
 
   const params = new URLSearchParams(window.location.search);
 
+  const debug = params.has("debug") && params.get("debug") !== "0" && params.get("debug") !== "false";
   let locale = params.get("locale") ?? localStorage.getItem("smashing-cats-locale") ?? "en";
   let t = createTranslator(locale);
 
@@ -69,7 +70,7 @@ async function bootstrap(): Promise<void> {
   let viewKind = parseViewKind(params.get("view") ?? localStorage.getItem("smashing-cats-view"));
   let selectedCharacterKind = localStorage.getItem("smashing-cats-character") as EntityKind | null;
 
-  let view: GameView = createView(viewKind, root);
+  let view: GameView = createView(viewKind, root, { debug });
   view.setLocale?.(locale, t);
 
   let characters: CharacterDefinition[] = [];
@@ -189,7 +190,7 @@ async function bootstrap(): Promise<void> {
       viewKind = parseViewKind(engineSelect.value);
       localStorage.setItem("smashing-cats-view", viewKind);
 
-      view = createView(viewKind, root);
+      view = createView(viewKind, root, { debug });
       view.setLocale?.(locale, t);
     });
   }
@@ -466,7 +467,7 @@ function parseServerMessage(data: unknown): ServerToClientMessage | undefined {
   }
 
   try {
-    return normalizeMessage(JSON.parse(data)) as ServerToClientMessage;
+    return normalizeMessage(JSON.parse(data)) as unknown as ServerToClientMessage;
   } catch {
     return undefined;
   }

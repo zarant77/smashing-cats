@@ -11,6 +11,10 @@ export type LocalizedText = {
   uk: string;
 };
 
+export type Size = readonly [width: number, height: number];
+
+export type HurtCircle = readonly [radius: number, offsetX: number, offsetY: number];
+
 export type GameConfig = {
   tickRate: number;
   worldWidth: number;
@@ -26,8 +30,8 @@ export type CharacterConfig = {
   kind: EntityKind;
   name: LocalizedText;
 
-  width: number;
-  height: number;
+  size: Size;
+  hurt: HurtCircle;
 
   hp: number;
 
@@ -43,7 +47,7 @@ export type CharacterConfig = {
 
 type CharacterCommonConfig = Pick<
   CharacterConfig,
-  "width" | "height" | "spawnInvulnerabilitySeconds" | "smashSpeed" | "bounceSpeed" | "smashMinJumpProgress"
+  "size" | "hurt" | "spawnInvulnerabilitySeconds" | "smashSpeed" | "bounceSpeed" | "smashMinJumpProgress"
 >;
 
 type CharacterSpecificConfig = Pick<CharacterConfig, "kind" | "name" | "hp" | "moveSpeed" | "jumpForce">;
@@ -56,8 +60,8 @@ type CharactersConfigFile = {
 export type EnemyConfig = {
   kind: EntityKind;
 
-  width: number;
-  height: number;
+  size: Size;
+  hurt: HurtCircle;
 
   damage: number;
   score: number;
@@ -69,8 +73,8 @@ export type EnemyConfig = {
 export type CivilianConfig = {
   kind: EntityKind;
 
-  width: number;
-  height: number;
+  size: Size;
+  hurt: HurtCircle;
 
   damage: number;
   score: number;
@@ -82,26 +86,28 @@ export type CivilianConfig = {
 export type ObstacleConfig = {
   kind: EntityKind;
 
-  width: number;
-  height: number;
+  size: Size;
+  hurt: HurtCircle;
 
   damage: number;
 };
 
-export const GAME_CONFIG = gameData as GameConfig;
+export type SpawnableConfig = ObstacleConfig | EnemyConfig | CivilianConfig;
 
-const CHARACTERS_CONFIG = charactersData as CharactersConfigFile;
+export const GAME_CONFIG = fromJson<GameConfig>(gameData);
+
+const CHARACTERS_CONFIG = fromJson<CharactersConfigFile>(charactersData);
 
 export const CHARACTERS = CHARACTERS_CONFIG.characters.map((character) => ({
   ...CHARACTERS_CONFIG.common,
   ...character,
 })) satisfies CharacterConfig[];
 
-export const CIVILIANS = civiliansData as CivilianConfig[];
-export const ENEMIES = enemiesData as EnemyConfig[];
-export const OBSTACLES = obstaclesData as ObstacleConfig[];
+export const CIVILIANS = fromJson<CivilianConfig[]>(civiliansData);
+export const ENEMIES = fromJson<EnemyConfig[]>(enemiesData);
+export const OBSTACLES = fromJson<ObstacleConfig[]>(obstaclesData);
 
-export const SPAWNABLES = [...OBSTACLES, ...ENEMIES, ...CIVILIANS] as const;
+export const SPAWNABLES = [...OBSTACLES, ...ENEMIES, ...CIVILIANS] satisfies SpawnableConfig[];
 
 export const TICK_RATE = GAME_CONFIG.tickRate;
 export const FIXED_DT = 1 / TICK_RATE;
@@ -114,4 +120,8 @@ export function getCharacterConfig(kind: EntityKind): CharacterConfig {
   }
 
   return config;
+}
+
+function fromJson<T>(value: unknown): T {
+  return value as T;
 }

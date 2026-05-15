@@ -149,7 +149,7 @@ export class CliConnection {
     }
 
     try {
-      return normalizeMessage(JSON.parse(data)) as ServerToClientMessage;
+      return normalizeMessage(JSON.parse(data)) as unknown as ServerToClientMessage;
     } catch {
       return undefined;
     }

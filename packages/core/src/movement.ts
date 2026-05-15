@@ -1,4 +1,4 @@
-import type { PlayerInput } from "@smashing-cats/protocol";
+import type { PlayerInput, Size } from "@smashing-cats/protocol";
 
 export type CharacterMovementConfig = {
   moveSpeed: number;
@@ -20,8 +20,7 @@ export type PlayerMovementState = {
   vx: number;
   vy: number;
 
-  width: number;
-  height: number;
+  size: Size;
 
   grounded: boolean;
 
@@ -43,6 +42,8 @@ export function simulatePlayerMovement(
   gameConfig: GameMovementConfig,
   dt: number,
 ): PlayerMovementResult {
+  const [, height] = player.size;
+
   const wasSmashing = player.smashing;
   const moveDirection = Number(input.right) - Number(input.left);
   const jumpPressed = input.jump && !player.wasJumpPressed;
@@ -71,10 +72,10 @@ export function simulatePlayerMovement(
     player.vy += gameConfig.gravity * dt;
   }
 
-  player.x = clamp(player.x, 20, gameConfig.width - player.width - 20);
+  player.x = clamp(player.x, 20, gameConfig.width - 20);
 
-  if (player.y + player.height >= gameConfig.groundY) {
-    player.y = gameConfig.groundY - player.height;
+  if (player.y + height >= gameConfig.groundY) {
+    player.y = gameConfig.groundY - height;
     player.vy = 0;
     player.grounded = true;
     player.smashing = false;
@@ -94,7 +95,6 @@ export function simulatePlayerMovement(
 
 function canSmash(player: PlayerMovementState, characterConfig: CharacterMovementConfig, gameConfig: GameMovementConfig): boolean {
   const maxJumpHeight = (characterConfig.jumpForce * characterConfig.jumpForce) / (2 * gameConfig.gravity);
-
   const currentJumpHeight = player.jumpStartY - player.y;
 
   return currentJumpHeight >= maxJumpHeight * characterConfig.smashMinJumpProgress;

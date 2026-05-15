@@ -48,8 +48,8 @@ function createPlayerSnapshots({ players, scrollX, tick }: { players: Iterable<P
     vx: player.vx,
     vy: player.vy,
 
-    width: player.width,
-    height: player.height,
+    size: player.size,
+    hurt: player.hurt,
 
     damage: player.damage,
     score: player.score,
@@ -80,8 +80,8 @@ function createEntitySnapshots(entities: Entity[]): EntitySnapshot[] {
     vx: entity.vx,
     vy: entity.vy,
 
-    width: entity.width,
-    height: entity.height,
+    size: entity.size,
+    hurt: entity.hurt,
 
     damage: entity.damage,
     score: entity.score,

@@ -31,8 +31,10 @@ export const IMAGE_ASSETS = [
   "/enemies/boar-dead.png",
 
   // Civilians
-  "/civilians/granny.png",
-  "/civilians/granny-dead.png",
+  "/civilians/baba.png",
+  "/civilians/baba-dead.png",
+  "/civilians/dido.png",
+  "/civilians/dido-dead.png",
 
   // Obstacles
   "/obstacles/cactus.png",

@@ -18,6 +18,11 @@ type SpawnAheadResult = {
   nextEntityIndex: number;
 };
 
+type MovingConfig = {
+  minMoveSpeed: number;
+  maxMoveSpeed: number;
+};
+
 export function spawnAhead({ rng, scrollX, nextSpawnX, nextEntityIndex }: SpawnAheadOptions): SpawnAheadResult {
   const entities: Entity[] = [];
 
@@ -27,9 +32,7 @@ export function spawnAhead({ rng, scrollX, nextSpawnX, nextEntityIndex }: SpawnA
   while (spawnX < scrollX + GAME_CONFIG.worldWidth * 1.8) {
     const config = rng.pick(SPAWNABLES);
 
-    const isMovingEntity = "minMoveSpeed" in config;
-
-    const moveSpeed = isMovingEntity ? rng.nextInt(config.minMoveSpeed, config.maxMoveSpeed) : 0;
+    const moveSpeed = isMovingConfig(config) ? rng.nextInt(config.minMoveSpeed, config.maxMoveSpeed) : 0;
 
     entities.push(
       createEntity({
@@ -48,4 +51,13 @@ export function spawnAhead({ rng, scrollX, nextSpawnX, nextEntityIndex }: SpawnA
     nextSpawnX: spawnX,
     nextEntityIndex: entityIndex,
   };
+}
+
+function isMovingConfig(config: object): config is MovingConfig {
+  return (
+    "minMoveSpeed" in config &&
+    typeof config.minMoveSpeed === "number" &&
+    "maxMoveSpeed" in config &&
+    typeof config.maxMoveSpeed === "number"
+  );
 }

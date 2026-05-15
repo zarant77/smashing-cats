@@ -1,84 +1,24 @@
 {
   "common": {
-    "width": 120,
-    "height": 70,
+    "size": [120, 70],
+    "hurt": [35, 20, 0],
     "smashSpeed": 2000,
     "bounceSpeed": -360,
     "smashMinJumpProgress": 0.5,
     "spawnInvulnerabilitySeconds": 2
   },
   "characters": [
-    {
-      "kind": "batcat",
-      "hp": 4,
-      "moveSpeed": 250,
-      "jumpForce": 1000
-    },
-    {
-      "kind": "ironcat",
-      "hp": 5,
-      "moveSpeed": 210,
-      "jumpForce": 900
-    },
-    {
-      "kind": "darkcat",
-      "hp": 2,
-      "moveSpeed": 330,
-      "jumpForce": 1000
-    },
-    {
-      "kind": "robocat",
-      "hp": 4,
-      "moveSpeed": 240,
-      "jumpForce": 900
-    },
-    {
-      "kind": "termicator",
-      "hp": 5,
-      "moveSpeed": 220,
-      "jumpForce": 900
-    },
-    {
-      "kind": "punishcat",
-      "hp": 3,
-      "moveSpeed": 290,
-      "jumpForce": 900
-    },
-    {
-      "kind": "carrambacat",
-      "hp": 2,
-      "moveSpeed": 350,
-      "jumpForce": 1000
-    },
-    {
-      "kind": "commandocat",
-      "hp": 4,
-      "moveSpeed": 260,
-      "jumpForce": 900
-    },
-    {
-      "kind": "cybercat",
-      "hp": 3,
-      "moveSpeed": 320,
-      "jumpForce": 1000
-    },
-    {
-      "kind": "samurcat",
-      "hp": 3,
-      "moveSpeed": 340,
-      "jumpForce": 1000
-    },
-    {
-      "kind": "zombocat",
-      "hp": 6,
-      "moveSpeed": 170,
-      "jumpForce": 800
-    },
-    {
-      "kind": "ghostcat",
-      "hp": 1,
-      "moveSpeed": 380,
-      "jumpForce": 1000
-    }
+    { "kind": "batcat", "hp": 4, "moveSpeed": 250, "jumpForce": 1000 },
+    { "kind": "ironcat", "hp": 5, "moveSpeed": 210, "jumpForce": 900 },
+    { "kind": "darkcat", "hp": 2, "moveSpeed": 330, "jumpForce": 1000 },
+    { "kind": "robocat", "hp": 4, "moveSpeed": 240, "jumpForce": 900 },
+    { "kind": "termicator", "hp": 5, "moveSpeed": 220, "jumpForce": 900 },
+    { "kind": "punishcat", "hp": 3, "moveSpeed": 290, "jumpForce": 900 },
+    { "kind": "carrambacat", "hp": 2, "moveSpeed": 350, "jumpForce": 1000 },
+    { "kind": "commandocat", "hp": 4, "moveSpeed": 260, "jumpForce": 900 },
+    { "kind": "cybercat", "hp": 3, "moveSpeed": 320, "jumpForce": 1000 },
+    { "kind": "samurcat", "hp": 3, "moveSpeed": 340, "jumpForce": 1000 },
+    { "kind": "zombocat", "hp": 6, "moveSpeed": 170, "jumpForce": 800 },
+    { "kind": "ghostcat", "hp": 1, "moveSpeed": 380, "jumpForce": 1000 }
   ]
 }

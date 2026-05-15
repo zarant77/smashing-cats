@@ -19,8 +19,10 @@ type CreatePlayerOptions = {
 };
 
 export function createPlayer({ playerId, characterConfig, index, tick, groundY, tickRate }: CreatePlayerOptions): Player {
+  const [, height] = characterConfig.size;
+
   const x = 120 + index * 70;
-  const y = groundY - characterConfig.height;
+  const y = groundY - height;
 
   return {
     id: `${characterConfig.kind}-${playerId}`,
@@ -32,11 +34,12 @@ export function createPlayer({ playerId, characterConfig, index, tick, groundY, 
     y,
     previousX: x,
     previousY: y,
+
     vx: 0,
     vy: 0,
 
-    width: characterConfig.width,
-    height: characterConfig.height,
+    size: characterConfig.size,
+    hurt: characterConfig.hurt,
 
     damage: 0,
     score: 0,
@@ -44,22 +47,28 @@ export function createPlayer({ playerId, characterConfig, index, tick, groundY, 
 
     hp: characterConfig.hp,
     maxHp: characterConfig.hp,
+
     invulnerableUntilTick: tick + Math.ceil(characterConfig.spawnInvulnerabilitySeconds * tickRate),
 
     paused: false,
     grounded: true,
+
     smashing: false,
     smashingForCollision: false,
+
     lockedWorldX: undefined,
+
     jumpStartY: y,
     wasJumpPressed: false,
 
     lastInputSnapshotTick: undefined,
     lastReceivedInputSeq: 0,
     lastProcessedInputSeq: 0,
+
     smashSnapshotTick: undefined,
 
     damagedByEntityIds: new Set(),
+
     lastInput: { ...EMPTY_INPUT },
   };
 }

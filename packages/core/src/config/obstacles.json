@@ -1,14 +1,14 @@
 [
   {
     "kind": "cactus",
-    "width": 80,
-    "height": 128,
+    "size": [80, 128],
+    "hurt": [38, 0, -26],
     "damage": 1
   },
   {
     "kind": "cactus",
-    "width": 80,
-    "height": 80,
+    "size": [80, 80],
+    "hurt": [36, 0, 0],
     "damage": 1
   }
 ]

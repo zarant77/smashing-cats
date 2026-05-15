@@ -81,9 +81,11 @@ export class FloatingTextRenderer {
       return;
     }
 
+    const [width] = current.size;
+
     this.spawn({
       text: `${hpDelta} HP`,
-      x: current.x + current.width / 2,
+      x: current.x + width / 2,
       y: current.y - 18,
       color: "#ff4040",
     });
@@ -96,9 +98,11 @@ export class FloatingTextRenderer {
       return;
     }
 
+    const [width] = current.size;
+
     this.spawn({
       text: scoreDelta > 0 ? `+${scoreDelta}` : `${scoreDelta}`,
-      x: current.x + current.width / 2,
+      x: current.x + width / 2,
       y: current.y - 44,
       color: scoreDelta > 0 ? "#ffe066" : "#ff7070",
     });

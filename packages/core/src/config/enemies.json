@@ -1,8 +1,8 @@
 [
   {
     "kind": "orc",
-    "width": 128,
-    "height": 96,
+    "size": [128, 96],
+    "hurt": [46, 0, 0],
     "damage": 1,
     "score": 100,
     "minMoveSpeed": 100,
@@ -10,8 +10,8 @@
   },
   {
     "kind": "boar",
-    "width": 128,
-    "height": 96,
+    "size": [128, 96],
+    "hurt": [44, 0, 6],
     "damage": 1,
     "score": 75,
     "minMoveSpeed": 200,
@@ -19,8 +19,8 @@
   },
   {
     "kind": "rat",
-    "width": 64,
-    "height": 33,
+    "size": [64, 33],
+    "hurt": [18, 0, 0],
     "damage": 1,
     "score": 50,
     "minMoveSpeed": 300,

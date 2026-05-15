@@ -1,4 +1,4 @@
-import { intersects } from "../collision/collisions.js";
+import { circlesIntersect, Hurt2Circle, type Circle } from "../collision/collisions.js";
 import { clamp } from "../math/clamp.js";
 import { getEntityHistoryFrame } from "./entityHistory.js";
 
@@ -31,19 +31,14 @@ export function intersectsCompensatedEntity({
     targetTick,
   });
 
-  const entityBounds = frame?.entities.get(entity.id);
+  const entityFrame = frame?.entities.get(entity.id);
 
-  if (frame === undefined || entityBounds === undefined) {
+  if (frame === undefined || entityFrame === undefined) {
     return false;
   }
 
-  return intersects(
-    {
-      x: player.x + frame.scrollX,
-      y: player.y,
-      width: player.width,
-      height: player.height,
-    },
-    entityBounds,
+  return circlesIntersect(
+    Hurt2Circle(player.x + frame.scrollX, player.y, player.size, player.hurt),
+    Hurt2Circle(entityFrame.x, entityFrame.y, entity.size, entityFrame.hurt),
   );
 }

@@ -4,7 +4,7 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "tsx src/index.ts",
+    "dev": "nodemon --watch src --watch ../../packages/core/src --watch ../../packages/protocol/src --ext ts,json --exec \"tsx src/index.ts\"",
     "build": "tsup",
     "start": "node dist/index.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"

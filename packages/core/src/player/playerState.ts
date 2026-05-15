@@ -1,5 +1,5 @@
 import { GAME_CONFIG } from "../config.js";
-import type { Entity, Player } from "../types.js";
+import type { Player, Entity } from "../types.js";
 
 export function damagePlayer(player: Player, entity: Entity, scrollX: number, tick: number): number {
   if (isPlayerInvulnerable(player, tick) || player.damagedByEntityIds.has(entity.id)) {
@@ -10,7 +10,7 @@ export function damagePlayer(player: Player, entity: Entity, scrollX: number, ti
 
   const damage = entity.damage;
 
-  player.hp = Math.max(0, player.hp - entity.damage);
+  player.hp = Math.max(0, player.hp - damage);
   player.alive = player.hp > 0;
 
   if (!player.alive) {
@@ -25,8 +25,10 @@ export function damagePlayer(player: Player, entity: Entity, scrollX: number, ti
 }
 
 export function updateDeadPlayer(player: Player, dt: number): void {
-  if (player.y + player.height >= GAME_CONFIG.groundY) {
-    player.y = GAME_CONFIG.groundY - player.height;
+  const [, height] = player.size;
+
+  if (player.y + height >= GAME_CONFIG.groundY) {
+    player.y = GAME_CONFIG.groundY - height;
     player.vy = 0;
     player.grounded = true;
     return;
@@ -35,8 +37,8 @@ export function updateDeadPlayer(player: Player, dt: number): void {
   player.vy += GAME_CONFIG.gravity * dt;
   player.y += player.vy * dt;
 
-  if (player.y + player.height >= GAME_CONFIG.groundY) {
-    player.y = GAME_CONFIG.groundY - player.height;
+  if (player.y + height >= GAME_CONFIG.groundY) {
+    player.y = GAME_CONFIG.groundY - height;
     player.vy = 0;
     player.grounded = true;
   }

@@ -1,5 +1,5 @@
-import type { GameEvent } from "@smashing-cats/protocol";
-import { type Bounds, intersects } from "./collisions.js";
+import type { GameEvent, HurtCircle } from "@smashing-cats/protocol";
+import { circlesIntersect } from "./collisions.js";
 import { damagePlayer } from "../player/playerState.js";
 import type { Entity, Player } from "../types.js";
 
@@ -20,7 +20,11 @@ export type CollisionContext = {
   intersectsCompensatedEntity: (player: Player, entity: Entity) => boolean;
 };
 
-const HURTBOX_SHRINK_PERCENT = 0.15;
+type Circle = {
+  x: number;
+  y: number;
+  radius: number;
+};
 
 export function resolvePlayerEntityCollisions(context: CollisionContext): void {
   for (const player of context.players) {
@@ -28,40 +32,28 @@ export function resolvePlayerEntityCollisions(context: CollisionContext): void {
       continue;
     }
 
-    const currentPlayerBounds: Bounds = {
-      x: player.x + context.scrollX,
-      y: player.y,
-      width: player.width,
-      height: player.height,
-    };
-
-    const previousPlayerBounds: Bounds = {
-      x: player.previousX + context.scrollX,
-      y: player.previousY,
-      width: player.width,
-      height: player.height,
-    };
-
-    const sweptPlayerBounds = getSweptBounds(previousPlayerBounds, currentPlayerBounds);
-    const attackBounds = player.smashingForCollision ? sweptPlayerBounds : currentPlayerBounds;
-    const playerHurtbox = shrinkBounds(currentPlayerBounds, HURTBOX_SHRINK_PERCENT);
+    const currentPlayerCircle = getPlayerCircle(player, context.scrollX);
+    const previousPlayerCircle = getPreviousPlayerCircle(player, context.scrollX);
 
     for (const entity of context.entities) {
       if (!entity.alive) {
         continue;
       }
 
+      const entityCircle = getEntityCircle(entity);
+
       if (player.smashingForCollision) {
-        if (intersects(attackBounds, entity) || context.intersectsCompensatedEntity(player, entity)) {
+        if (
+          sweptCircleIntersects(previousPlayerCircle, currentPlayerCircle, entityCircle) ||
+          context.intersectsCompensatedEntity(player, entity)
+        ) {
           resolvePlayerEntityCollision(context, player, entity);
         }
 
         continue;
       }
 
-      const entityHurtbox = shrinkBounds(entity, HURTBOX_SHRINK_PERCENT);
-
-      if (intersects(playerHurtbox, entityHurtbox)) {
+      if (circlesIntersect(currentPlayerCircle, entityCircle)) {
         resolvePlayerEntityCollision(context, player, entity);
       }
     }
@@ -129,8 +121,14 @@ export function resolveEnemyCivilianCollisions(context: Pick<CollisionContext, "
       continue;
     }
 
+    const enemyCircle = getEntityCircle(enemy);
+
     for (const civilian of context.entities) {
-      if (civilian.type !== "civilian" || !civilian.alive || !intersects(enemy, civilian)) {
+      if (civilian.type !== "civilian" || !civilian.alive) {
+        continue;
+      }
+
+      if (!circlesIntersect(enemyCircle, getEntityCircle(civilian))) {
         continue;
       }
 
@@ -155,28 +153,53 @@ function stopSmash(player: Player): void {
   player.jumpStartY = player.y;
 }
 
-function getSweptBounds(from: Bounds, to: Bounds): Bounds {
-  const left = Math.min(from.x, to.x);
-  const top = Math.min(from.y, to.y);
-  const right = Math.max(from.x + from.width, to.x + to.width);
-  const bottom = Math.max(from.y + from.height, to.y + to.height);
+function getPlayerCircle(player: Player, scrollX: number): Circle {
+  return getCircle(player.x + scrollX, player.y, player.size, player.hurt);
+}
+
+function getPreviousPlayerCircle(player: Player, scrollX: number): Circle {
+  return getCircle(player.previousX + scrollX, player.previousY, player.size, player.hurt);
+}
+
+function getEntityCircle(entity: Entity): Circle {
+  return getCircle(entity.x, entity.y, entity.size, entity.hurt);
+}
+
+function getCircle(x: number, y: number, size: readonly [width: number, height: number], hurt: HurtCircle): Circle {
+  const [width, height] = size;
+  const [radius, offsetX, offsetY] = hurt;
 
   return {
-    x: left,
-    y: top,
-    width: right - left,
-    height: bottom - top,
+    x: x + width / 2 + offsetX,
+    y: y + height / 2 + offsetY,
+    radius,
   };
 }
 
-function shrinkBounds(bounds: Bounds, percent: number): Bounds {
-  const widthShrink = bounds.width * percent;
-  const heightShrink = bounds.height * percent;
+function sweptCircleIntersects(from: Circle, to: Circle, target: Circle): boolean {
+  const radius = from.radius + target.radius;
 
-  return {
-    x: bounds.x + widthShrink / 2,
-    y: bounds.y + heightShrink / 2,
-    width: bounds.width - widthShrink,
-    height: bounds.height - heightShrink,
-  };
+  return distancePointToSegmentSquared(target.x, target.y, from.x, from.y, to.x, to.y) <= radius * radius;
+}
+
+function distancePointToSegmentSquared(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
+  const dx = bx - ax;
+  const dy = by - ay;
+
+  if (dx === 0 && dy === 0) {
+    return distanceSquared(px, py, ax, ay);
+  }
+
+  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)));
+  const x = ax + dx * t;
+  const y = ay + dy * t;
+
+  return distanceSquared(px, py, x, y);
+}
+
+function distanceSquared(ax: number, ay: number, bx: number, by: number): number {
+  const dx = ax - bx;
+  const dy = ay - by;
+
+  return dx * dx + dy * dy;
 }

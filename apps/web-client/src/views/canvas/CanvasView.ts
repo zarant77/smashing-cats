@@ -1,6 +1,6 @@
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
 import type { Translator } from "@smashing-cats/i18n";
-import type { GameView } from "../types.js";
+import type { GameView, ViewOptions } from "../types.js";
 import { BackgroundRenderer } from "./BackgroundRenderer.js";
 import { EntityRenderer } from "./EntityRenderer.js";
 import { FloatingTextRenderer } from "./FloatingTextRenderer.js";
@@ -12,19 +12,22 @@ import { resizeCanvasToRoot } from "./viewport.js";
 export class CanvasView implements GameView {
   private readonly context: CanvasRenderingContext2D;
   private readonly canvas: HTMLCanvasElement;
-  private readonly root: HTMLElement;
 
   private readonly background = new BackgroundRenderer();
   private readonly ground = new GroundRenderer();
-  private readonly entities = new EntityRenderer();
-  private readonly players = new PlayerRenderer();
+  private readonly entities: EntityRenderer;
+  private readonly players: PlayerRenderer;
   private readonly screenShake = new ScreenShake();
   private readonly floatingTexts = new FloatingTextRenderer();
 
   private t: Translator = (key) => key;
 
-  public constructor(root: HTMLElement) {
-    this.root = root;
+  public constructor(
+    private readonly root: HTMLElement,
+    private readonly options: ViewOptions,
+  ) {
+    this.entities = new EntityRenderer(options.debug);
+    this.players = new PlayerRenderer(options.debug);
 
     this.canvas = document.createElement("canvas");
     root.replaceChildren(this.canvas);

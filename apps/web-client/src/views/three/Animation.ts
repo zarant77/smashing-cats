@@ -5,8 +5,7 @@ import { getWorldY } from "./coordinates.js";
 type AnimationInput = {
   id: string;
   topY: number;
-  width: number;
-  height: number;
+  size: readonly [width: number, height: number];
   groundY: number;
   alive: boolean;
   hp?: number;
@@ -38,8 +37,7 @@ export class Animation {
       {
         id: player.id,
         topY: player.y,
-        width: player.width,
-        height: player.height,
+        size: player.size,
         groundY,
         alive: player.alive,
         hp: player.hp,
@@ -55,8 +53,7 @@ export class Animation {
     id: string,
     centerX: number,
     topY: number,
-    width: number,
-    height: number,
+    size: readonly [width: number, height: number],
     groundY: number,
     alive: boolean,
   ): void {
@@ -65,8 +62,7 @@ export class Animation {
       {
         id,
         topY,
-        width,
-        height,
+        size,
         groundY,
         alive,
       },
@@ -88,12 +84,14 @@ export class Animation {
 
     state.alive = input.alive;
 
+    const [, height] = input.size;
+
     const bounce = Math.sin(now * BOUNCE_SPEED) * BOUNCE_POWER;
     const scaleY = input.alive ? 1 + bounce : 1;
     const scaleX = input.alive ? 1 - bounce * 0.45 : 1;
     const shakeX = this.getDamageShakeX(now, state.damagedAt);
 
-    object.root.position.set(centerX + shakeX, getWorldY(input.topY, input.height, input.groundY), 0);
+    object.root.position.set(centerX + shakeX, getWorldY(input.topY, height, input.groundY), 0);
 
     object.root.rotation.set(0, 0, this.getRotation(input));
     object.root.scale.set(scaleX, scaleY, 1);

@@ -1,10 +1,16 @@
-import type { Bounds } from "../collision/collisions.js";
+import type { HurtCircle } from "@smashing-cats/protocol";
 import type { Entity } from "../types.js";
+
+export type EntityHistoryState = {
+  x: number;
+  y: number;
+  hurt: HurtCircle;
+};
 
 export type EntityHistoryFrame = {
   tick: number;
   scrollX: number;
-  entities: Map<string, Bounds>;
+  entities: Map<string, EntityHistoryState>;
 };
 
 type RecordEntityHistoryOptions = {
@@ -25,8 +31,7 @@ export function recordEntityHistory({ history, tick, scrollX, entities, maxHisto
         {
           x: entity.x,
           y: entity.y,
-          width: entity.width,
-          height: entity.height,
+          hurt: entity.hurt,
         },
       ]),
     ),

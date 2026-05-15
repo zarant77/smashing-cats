@@ -50,8 +50,10 @@ export class EntityAsciiRenderer {
   }
 
   private renderEntity(buffer: AsciiBuffer, camera: AsciiCamera, entity: EntitySnapshot, scrollX: number, groundY: number): void {
+    const [, height] = entity.size;
+
     const x = camera.worldToScreenX(entity.x, scrollX);
-    const bottomY = camera.worldToScreenY(entity.y + entity.height, groundY);
+    const bottomY = camera.worldToScreenY(entity.y + height, groundY);
 
     buffer.drawSprite(x, bottomY, this.getSprite(String(entity.kind)));
   }

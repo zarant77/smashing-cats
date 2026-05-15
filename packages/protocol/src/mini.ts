@@ -23,10 +23,8 @@ const FIELD_MAP = {
 
 const NORMAL_FIELD_MAP = Object.fromEntries(Object.entries(FIELD_MAP).map(([normal, mini]) => [mini, normal])) as Record<string, string>;
 
-export function minifyMessage(message: ClientToServerMessage): string;
-export function minifyMessage(message: ServerToClientMessage): string;
-export function minifyMessage(message: JsonValue): string {
-  return JSON.stringify(mapJsonKeys(message, FIELD_MAP));
+export function minifyMessage(message: ClientToServerMessage | ServerToClientMessage): string {
+  return JSON.stringify(mapJsonKeys(message as unknown as JsonValue, FIELD_MAP));
 }
 
 export function normalizeMessage(value: unknown): JsonValue | undefined {

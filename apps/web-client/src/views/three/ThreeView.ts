@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
 import type { Translator } from "@smashing-cats/i18n";
-import type { GameView } from "../types.js";
+import type { GameView, ViewOptions } from "../types.js";
 import { Animation } from "./Animation.js";
 import { CameraController, type CameraMode } from "./CameraController.js";
 import { getEntityColor, getPlayerColor } from "./colors.js";
@@ -21,7 +21,10 @@ export class ThreeView implements GameView {
 
   private t: Translator = (key) => key;
 
-  public constructor(private readonly root: HTMLElement) {
+  public constructor(
+    private readonly root: HTMLElement,
+    private readonly options: ViewOptions,
+  ) {
     this.root.replaceChildren();
 
     this.scene.background = new THREE.Color(0x87ceeb);
@@ -116,19 +119,21 @@ export class ThreeView implements GameView {
 
   private drawEntities(snapshot: GameSnapshot): void {
     for (const entity of snapshot.entities) {
+      const [width, height] = entity.size;
+
       const color = getEntityColor(entity.type, entity.alive);
       const object = this.registry.get(`entity:${entity.id}`, color);
       const depth = entity.type === "obstacle" ? 90 : 50;
-      const x = entity.x - snapshot.world.scrollX + entity.width / 2;
+      const x = entity.x - snapshot.world.scrollX + width / 2;
 
-      this.setGameObjectSize(object, entity.width, entity.height, depth);
+      this.setGameObjectSize(object, width, height, depth);
 
       if (entity.type === "obstacle") {
-        object.root.position.set(x, getWorldY(entity.y, entity.height, snapshot.world.groundY), 0);
+        object.root.position.set(x, getWorldY(entity.y, height, snapshot.world.groundY), 0);
         object.root.rotation.set(0, 0, 0);
         object.root.scale.set(1, 1, 1);
       } else {
-        this.animation.applyEntity(object, entity.id, x, entity.y, entity.width, entity.height, snapshot.world.groundY, entity.alive);
+        this.animation.applyEntity(object, entity.id, x, entity.y, entity.size, snapshot.world.groundY, entity.alive);
       }
 
       void this.registry.attachModel(object, getEntityModelPath(entity.type, entity.kind), (path) => this.models.load(path));
@@ -137,12 +142,14 @@ export class ThreeView implements GameView {
 
   private drawPlayers(snapshot: GameSnapshot, playerId: PlayerId | undefined): void {
     for (const player of snapshot.players) {
+      const [width, height] = player.size;
+
       const isLocal = player.playerId === playerId;
       const color = getPlayerColor(isLocal, player.alive);
       const object = this.registry.get(`player:${player.playerId}`, color);
-      const x = player.x + player.width / 2;
+      const x = player.x + width / 2;
 
-      this.setGameObjectSize(object, player.width, player.height, 70);
+      this.setGameObjectSize(object, width, height, 70);
       this.animation.applyPlayer(object, player, x, snapshot.world.groundY);
 
       void this.registry.attachModel(object, getPlayerModelPath(player.kind), (path) => this.models.load(path));
@@ -156,12 +163,43 @@ export class ThreeView implements GameView {
       return;
     }
 
-    if (object.model.userData["fitted"] === true) {
+    const fitKey = `${width}:${height}`;
+
+    if (object.model.userData["fitKey"] === fitKey) {
       return;
     }
 
-    this.registry.fitModelToBox(object.model, width, height, depth);
-    object.model.userData["fitted"] = true;
+    this.fitModelToSize(object.model, width, height);
+    object.model.userData["fitKey"] = fitKey;
+  }
+
+  private fitModelToSize(model: THREE.Object3D, targetWidth: number, targetHeight: number): void {
+    model.scale.set(1, 1, 1);
+    model.position.set(0, 0, 0);
+
+    model.updateMatrixWorld(true);
+
+    const box = new THREE.Box3().setFromObject(model);
+    const size = new THREE.Vector3();
+
+    box.getSize(size);
+
+    if (size.x <= 0 || size.y <= 0) {
+      return;
+    }
+
+    const scale = Math.min(targetWidth / size.x, targetHeight / size.y);
+
+    model.scale.setScalar(scale);
+    model.updateMatrixWorld(true);
+
+    const fittedBox = new THREE.Box3().setFromObject(model);
+    const center = new THREE.Vector3();
+
+    fittedBox.getCenter(center);
+
+    model.position.x -= center.x;
+    model.position.y -= center.y;
   }
 
   private cleanup(snapshot: GameSnapshot): void {
