@@ -33,7 +33,7 @@ export class EntityRenderer {
           height,
           alive: entity.alive,
           hp: entity.alive ? 1 : 0,
-          moving: false,
+          moving: entity.alive && entity.type !== "obstacle",
           jumping: false,
           smashing: false,
           scale: viewport.scale,
@@ -48,15 +48,15 @@ export class EntityRenderer {
 
     ctx.save();
 
-    ctx.translate(transform.x, transform.y);
+    ctx.translate(transform.x, transform.y + height / 2);
     ctx.rotate(transform.rotation);
     ctx.scale(transform.scaleX, transform.scaleY);
 
     if (image.complete && image.naturalWidth > 0) {
-      ctx.drawImage(image, -width / 2, -height / 2, width, height);
+      ctx.drawImage(image, -width / 2, -height, width, height);
     } else {
       ctx.fillStyle = getEntityFallbackColor(entity);
-      ctx.fillRect(-width / 2, -height / 2, width, height);
+      ctx.fillRect(-width / 2, -height, width, height);
     }
 
     ctx.restore();

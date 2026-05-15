@@ -66,7 +66,7 @@ export class PlayerRenderer {
       alive: player.alive,
       hp: player.hp,
       velocityX: player.vx,
-      moving: Math.abs(player.vx) > 1,
+      moving: player.alive && player.grounded && !player.smashing,
       jumping: !player.grounded,
       smashing: player.smashing,
       scale: viewport.scale,
@@ -76,15 +76,15 @@ export class PlayerRenderer {
 
     ctx.globalAlpha = shouldBlinkOff ? 0.35 : 1;
 
-    ctx.translate(transform.x, transform.y);
+    ctx.translate(transform.x, transform.y + height / 2);
     ctx.rotate(transform.rotation);
     ctx.scale(-transform.scaleX, transform.scaleY);
 
     if (image.complete && image.naturalWidth > 0) {
-      ctx.drawImage(image, -width / 2, -height / 2, width, height);
+      ctx.drawImage(image, -width / 2, -height, width, height);
     } else {
       ctx.fillStyle = isLocal ? "#ffcc33" : "#f58ad4";
-      ctx.fillRect(-width / 2, -height / 2, width, height);
+      ctx.fillRect(-width / 2, -height, width, height);
     }
 
     ctx.restore();
