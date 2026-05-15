@@ -1,8 +1,19 @@
 export const IMAGE_ASSETS = [
   // Environments
   "/environments/sky.png",
-  // "/environments/clouds.png",
+  "/environments/clouds.png",
+  "/environments/mountains.png",
+  "/environments/fog.png",
+  "/environments/forest.png",
+  "/environments/forest_front.png",
   "/environments/ground.png",
+
+  "/environments/leaf1.png",
+  "/environments/leaf2.png",
+  "/environments/leaf3.png",
+  "/environments/leaf4.png",
+  "/environments/leaf5.png",
+  "/environments/leaf6.png",
 
   // UI
   "/favicon.png",

@@ -2,14 +2,16 @@ import type { GameSnapshot } from "@smashing-cats/protocol";
 import { assets } from "../../assets/assets.js";
 
 const TILE_PATH = "/environments/ground.png";
-const TILE_WIDTH = 400;
-const GROUND_OFFSET_Y = -20;
+const TILE_WIDTH = 800;
+
+const GROUND_OFFSET_Y = -55;
+const DRAW_OFFSET_Y = 0;
 
 export class GroundRenderer {
   public draw(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, snapshot: GameSnapshot): void {
     const image = assets.get(TILE_PATH);
 
-    const groundY = snapshot.world.groundY + GROUND_OFFSET_Y;
+    const groundY = snapshot.world.groundY + GROUND_OFFSET_Y + DRAW_OFFSET_Y;
 
     if (!this.isReady(image)) {
       this.drawFallback(ctx, canvas, groundY);
@@ -25,38 +27,35 @@ export class GroundRenderer {
     for (let tileIndex = firstTileIndex; offsetX + (tileIndex - firstTileIndex) * TILE_WIDTH < canvas.width + TILE_WIDTH; tileIndex++) {
       const x = offsetX + (tileIndex - firstTileIndex) * TILE_WIDTH;
 
-      this.drawTileColumn(ctx, image, x, groundY, tileHeight, tileIndex);
+      this.drawTile(ctx, image, x, groundY, tileHeight, tileIndex);
     }
   }
 
-  private drawTileColumn(
+  private drawTile(
     ctx: CanvasRenderingContext2D,
     image: HTMLImageElement,
     x: number,
-    groundY: number,
+    y: number,
     tileHeight: number,
     tileIndex: number,
   ): void {
     const drawX = Math.round(x);
+    const drawY = Math.round(y);
     const drawWidth = TILE_WIDTH + 1;
+    const drawHeight = Math.ceil(tileHeight);
     const shouldMirror = Math.abs(tileIndex) % 2 === 1;
 
-    for (let y = groundY; y < ctx.canvas.height; y += tileHeight) {
-      const drawY = Math.round(y);
-      const drawHeight = Math.ceil(tileHeight);
+    ctx.save();
 
-      ctx.save();
-
-      if (shouldMirror) {
-        ctx.translate(drawX + drawWidth, drawY);
-        ctx.scale(-1, 1);
-        ctx.drawImage(image, 0, 0, drawWidth, drawHeight);
-      } else {
-        ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
-      }
-
-      ctx.restore();
+    if (shouldMirror) {
+      ctx.translate(drawX + drawWidth, drawY);
+      ctx.scale(-1, 1);
+      ctx.drawImage(image, 0, 0, drawWidth, drawHeight);
+    } else {
+      ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
     }
+
+    ctx.restore();
   }
 
   private isReady(image: HTMLImageElement): boolean {

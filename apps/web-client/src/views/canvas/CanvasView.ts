@@ -5,6 +5,7 @@ import { BackgroundRenderer } from "./BackgroundRenderer.js";
 import { EntityRenderer } from "./EntityRenderer.js";
 import { FloatingTextRenderer } from "./FloatingTextRenderer.js";
 import { GroundRenderer } from "./GroundRenderer.js";
+import { ParticlesRenderer } from "./ParticlesRenderer.js";
 import { PlayerRenderer } from "./PlayerRenderer.js";
 import { ScreenShake } from "./ScreenShake.js";
 import { resizeCanvasToRoot } from "./viewport.js";
@@ -15,12 +16,17 @@ export class CanvasView implements GameView {
 
   private readonly background = new BackgroundRenderer();
   private readonly ground = new GroundRenderer();
+  private readonly particles = new ParticlesRenderer(10);
+
   private readonly entities: EntityRenderer;
   private readonly players: PlayerRenderer;
+
   private readonly screenShake = new ScreenShake();
   private readonly floatingTexts = new FloatingTextRenderer();
 
   private t: Translator = (key) => key;
+
+  private lastFrameTime = performance.now();
 
   public constructor(
     private readonly root: HTMLElement,
@@ -30,11 +36,13 @@ export class CanvasView implements GameView {
     this.players = new PlayerRenderer(options.debug);
 
     this.canvas = document.createElement("canvas");
+
     root.replaceChildren(this.canvas);
 
     resizeCanvasToRoot(this.canvas, this.root);
 
     const context = this.canvas.getContext("2d");
+
     if (context === null) {
       throw new Error("Canvas 2D context is unavailable");
     }
@@ -47,10 +55,19 @@ export class CanvasView implements GameView {
 
     resizeCanvasToRoot(this.canvas, this.root);
 
+    const now = performance.now();
+
+    const rawDelta = (now - this.lastFrameTime) / 1000;
+    const deltaTime = Math.min(rawDelta, 0.033);
+
+    this.lastFrameTime = now;
+
     if (snapshot === undefined) {
       ctx.fillStyle = "#87ceeb";
       ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
       this.drawCenteredText(this.t("connecting"));
+
       return;
     }
 
@@ -64,9 +81,12 @@ export class CanvasView implements GameView {
     const shake = this.screenShake.getOffset();
 
     ctx.save();
+
     ctx.translate(shake.x, shake.y);
 
     this.ground.draw(ctx, this.canvas, snapshot);
+
+    this.particles.draw(ctx, this.canvas, deltaTime);
 
     for (const entity of snapshot.entities) {
       this.entities.draw(ctx, this.canvas.width, snapshot, entity);
@@ -91,7 +111,9 @@ export class CanvasView implements GameView {
     ctx.fillStyle = "#111111";
     ctx.font = "24px sans-serif";
     ctx.textAlign = "center";
+
     ctx.fillText(text, this.canvas.width / 2, this.canvas.height / 2);
+
     ctx.textAlign = "start";
   }
 }

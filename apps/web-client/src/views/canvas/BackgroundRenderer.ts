@@ -7,18 +7,22 @@ type ParallaxLayer = {
   y: number;
   height: number;
   mirror?: boolean;
+  alpha?: number;
 };
 
 const LAYERS: ParallaxLayer[] = [
   { path: "/environments/sky.png", speed: 0, y: 0, height: 1 },
-  { path: "/environments/clouds.png", speed: 0.05, y: 20, height: 0.45 },
-  { path: "/environments/mountains.png", speed: 0.10, y: 150, height: 0.35, mirror: true },
-  { path: "/environments/forest.png", speed: 0.6, y: 190, height: 0.35, mirror: false },
+  { path: "/environments/mountains.png", speed: 0.05, y: 160, height: 0.35, mirror: true },
+  { path: "/environments/clouds.png", speed: 0.1, y: 20, height: 0.4 },
+  { path: "/environments/fog.png", speed: 0.3, y: 160, height: 0.3, mirror: true },
+  { path: "/environments/forest.png", speed: 0.6, y: 175, height: 0.35, mirror: false },
+  { path: "/environments/forest_front.png", speed: 0.85, y: 360, height: 0.1 },
 ];
 
 export class BackgroundRenderer {
   public draw(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, snapshot: GameSnapshot): void {
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
 
     ctx.fillStyle = "#87ceeb";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -48,6 +52,9 @@ export class BackgroundRenderer {
     const firstTileIndex = Math.floor(scroll / width);
     const offsetX = -(scroll - firstTileIndex * width);
 
+    ctx.save();
+    ctx.globalAlpha = layer.alpha ?? 1;
+
     for (let tileIndex = firstTileIndex; offsetX + (tileIndex - firstTileIndex) * width < canvas.width + width; tileIndex++) {
       const x = offsetX + (tileIndex - firstTileIndex) * width;
       const drawX = Math.round(x);
@@ -66,5 +73,7 @@ export class BackgroundRenderer {
 
       ctx.restore();
     }
+
+    ctx.restore();
   }
 }
