@@ -1,4 +1,4 @@
-import { circlesIntersect, Hurt2Circle, type Circle } from "../collision/collisions.js";
+import { getSmashBox, intersects, type Bounds } from "../collision/collisions.js";
 import { clamp } from "../math/clamp.js";
 import { getEntityHistoryFrame } from "./entityHistory.js";
 
@@ -37,8 +37,20 @@ export function intersectsCompensatedEntity({
     return false;
   }
 
-  return circlesIntersect(
-    Hurt2Circle(player.x + frame.scrollX, player.y, player.size, player.hurt),
-    Hurt2Circle(entityFrame.x, entityFrame.y, entity.size, entityFrame.hurt),
-  );
+  const smashBox = getSmashBox(player.x + frame.scrollX, player.y, player.size, player.smash);
+
+  const entityBounds = getEntityBounds(entityFrame.x, entityFrame.y, entity.size);
+
+  return intersects(smashBox, entityBounds);
+}
+
+function getEntityBounds(x: number, y: number, size: readonly [width: number, height: number]): Bounds {
+  const [width, height] = size;
+
+  return {
+    x,
+    y,
+    width,
+    height,
+  };
 }

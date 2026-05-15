@@ -1,3 +1,5 @@
+import { Size, SmashBox } from "@smashing-cats/protocol";
+
 export type Bounds = {
   x: number;
   y: number;
@@ -32,5 +34,17 @@ export function Hurt2Circle(x: number, y: number, size: readonly [number, number
     x: x + width / 2 + offsetX,
     y: y + height / 2 + offsetY,
     radius,
+  };
+}
+
+export function getSmashBox(x: number, y: number, size: Size, smash: SmashBox): Bounds {
+  const [width, height] = size;
+  const [smashWidth, offsetX] = smash;
+
+  return {
+    x: x + width / 2 - smashWidth / 2 + offsetX,
+    y,
+    width: smashWidth,
+    height,
   };
 }

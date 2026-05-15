@@ -1,9 +1,10 @@
-import type { HurtCircle } from "@smashing-cats/protocol";
+import type { HurtCircle, Size } from "@smashing-cats/protocol";
 import type { Entity } from "../types.js";
 
 export type EntityHistoryState = {
   x: number;
   y: number;
+  size: Size;
   hurt: HurtCircle;
 };
 
@@ -31,6 +32,7 @@ export function recordEntityHistory({ history, tick, scrollX, entities, maxHisto
         {
           x: entity.x,
           y: entity.y,
+          size: entity.size,
           hurt: entity.hurt,
         },
       ]),

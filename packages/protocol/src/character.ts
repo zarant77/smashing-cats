@@ -1,5 +1,5 @@
 import type { EntityKind } from "./entity.js";
-import type { HurtCircle, Size } from "./snapshot.js";
+import { HurtCircle, Size, SmashBox } from "./geometry.js";
 
 export type CharacterDefinition = {
   kind: EntityKind;
@@ -8,6 +8,7 @@ export type CharacterDefinition = {
 
   size: Size;
   hurt: HurtCircle;
+  smash: SmashBox;
 
   hp: number;
 

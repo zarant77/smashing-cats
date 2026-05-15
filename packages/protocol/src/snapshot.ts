@@ -1,8 +1,5 @@
 import type { EntityId, EntityKind, EntityType, PlayerId } from "./entity.js";
-
-export type Size = readonly [width: number, height: number];
-
-export type HurtCircle = readonly [radius: number, offsetX: number, offsetY: number];
+import { HurtCircle, Size, SmashBox } from "./geometry.js";
 
 export type EntitySnapshot = {
   id: EntityId;
@@ -24,6 +21,7 @@ export type PlayerSnapshot = EntitySnapshot & {
   playerId: PlayerId;
   hp: number;
   maxHp: number;
+  smash: SmashBox;
   invulnerable: boolean;
   paused: boolean;
   grounded: boolean;

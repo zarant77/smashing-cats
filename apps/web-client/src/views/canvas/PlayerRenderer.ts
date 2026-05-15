@@ -59,7 +59,7 @@ export class PlayerRenderer {
     this.landingEffect.draw(ctx, player.id);
 
     if (this.debug) {
-      drawDebugShape(ctx, player.x, player.y, player.size, player.hurt);
+      drawDebugShape(ctx, player.x, player.y, player.size, player.hurt, player.smash);
     }
   }
 }

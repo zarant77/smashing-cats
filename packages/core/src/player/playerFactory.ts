@@ -40,6 +40,7 @@ export function createPlayer({ playerId, characterConfig, index, tick, groundY, 
 
     size: characterConfig.size,
     hurt: characterConfig.hurt,
+    smash: characterConfig.smash,
 
     damage: 0,
     score: 0,

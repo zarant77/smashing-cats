@@ -1,5 +1,5 @@
 import type { GameEvent, HurtCircle } from "@smashing-cats/protocol";
-import { circlesIntersect } from "./collisions.js";
+import { type Bounds, circlesIntersect, getSmashBox, intersects } from "./collisions.js";
 import { damagePlayer } from "../player/playerState.js";
 import type { Entity, Player } from "../types.js";
 
@@ -32,8 +32,7 @@ export function resolvePlayerEntityCollisions(context: CollisionContext): void {
       continue;
     }
 
-    const currentPlayerCircle = getPlayerCircle(player, context.scrollX);
-    const previousPlayerCircle = getPreviousPlayerCircle(player, context.scrollX);
+    const playerHurtCircle = getPlayerCircle(player, context.scrollX);
 
     for (const entity of context.entities) {
       if (!entity.alive) {
@@ -42,19 +41,17 @@ export function resolvePlayerEntityCollisions(context: CollisionContext): void {
 
       const entityCircle = getEntityCircle(entity);
 
-      if (player.smashingForCollision) {
-        if (
-          sweptCircleIntersects(previousPlayerCircle, currentPlayerCircle, entityCircle) ||
-          context.intersectsCompensatedEntity(player, entity)
-        ) {
-          resolvePlayerEntityCollision(context, player, entity);
-        }
+      if (player.smashingForCollision && entity.type !== "obstacle") {
+        const smashBox = getPlayerSmashBox(player, context.scrollX);
 
-        continue;
+        if (intersects(smashBox, circleToBounds(entityCircle)) || context.intersectsCompensatedEntity(player, entity)) {
+          resolvePlayerEntityCollision(context, player, entity);
+          continue;
+        }
       }
 
-      if (circlesIntersect(currentPlayerCircle, entityCircle)) {
-        resolvePlayerEntityCollision(context, player, entity);
+      if (circlesIntersect(playerHurtCircle, entityCircle)) {
+        resolveDamagingCollision(context, player, entity);
       }
     }
   }
@@ -202,4 +199,17 @@ function distanceSquared(ax: number, ay: number, bx: number, by: number): number
   const dy = ay - by;
 
   return dx * dx + dy * dy;
+}
+
+function getPlayerSmashBox(player: Player, scrollX: number): Bounds {
+  return getSmashBox(player.x + scrollX, player.y, player.size, player.smash);
+}
+
+function circleToBounds(circle: Circle): Bounds {
+  return {
+    x: circle.x - circle.radius,
+    y: circle.y - circle.radius,
+    width: circle.radius * 2,
+    height: circle.radius * 2,
+  };
 }

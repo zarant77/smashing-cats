@@ -50,6 +50,7 @@ function createPlayerSnapshots({ players, scrollX, tick }: { players: Iterable<P
 
     size: player.size,
     hurt: player.hurt,
+    smash: player.smash,
 
     damage: player.damage,
     score: player.score,
