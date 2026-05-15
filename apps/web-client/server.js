@@ -201,18 +201,28 @@ const server = createServer((request, response) => {
     if (IMAGE_EXTENSIONS.has(extension)) {
       response.statusCode = 404;
       response.setHeader("Content-Type", "image/png");
+      response.setHeader("Cache-Control", "no-store");
       response.end(NOT_FOUND_IMAGE);
       return;
     }
 
     response.statusCode = 404;
     response.setHeader("Content-Type", "text/html; charset=utf-8");
+    response.setHeader("Cache-Control", "no-store");
     response.end(NOT_FOUND_HTML);
 
     return;
   }
 
   response.statusCode = 200;
+
+  const extension = extname(filePath).toLowerCase();
+
+  if (extension === ".html") {
+    response.setHeader("Cache-Control", "no-cache");
+  } else {
+    response.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+  }
 
   response.setHeader("Content-Type", mimeTypes.get(extname(filePath)) ?? "application/octet-stream");
 

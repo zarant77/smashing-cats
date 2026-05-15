@@ -19,23 +19,48 @@ export class GroundRenderer {
     const scale = TILE_WIDTH / image.naturalWidth;
     const tileHeight = image.naturalHeight * scale;
 
-    const offsetX = this.getOffset(snapshot.world.scrollX);
+    const firstTileIndex = Math.floor(snapshot.world.scrollX / TILE_WIDTH);
+    const offsetX = -(snapshot.world.scrollX - firstTileIndex * TILE_WIDTH);
 
-    for (let x = offsetX; x < canvas.width; x += TILE_WIDTH) {
-      for (let y = groundY; y < canvas.height; y += tileHeight) {
-        ctx.drawImage(image, x, y, TILE_WIDTH, tileHeight);
-      }
+    for (let tileIndex = firstTileIndex; offsetX + (tileIndex - firstTileIndex) * TILE_WIDTH < canvas.width + TILE_WIDTH; tileIndex++) {
+      const x = offsetX + (tileIndex - firstTileIndex) * TILE_WIDTH;
+
+      this.drawTileColumn(ctx, image, x, groundY, tileHeight, tileIndex);
     }
   }
 
-  private getOffset(scrollX: number): number {
-    const offset = -scrollX % TILE_WIDTH;
+  private drawTileColumn(
+    ctx: CanvasRenderingContext2D,
+    image: HTMLImageElement,
+    x: number,
+    groundY: number,
+    tileHeight: number,
+    tileIndex: number,
+  ): void {
+    const drawX = Math.round(x);
+    const drawWidth = TILE_WIDTH + 1;
+    const shouldMirror = Math.abs(tileIndex) % 2 === 1;
 
-    return offset > 0 ? offset - TILE_WIDTH : offset;
+    for (let y = groundY; y < ctx.canvas.height; y += tileHeight) {
+      const drawY = Math.round(y);
+      const drawHeight = Math.ceil(tileHeight);
+
+      ctx.save();
+
+      if (shouldMirror) {
+        ctx.translate(drawX + drawWidth, drawY);
+        ctx.scale(-1, 1);
+        ctx.drawImage(image, 0, 0, drawWidth, drawHeight);
+      } else {
+        ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+      }
+
+      ctx.restore();
+    }
   }
 
   private isReady(image: HTMLImageElement): boolean {
-    return image.complete && image.naturalWidth > 0;
+    return image.complete && image.naturalWidth > 0 && image.naturalHeight > 0;
   }
 
   private drawFallback(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, groundY: number): void {
