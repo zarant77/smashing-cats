@@ -2,15 +2,15 @@ import {
   normalizeMessage,
   minifyMessage,
   type CharacterDefinition,
+  type ClientToServerMessage,
   type EntityKind,
   type GameEvent,
   type GameSnapshot,
   type InputMessage,
   type PlayerId,
   type ServerToClientMessage,
-  ClientToServerMessage,
 } from "@smashing-cats/protocol";
-import { SnapshotStore } from "@smashing-cats/core";
+import { CHARACTERS, FIXED_DT, Game, SnapshotStore } from "@smashing-cats/core";
 import { createTranslator } from "@smashing-cats/i18n";
 import { SnapshotInterpolator, LocalPlayerPredictor } from "@smashing-cats/client-netcode";
 
@@ -29,6 +29,7 @@ import "./styles/index.css";
 
 const SOUNDS_ENABLED_KEY = "smashing-cats-sounds-enabled";
 const MUSIC_ENABLED_KEY = "smashing-cats-music-enabled";
+const LOCAL_PLAYER_ID = "p1";
 
 void bootstrap();
 
@@ -56,6 +57,8 @@ async function bootstrap(): Promise<void> {
   const fullscreenToggle = document.querySelector<HTMLButtonElement>("#fullscreen-toggle");
 
   const params = new URLSearchParams(window.location.search);
+  const matchCode = getMatchCode(params);
+  const multiplayer = matchCode !== undefined;
 
   const debug = params.has("debug") && params.get("debug") !== "0" && params.get("debug") !== "false";
   let locale = params.get("locale") ?? localStorage.getItem("smashing-cats-locale") ?? "en";
@@ -73,9 +76,9 @@ async function bootstrap(): Promise<void> {
   let view: GameView = createView(viewKind, root, { debug });
   view.setLocale?.(locale, t);
 
-  let characters: CharacterDefinition[] = [];
+  let characters: CharacterDefinition[] = multiplayer ? [] : [...CHARACTERS];
   let hasSelectedCharacter = false;
-  let playerId: PlayerId | undefined;
+  let playerId: PlayerId | undefined = multiplayer ? undefined : LOCAL_PLAYER_ID;
   let inputSeq = 1;
   let wasJumpPressed = false;
   let wasSmashing = false;
@@ -84,32 +87,43 @@ async function bootstrap(): Promise<void> {
   let snapshotStore = new SnapshotStore();
   let predictor = new LocalPlayerPredictor();
   let audioEventPlayer = new AudioEventPlayer();
-  let socket = createSocket();
+  let socket = multiplayer ? createSocket() : undefined;
+  let localGame = multiplayer ? undefined : createLocalGame();
+  let lastLocalUpdateAt = performance.now();
+  let localUpdateAccumulator = 0;
 
   const hud = new Hud(uiRoot, t);
   const pauseOverlay = new PauseOverlay(uiRoot, t);
 
-  const send = (msg: ClientToServerMessage) => socket.send(minifyMessage(msg));
+  const send = (msg: ClientToServerMessage): void => {
+    socket?.send(minifyMessage(msg));
+  };
 
   const restartGame = (): void => {
     playSound("UiClick");
 
     hasSelectedCharacter = false;
-    playerId = undefined;
+    playerId = multiplayer ? undefined : LOCAL_PLAYER_ID;
     inputSeq = 1;
     wasJumpPressed = false;
     wasSmashing = false;
 
-    characters = [];
+    characters = multiplayer ? [] : [...CHARACTERS];
 
     interpolator = new SnapshotInterpolator();
     snapshotStore = new SnapshotStore();
     predictor = new LocalPlayerPredictor();
     audioEventPlayer = new AudioEventPlayer();
+    localUpdateAccumulator = 0;
+    lastLocalUpdateAt = performance.now();
 
-    socket.close();
-    socket = createSocket();
-    bindSocketEvents();
+    if (multiplayer) {
+      socket?.close();
+      socket = createSocket();
+      bindSocketEvents(socket);
+    } else {
+      localGame = createLocalGame();
+    }
 
     characterSelect.render(characters, hasSelectedCharacter);
     hud.render(undefined, undefined);
@@ -128,7 +142,7 @@ async function bootstrap(): Promise<void> {
     t,
     initialCharacterKind: selectedCharacterKind ?? undefined,
     onSelect: (characterKind: EntityKind) => {
-      if (socket.readyState !== WebSocket.OPEN || playerId === undefined) {
+      if (multiplayer && (socket?.readyState !== WebSocket.OPEN || playerId === undefined || matchCode === undefined)) {
         return;
       }
 
@@ -142,11 +156,19 @@ async function bootstrap(): Promise<void> {
       hasSelectedCharacter = true;
       characterSelect.render(characters, hasSelectedCharacter);
 
-      send({
-        type: "selectCharacter",
-        characterKind,
-        matchCode: ensureMatchCode(params),
-      });
+      if (multiplayer) {
+        send({
+          type: "selectCharacter",
+          characterKind,
+          matchCode,
+        });
+        return;
+      }
+
+      playerId = LOCAL_PLAYER_ID;
+      localGame = createLocalGame();
+      localGame.addPlayer(playerId, characterKind);
+      interpolator.add(localGame.createSnapshot());
     },
   });
 
@@ -251,12 +273,16 @@ async function bootstrap(): Promise<void> {
     });
   }
 
-  function bindSocketEvents(): void {
-    socket.addEventListener("open", () => {
+  function bindSocketEvents(currentSocket: WebSocket | undefined): void {
+    if (currentSocket === undefined) {
+      return;
+    }
+
+    currentSocket.addEventListener("open", () => {
       send({ type: "join" });
     });
 
-    socket.addEventListener("message", (event) => {
+    currentSocket.addEventListener("message", (event) => {
       const message = parseServerMessage(event.data);
 
       if (message === undefined) {
@@ -288,16 +314,22 @@ async function bootstrap(): Promise<void> {
     });
   }
 
-  bindSocketEvents();
+  bindSocketEvents(socket);
 
   function frame(): void {
-    const canSend = socket.readyState === WebSocket.OPEN && playerId !== undefined && hasSelectedCharacter;
+    const currentPlayerId = playerId;
+    const canPlay = currentPlayerId !== undefined && hasSelectedCharacter;
+    const canSend = multiplayer && socket?.readyState === WebSocket.OPEN && canPlay;
 
-    if (consumePauseToggle() && canSend) {
-      send({
-        type: "pause",
-        paused: isPaused(),
-      });
+    if (consumePauseToggle() && canPlay) {
+      if (multiplayer) {
+        send({
+          type: "pause",
+          paused: isPaused(),
+        });
+      } else {
+        localGame?.setPaused(currentPlayerId, isPaused());
+      }
     }
 
     const keyboardInput = readInput();
@@ -332,6 +364,25 @@ async function bootstrap(): Promise<void> {
             };
 
       send(inputMessage);
+    }
+
+    if (!multiplayer && canPlay && localGame !== undefined) {
+      if (!isPaused()) {
+        localGame.setInput(currentPlayerId, input, undefined, currentInputSeq);
+      }
+
+      const now = performance.now();
+      localUpdateAccumulator += Math.min(0.25, (now - lastLocalUpdateAt) / 1000);
+      lastLocalUpdateAt = now;
+
+      while (localUpdateAccumulator >= FIXED_DT) {
+        localGame.update(FIXED_DT);
+        interpolator.add(localGame.createSnapshot());
+        localUpdateAccumulator -= FIXED_DT;
+      }
+    } else {
+      lastLocalUpdateAt = performance.now();
+      localUpdateAccumulator = 0;
     }
 
     const interpolatedSnapshot = interpolator.get(playerId);
@@ -425,34 +476,14 @@ function createSocket(): WebSocket {
   return new WebSocket(import.meta.env.VITE_WS_URL ?? "ws://localhost:8080");
 }
 
-function ensureMatchCode(params: URLSearchParams): string {
-  const existingMatchCode = params.get("match");
-
-  if (existingMatchCode !== null && existingMatchCode.trim() !== "") {
-    return existingMatchCode;
-  }
-
-  const nextMatchCode = generateMatchCode();
-
-  params.set("match", nextMatchCode);
-
-  const nextUrl = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
-  window.history.replaceState(null, "", nextUrl);
-
-  return nextMatchCode;
+function createLocalGame(): Game {
+  return new Game(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
 }
 
-function generateMatchCode(): string {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const length = 6;
+function getMatchCode(params: URLSearchParams): string | undefined {
+  const matchCode = params.get("match")?.trim();
 
-  let code = "";
-
-  for (let i = 0; i < length; i++) {
-    code += alphabet[Math.floor(Math.random() * alphabet.length)];
-  }
-
-  return code;
+  return matchCode === "" ? undefined : matchCode;
 }
 
 function applyStaticTranslations(locale: string, t: (key: string) => string): void {
