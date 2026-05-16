@@ -11,6 +11,8 @@ import { getBounceImpact } from "./animations/getBounceImpact.js";
 import { getDamageImpact } from "./animations/getDamageImpact.js";
 import { getFlyingDeathImpact } from "./animations/getFlyingDeathImpact.js";
 import { getGroundDeathImpact } from "./animations/getGroundDeathImpact.js";
+import { getJumpImpact } from "./animations/getJumpImpact.js";
+import { getSmashImpact } from "./animations/getSmashImpact.js";
 import { getSwingImpact } from "./animations/getSwingImpact.js";
 import { getWalkImpact } from "./animations/getWalkImpact.js";
 
@@ -32,15 +34,9 @@ const ANIMATIONS: Record<string, AnimationHandler> = {
 
   fly: (now, _state, input) => getWalkImpact(now, input),
 
-  jump: () => ({
-    ...DEFAULT_IMPACT,
-    rotation: -0.15,
-  }),
+  jump: (now, _state, input) => getJumpImpact(now, input),
 
-  smash: () => ({
-    ...DEFAULT_IMPACT,
-    rotation: 0.35,
-  }),
+  smash: (now, _state, input) => getSmashImpact(now, input),
 
   squish: (now, state, input) => getGroundDeathImpact(now, state, input),
 
