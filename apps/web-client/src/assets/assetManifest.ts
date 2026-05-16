@@ -8,16 +8,29 @@ export const IMAGE_ASSETS = [
   "/environments/forest_front.png",
   "/environments/ground.png",
 
+  // Foreground
+  "/environments/fg_fence1.png",
+
+  "/environments/fg_pumpkin1.png",
+  "/environments/fg_pumpkin2.png",
+
+  "/environments/fg_stump1.png",
+  "/environments/fg_stump2.png",
+  "/environments/fg_stump3.png",
+  "/environments/fg_stump4.png",
+  "/environments/fg_stump5.png",
+
+  "/environments/fg_tree1.png",
+  "/environments/fg_tree2.png",
+  "/environments/fg_tree3.png",
+
+  // Leaves
   "/environments/leaf1.png",
   "/environments/leaf2.png",
   "/environments/leaf3.png",
   "/environments/leaf4.png",
   "/environments/leaf5.png",
   "/environments/leaf6.png",
-
-  // UI
-  "/favicon.png",
-  "/logo.png",
 
   // Players
   "/players/batcat.png",
@@ -52,6 +65,8 @@ export const IMAGE_ASSETS = [
   // Obstacles
   "/obstacles/cactus.png",
   "/obstacles/rock.png",
+  "/obstacles/stump.png",
+  "/obstacles/bush.png",
 
   // Effects
   "/effects/screen-crack.png",
