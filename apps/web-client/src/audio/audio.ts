@@ -14,7 +14,10 @@ const Sounds = {
   PlayerDie: "/sfx/player_die.wav",
 
   EnemyDie: "/sfx/enemy_die.wav",
-  EnemySpawn: "/sfx/enemy_spawn.wav",
+  BoarEnemyDie: "/sfx/enemy_die_boar.wav",
+  CrowEnemyDie: "/sfx/enemy_die_crow.wav",
+  OrcEnemyDie: "/sfx/enemy_die_orc.wav",
+  RatEnemyDie: "/sfx/enemy_die_rat.wav",
 
   CivilianDie: "/sfx/civilian_die.wav",
 
@@ -22,6 +25,8 @@ const Sounds = {
   UiClick: "/sfx/ui_click.wav",
   GameOver: "/sfx/game_over.wav",
 } as const;
+
+type SoundKey = keyof typeof Sounds;
 
 const MusicFiles = Object.values(Music).flat();
 
@@ -31,51 +36,16 @@ export async function initAudio(): Promise<void> {
   setupAudioUnlock();
 }
 
-export const audioEvents = {
-  playerJump(): void {
-    audio.playSound(Sounds.PlayerJump);
-  },
+export function playSound(key: SoundKey, kind?: string) {
+  const prefix = kind?.length ? kind[0].toUpperCase() + kind.slice(1) : "";
+  let sounds = Sounds[key];
 
-  playerLand(): void {
-    audio.playSound(Sounds.PlayerLand);
-  },
+  if (Object.hasOwn(Sounds, prefix + key)) {
+    sounds = Sounds[(prefix + key) as SoundKey];
+  }
 
-  playerSmash(): void {
-    audio.playSound(Sounds.PlayerSmash);
-  },
-
-  playerHurt(): void {
-    audio.playSound(Sounds.PlayerHurt);
-  },
-
-  playerDie(): void {
-    audio.playSound(Sounds.PlayerDie);
-  },
-
-  enemyDie(): void {
-    audio.playSound(Sounds.EnemyDie);
-  },
-
-  enemySpawn(): void {
-    audio.playSound(Sounds.EnemySpawn);
-  },
-
-  civilianDie(): void {
-    audio.playSound(Sounds.CivilianDie);
-  },
-
-  pickup(): void {
-    audio.playSound(Sounds.Pickup);
-  },
-
-  uiClick(): void {
-    audio.playSound(Sounds.UiClick);
-  },
-
-  gameOver(): void {
-    audio.playSound(Sounds.GameOver);
-  },
-} as const;
+  audio.playSound(sounds);
+}
 
 export const musicEvents = {
   gameplay(): void {

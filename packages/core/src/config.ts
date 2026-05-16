@@ -55,7 +55,7 @@ type EntityBaseConfig = {
   size: Size;
   hurt: HurtCircle;
   damage: number;
-  laneY?: number;
+  laneY?: [number, number];
   animations?: AnimationSet;
 };
 

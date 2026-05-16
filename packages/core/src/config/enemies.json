@@ -2,12 +2,11 @@
   {
     "kind": "orc",
     "size": [128, 96],
-    "hurt": [46, 0, 0],
+    "hurt": [40, 0, 0],
     "damage": 1,
     "score": 100,
     "minMoveSpeed": 100,
     "maxMoveSpeed": 150,
-    "laneY": 0,
     "animations": {
       "idle": "walk",
       "death": "squish"
@@ -16,12 +15,11 @@
   {
     "kind": "boar",
     "size": [128, 96],
-    "hurt": [44, 0, 6],
+    "hurt": [40, 0, 6],
     "damage": 1,
     "score": 75,
     "minMoveSpeed": 200,
     "maxMoveSpeed": 300,
-    "laneY": 0,
     "animations": {
       "idle": "walk",
       "death": "squish"
@@ -35,21 +33,20 @@
     "score": 50,
     "minMoveSpeed": 300,
     "maxMoveSpeed": 400,
-    "laneY": 0,
     "animations": {
       "idle": "walk",
       "death": "squish"
     }
   },
   {
-    "kind": "bird",
+    "kind": "crow",
     "size": [90, 60],
-    "hurt": [18, 0, 0],
+    "hurt": [18, -10, 0],
     "damage": 1,
     "score": 50,
     "minMoveSpeed": 300,
     "maxMoveSpeed": 400,
-    "laneY": -150,
+    "laneY": [-50, -150],
     "animations": {
       "idle": "fly",
       "death": "flyToScreen"

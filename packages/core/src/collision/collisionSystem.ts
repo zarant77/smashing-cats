@@ -33,6 +33,7 @@ export function resolvePlayerEntityCollisions(context: CollisionContext): void {
     }
 
     const playerHurtCircle = getPlayerCircle(player, context.scrollX);
+    let shouldStopSmash = false;
 
     for (const entity of context.entities) {
       if (!entity.alive) {
@@ -45,7 +46,7 @@ export function resolvePlayerEntityCollisions(context: CollisionContext): void {
         const smashBox = getPlayerSmashBox(player, context.scrollX);
 
         if (intersects(smashBox, circleToBounds(entityCircle)) || context.intersectsCompensatedEntity(player, entity)) {
-          resolvePlayerEntityCollision(context, player, entity);
+          shouldStopSmash = resolvePlayerEntityCollision(context, player, entity, true) || shouldStopSmash;
           continue;
         }
       }
@@ -54,45 +55,49 @@ export function resolvePlayerEntityCollisions(context: CollisionContext): void {
         resolveDamagingCollision(context, player, entity);
       }
     }
+
+    if (shouldStopSmash) {
+      stopSmash(player);
+    }
   }
 }
 
-function resolvePlayerEntityCollision(context: CollisionContext, player: Player, entity: Entity): void {
+function resolvePlayerEntityCollision(context: CollisionContext, player: Player, entity: Entity, smashCollision = false): boolean {
   if (!entity.alive) {
-    return;
+    return false;
   }
 
   if (entity.type === "enemy") {
-    resolveEnemyCollision(context, player, entity);
-    return;
+    return resolveEnemyCollision(context, player, entity, smashCollision);
   }
 
   if (entity.type === "civilian") {
-    resolveCivilianCollision(context, player, entity);
-    return;
+    return resolveCivilianCollision(context, player, entity, smashCollision);
   }
 
   if (entity.type === "obstacle") {
     resolveDamagingCollision(context, player, entity);
   }
+
+  return false;
 }
 
-function resolveEnemyCollision(context: CollisionContext, player: Player, entity: Entity): void {
-  if (player.smashingForCollision) {
+function resolveEnemyCollision(context: CollisionContext, player: Player, entity: Entity, smashCollision: boolean): boolean {
+  if (smashCollision) {
     entity.alive = false;
     player.score += entity.score;
 
     context.addEvent("enemyKilled", player, entity, 0, entity.score);
-    stopSmash(player);
-    return;
+    return true;
   }
 
   resolveDamagingCollision(context, player, entity);
+  return false;
 }
 
-function resolveCivilianCollision(context: CollisionContext, player: Player, entity: Entity): void {
-  if (!player.smashingForCollision) {
-    return;
+function resolveCivilianCollision(context: CollisionContext, player: Player, entity: Entity, smashCollision: boolean): boolean {
+  if (!smashCollision) {
+    return false;
   }
 
   entity.alive = false;
@@ -101,7 +106,7 @@ function resolveCivilianCollision(context: CollisionContext, player: Player, ent
   player.score += scoreDelta;
 
   context.addEvent("civilianKilled", player, entity, 0, scoreDelta);
-  stopSmash(player);
+  return true;
 }
 
 function resolveDamagingCollision(context: CollisionContext, player: Player, entity: Entity): void {

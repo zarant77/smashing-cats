@@ -15,7 +15,7 @@ import { createTranslator } from "@smashing-cats/i18n";
 import { SnapshotInterpolator, LocalPlayerPredictor } from "@smashing-cats/client-netcode";
 
 import { preloadAssets } from "./assets/assets.js";
-import { audio, audioEvents, initAudio, musicEvents } from "./audio/audio.js";
+import { audio, initAudio, musicEvents, playSound } from "./audio/audio.js";
 import { consumePauseToggle, isPaused, readInput } from "./input.js";
 import { PauseOverlay } from "./ui/PauseOverlay.js";
 import { CharacterSelect } from "./ui/CharacterSelect.js";
@@ -92,7 +92,7 @@ async function bootstrap(): Promise<void> {
   const send = (msg: ClientToServerMessage) => socket.send(minifyMessage(msg));
 
   const restartGame = (): void => {
-    audioEvents.uiClick();
+    playSound("UiClick");
 
     hasSelectedCharacter = false;
     playerId = undefined;
@@ -132,7 +132,7 @@ async function bootstrap(): Promise<void> {
         return;
       }
 
-      audioEvents.uiClick();
+      playSound("UiClick");
 
       selectedCharacterKind = characterKind;
       localStorage.setItem("smashing-cats-character", characterKind);
@@ -185,7 +185,7 @@ async function bootstrap(): Promise<void> {
     engineSelect.value = viewKind;
 
     engineSelect.addEventListener("change", () => {
-      audioEvents.uiClick();
+      playSound("UiClick");
 
       viewKind = parseViewKind(engineSelect.value);
       localStorage.setItem("smashing-cats-view", viewKind);
@@ -202,7 +202,7 @@ async function bootstrap(): Promise<void> {
     audio.setSoundsEnabled(soundsEnabled);
 
     if (soundsEnabled) {
-      audioEvents.uiClick();
+      playSound("UiClick");
     }
 
     updateAudioButtons(soundToggle, musicToggle, soundsEnabled, musicEnabled, t);
@@ -214,7 +214,7 @@ async function bootstrap(): Promise<void> {
     localStorage.setItem(MUSIC_ENABLED_KEY, String(musicEnabled));
     audio.setMusicEnabled(musicEnabled);
 
-    audioEvents.uiClick();
+    playSound("UiClick");
     musicEvents.gameplay();
 
     updateAudioButtons(soundToggle, musicToggle, soundsEnabled, musicEnabled, t);
@@ -231,7 +231,7 @@ async function bootstrap(): Promise<void> {
 
   for (const button of localeButtons) {
     button.addEventListener("click", () => {
-      audioEvents.uiClick();
+      playSound("UiClick");
 
       locale = button.dataset.locale ?? "en";
       t = createTranslator(locale);
@@ -348,9 +348,9 @@ async function bootstrap(): Promise<void> {
 
     if (jumpPressed && hasSelectedCharacter && predictedPlayer !== undefined && !isPaused()) {
       if (predictedPlayer.smashing && !wasSmashing) {
-        audioEvents.playerSmash();
+        playSound("PlayerSmash");
       } else {
-        audioEvents.playerJump();
+        playSound("PlayerJump");
       }
     }
 
@@ -401,21 +401,21 @@ class AudioEventPlayer {
         const player = snapshot.players.find((item) => item.playerId === localPlayerId);
 
         if (player !== undefined && !player.alive) {
-          audioEvents.playerDie();
+          playSound("PlayerDie");
           return;
         }
 
-        audioEvents.playerHurt();
+        playSound("PlayerHurt");
         return;
       }
 
       case "enemyKilled":
-        audioEvents.enemyDie();
+        playSound("EnemyDie", event.entityKind);
         return;
 
       case "civilianKilled":
       case "civilianKilledByEnemy":
-        audioEvents.civilianDie();
+        playSound("CivilianDie", event.entityKind);
         return;
     }
   }

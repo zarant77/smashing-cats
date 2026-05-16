@@ -1,6 +1,6 @@
 import type { CharacterDefinition, EntityKind } from "@smashing-cats/protocol";
 import type { Translator } from "@smashing-cats/i18n";
-import { audioEvents } from "../audio/audio.js";
+import { playSound } from "../audio/audio.js";
 
 type CharacterSelectOptions = {
   locale: string;
@@ -134,13 +134,13 @@ export class CharacterSelect {
   private selectPreviousCharacter(): void {
     this.currentIndex = wrapIndex(this.currentIndex - 1, this.lastCharacters.length);
     this.render(this.lastCharacters, false);
-    audioEvents.uiClick();
+    playSound("UiClick");
   }
 
   private selectNextCharacter(): void {
     this.currentIndex = wrapIndex(this.currentIndex + 1, this.lastCharacters.length);
     this.render(this.lastCharacters, false);
-    audioEvents.uiClick();
+    playSound("UiClick");
   }
 
   private selectCurrentCharacter(): void {
@@ -150,7 +150,7 @@ export class CharacterSelect {
       return;
     }
 
-    audioEvents.uiClick();
+    playSound("UiClick");
     this.onSelect(character.kind);
   }
 

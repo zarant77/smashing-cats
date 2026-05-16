@@ -2,6 +2,7 @@ import { GAME_CONFIG, SPAWNABLES } from "../config.js";
 import { getEntityType } from "./entityType.js";
 
 import type { Entity } from "../types.js";
+import { randomInt } from "../math.js";
 
 type CreateEntityOptions = {
   config: (typeof SPAWNABLES)[number];
@@ -12,7 +13,8 @@ type CreateEntityOptions = {
 
 export function createEntity({ config, id, x, moveSpeed }: CreateEntityOptions): Entity {
   const [, height] = config.size;
-  const laneY = config.laneY ?? 0;
+  const laneY = config.laneY ?? [0, 0];
+  const y = GAME_CONFIG.groundY - height + randomInt(laneY[0], laneY[1]);
 
   return {
     id,
@@ -20,7 +22,7 @@ export function createEntity({ config, id, x, moveSpeed }: CreateEntityOptions):
     kind: config.kind,
 
     x,
-    y: GAME_CONFIG.groundY - height + laneY,
+    y,
 
     vx: -moveSpeed,
     vy: 0,

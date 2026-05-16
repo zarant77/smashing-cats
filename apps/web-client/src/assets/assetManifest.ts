@@ -34,14 +34,14 @@ export const IMAGE_ASSETS = [
   "/players/zombocat.png",
 
   // Enemies
+  "/enemies/crow.png",
+  "/enemies/crow-dead.png",
+  "/enemies/boar.png",
+  "/enemies/boar-dead.png",
   "/enemies/rat.png",
   "/enemies/rat-dead.png",
   "/enemies/orc.png",
   "/enemies/orc-dead.png",
-  "/enemies/boar.png",
-  "/enemies/boar-dead.png",
-  "/enemies/bird.png",
-  "/enemies/bird-dead.png",
 
   // Civilians
   "/civilians/baba.png",
@@ -51,6 +51,7 @@ export const IMAGE_ASSETS = [
 
   // Obstacles
   "/obstacles/cactus.png",
+  "/obstacles/rock.png",
 
   // Effects
   "/effects/screen-crack.png",

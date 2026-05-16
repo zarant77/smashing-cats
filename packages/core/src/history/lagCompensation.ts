@@ -1,5 +1,5 @@
 import { getSmashBox, intersects, type Bounds } from "../collision/collisions.js";
-import { clamp } from "../math/clamp.js";
+import { clamp } from "../math.js";
 import { getEntityHistoryFrame } from "./entityHistory.js";
 
 import type { EntityHistoryFrame } from "./entityHistory.js";
