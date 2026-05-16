@@ -2,6 +2,7 @@ import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
 import type { Translator } from "@smashing-cats/i18n";
 import type { GameView, ViewOptions } from "../types.js";
 import { BackgroundRenderer } from "./BackgroundRenderer.js";
+import { ForegroundRenderer } from "./ForegroundRenderer.js";
 import { EffectRenderer } from "./EffectRenderer.js";
 import { EntityRenderer } from "./EntityRenderer.js";
 import { FloatingTextRenderer } from "./FloatingTextRenderer.js";
@@ -16,6 +17,7 @@ export class CanvasView implements GameView {
   private readonly canvas: HTMLCanvasElement;
 
   private readonly background = new BackgroundRenderer();
+  private readonly foreground = new ForegroundRenderer();
   private readonly ground = new GroundRenderer();
   private readonly particles = new ParticlesRenderer(10);
   private readonly effects = new EffectRenderer();
@@ -99,6 +101,8 @@ export class CanvasView implements GameView {
     this.effects.draw(ctx, viewport);
 
     this.floatingTexts.draw(ctx, viewport);
+
+    this.foreground.draw(ctx, this.canvas, snapshot, viewport);
 
     ctx.restore();
   }

@@ -78,6 +78,7 @@ export class PlayerRenderer {
       alive: player.alive,
       hp: player.hp,
       velocityX: player.vx,
+      velocityY: player.vy,
       moving: player.alive && player.grounded && !player.smashing,
       jumping: !player.grounded,
       smashing: player.smashing,
@@ -89,7 +90,7 @@ export class PlayerRenderer {
 
     ctx.save();
 
-    ctx.globalAlpha = shouldBlinkOff ? 0.35 : 1;
+    ctx.globalAlpha = shouldBlinkOff ? 0.35 : transform.alpha;
 
     ctx.translate(transform.x, transform.y + height / 2);
     ctx.rotate(transform.rotation);

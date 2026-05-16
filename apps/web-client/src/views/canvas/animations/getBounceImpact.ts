@@ -1,4 +1,4 @@
-import { type AnimationImpact, type TransformInput } from "./animationTypes.js";
+import { DEFAULT_IMPACT, type AnimationImpact, type TransformInput } from "./animationTypes.js";
 
 const BOUNCE_POWER = 20;
 const SQUASH_POWER = 0.07;
@@ -10,10 +10,9 @@ export function getBounceImpact(now: number, input: TransformInput): AnimationIm
   const bounce = Math.abs(wave);
 
   return {
-    x: 0,
+    ...DEFAULT_IMPACT,
     y: -bounce * BOUNCE_POWER * input.scale,
     scaleX: 1 - wave2 * SQUASH_POWER,
     scaleY: 1 + wave2 * SQUASH_POWER,
-    rotation: 0,
   };
 }

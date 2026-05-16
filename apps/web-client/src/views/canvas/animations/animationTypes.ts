@@ -41,6 +41,7 @@ export type TransformInput = {
   screenWidth: number;
   screenHeight: number;
   velocityX?: number;
+  velocityY?: number;
 };
 
 export type AnimationState = {
@@ -61,6 +62,7 @@ export type AnimationImpact = {
   scaleX: number;
   scaleY: number;
   rotation: number;
+  alpha: number;
   spawnEffects?: readonly AnimationEffectSpawn[];
 };
 
@@ -72,4 +74,5 @@ export const DEFAULT_IMPACT: AnimationImpact = {
   scaleX: 1,
   scaleY: 1,
   rotation: 0,
+  alpha: 1,
 };

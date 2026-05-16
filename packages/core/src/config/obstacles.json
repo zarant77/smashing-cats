@@ -1,20 +1,20 @@
 [
   {
-    "kind": "cactus",
-    "size": [80, 128],
-    "hurt": [20, 0, -15],
+    "kind": "stump",
+    "size": [100, 120],
+    "hurt": [25, 0, 0],
     "damage": 1,
     "animations": {
       "idle": "swing"
     }
   },
   {
-    "kind": "cactus",
-    "size": [80, 80],
-    "hurt": [20, 0, 0],
+    "kind": "bush",
+    "size": [100, 120],
+    "hurt": [25, 0, 0],
     "damage": 1,
     "animations": {
-      "idle": "swing"
+      "idle": "walk"
     }
   },
   {

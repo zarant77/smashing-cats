@@ -7,10 +7,7 @@ export function getSwingImpact(now: number, input: TransformInput): AnimationImp
   const wave = Math.sin(now * SPEED);
 
   return {
-    x: 0,
-    y: 0,
-    scaleX: 1,
-    scaleY: 1,
+    ...DEFAULT_IMPACT,
     rotation: wave * POWER,
   };
 }

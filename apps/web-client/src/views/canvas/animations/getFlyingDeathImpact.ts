@@ -1,5 +1,11 @@
 import { clamp, easeInCubic, easeOutBack, easeOutCubic, lerp } from "./animationMath.js";
-import type { AnimationEffectSpawn, AnimationImpact, AnimationState, TransformInput } from "./animationTypes.js";
+import {
+  DEFAULT_IMPACT,
+  type AnimationEffectSpawn,
+  type AnimationImpact,
+  type AnimationState,
+  type TransformInput,
+} from "./animationTypes.js";
 
 export const FLYING_DEATH_FLY_MS = 400;
 export const FLYING_DEATH_HOLD_MS = 100;
@@ -54,24 +60,22 @@ function getFlyToScreenImpact(elapsed: number, state: AnimationState, currentX: 
   const scale = lerp(1, FLYING_DEATH_MAX_SCALE, scaleProgress);
 
   return {
+    ...DEFAULT_IMPACT,
     x: animatedX - currentX,
     y: animatedY - currentY,
-
     scaleX: scale,
     scaleY: scale,
-
     rotation: FLYING_DEATH_FLY_ROTATION * progress,
   };
 }
 
 function getHoldImpact(state: AnimationState, currentX: number, currentY: number): AnimationImpact {
   return {
+    ...DEFAULT_IMPACT,
     x: state.deathTargetX - currentX,
     y: state.deathTargetY - currentY,
-
     scaleX: FLYING_DEATH_MAX_SCALE,
     scaleY: FLYING_DEATH_MAX_SCALE,
-
     rotation: FLYING_DEATH_FLY_ROTATION,
   };
 }
@@ -86,12 +90,11 @@ function getFallImpact(elapsed: number, state: AnimationState, input: TransformI
   const scale = lerp(FLYING_DEATH_MAX_SCALE, FLYING_DEATH_MAX_SCALE * 0.85, progress);
 
   return {
+    ...DEFAULT_IMPACT,
     x: state.deathTargetX - currentX,
     y: animatedY - currentY,
-
     scaleX: scale,
     scaleY: scale,
-
     rotation: FLYING_DEATH_FLY_ROTATION + FLYING_DEATH_FALL_ROTATION * progress,
   };
 }

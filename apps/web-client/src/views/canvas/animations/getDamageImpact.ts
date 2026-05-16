@@ -17,10 +17,10 @@ export function getDamageImpact(now: number, damagedAt: number, scale: number): 
   const squash = Math.sin(elapsed * 0.12) * DAMAGE_SQUASH_POWER * progress;
 
   return {
+    ...DEFAULT_IMPACT,
     x: Math.sin(elapsed * 0.11) * DAMAGE_SHAKE_POWER_X * progress * scale,
     y: Math.cos(elapsed * 0.17) * DAMAGE_SHAKE_POWER_Y * progress * scale,
     scaleX: 1 + squash,
     scaleY: 1 - squash,
-    rotation: 0,
   };
 }

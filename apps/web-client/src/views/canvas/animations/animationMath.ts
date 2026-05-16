@@ -6,6 +6,14 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+export function clamp01(value: number): number {
+  return Math.min(Math.max(value, 0), 1);
+}
+
+export function easeOutQuad(value: number): number {
+  return 1 - (1 - value) * (1 - value);
+}
+
 export function easeOutCubic(value: number): number {
   return 1 - Math.pow(1 - value, 3);
 }

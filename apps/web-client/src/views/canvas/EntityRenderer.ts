@@ -56,6 +56,8 @@ export class EntityRenderer {
 
     ctx.save();
 
+    ctx.globalAlpha = transform.alpha;
+
     ctx.translate(transform.x, transform.y + height / 2);
     ctx.rotate(transform.rotation);
     ctx.scale(transform.scaleX, transform.scaleY);

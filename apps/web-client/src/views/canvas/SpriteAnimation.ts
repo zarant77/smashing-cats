@@ -61,6 +61,7 @@ export class SpriteAnimation {
       scaleY: damage.scaleY * animation.scaleY,
 
       rotation: damage.rotation + animation.rotation,
+      alpha: damage.alpha * animation.alpha,
 
       spawnEffects: mergeSpawnEffects(damage.spawnEffects, animation.spawnEffects),
     };

@@ -1,4 +1,4 @@
-import { type AnimationImpact, type TransformInput } from "./animationTypes.js";
+import { DEFAULT_IMPACT, type AnimationImpact, type TransformInput } from "./animationTypes.js";
 
 const SQUASH_POWER = 0.05;
 const SPEED = 0.005;
@@ -7,10 +7,8 @@ export function getWalkImpact(now: number, input: TransformInput): AnimationImpa
   const value = Math.sin(now * SPEED * 2) * SQUASH_POWER;
 
   return {
-    x: 0,
-    y: 0,
+    ...DEFAULT_IMPACT,
     scaleX: 1 - value,
     scaleY: 1 + value,
-    rotation: 0,
   };
 }
