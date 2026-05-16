@@ -65,7 +65,8 @@ export class ObjectRegistry {
       object.model = model;
       object.root.add(model);
       object.fallback.visible = false;
-    } catch {
+    } catch (e) {
+      console.warn(e);
       object.fallback.visible = true;
     }
   }

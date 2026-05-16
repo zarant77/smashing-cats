@@ -131,7 +131,7 @@ export class ThreeView implements GameView {
       if (entity.type === "obstacle") {
         object.root.position.set(x, getWorldY(entity.y, height, snapshot.world.groundY), 0);
         object.root.rotation.set(0, 0, 0);
-        object.root.scale.set(1, 1, 1);
+        object.root.scale.setScalar(0.1);
       } else {
         this.animation.applyEntity(object, entity.id, x, entity.y, entity.size, snapshot.world.groundY, entity.alive);
       }
