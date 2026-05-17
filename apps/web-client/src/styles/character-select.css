@@ -25,7 +25,7 @@
 }
 
 .character-select-panel {
-  width: min(980px, calc(100vw - 32px));
+  width: min(980px, calc(100vw - 60px));
 }
 
 .character-select-title {
@@ -322,11 +322,6 @@
 
   .character-control-separator {
     display: none;
-  }
-
-  .character-card dl div {
-    grid-template-columns: 1fr;
-    gap: 6px;
   }
 }
 
