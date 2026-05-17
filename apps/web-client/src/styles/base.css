@@ -31,5 +31,29 @@ label {
 }
 
 :root {
-  --ui-scale: clamp(0.62, min(1vw, 1.8vh), 1);
+  --ui-scale: 1;
+}
+
+@media (max-width: 760px) {
+  :root {
+    --ui-scale: 0.82;
+  }
+}
+
+@media (max-width: 420px) {
+  :root {
+    --ui-scale: 0.68;
+  }
+}
+
+@media (max-width: 360px) {
+  :root {
+    --ui-scale: 0.6;
+  }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  :root {
+    --ui-scale: 0.58;
+  }
 }

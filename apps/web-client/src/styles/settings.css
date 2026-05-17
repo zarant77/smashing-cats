@@ -186,6 +186,8 @@
 
   user-select: none;
   pointer-events: none;
+
+  color: #ffff00;
 }
 
 .audio-cross {
@@ -224,4 +226,17 @@
   box-shadow:
     0 0 16px rgba(255, 204, 51, 0.35),
     inset 0 0 12px rgba(255, 204, 51, 0.15);
+}
+
+#fullscreen-toggle .audio-icon {
+  font-size: 24px;
+  transform: translateY(-1px);
+}
+
+@media (max-height: 400px) and (orientation: landscape) {
+  .settings-overlay {
+    bottom: 2px;
+    padding: 4px 6px 4px 6px;
+    border-radius: 12px;
+  }
 }

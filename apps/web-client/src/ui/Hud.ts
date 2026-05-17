@@ -32,8 +32,6 @@ export class Hud {
 
         item.className = player.playerId === localPlayerId ? "hud-player hud-player-local" : "hud-player";
 
-        const hpPercent = getHpPercent(player.hp, player.maxHp);
-
         item.innerHTML = `
           <img
             class="hud-player-portrait"
@@ -73,12 +71,4 @@ function createHpSegments(hp: number, maxHp: number): string {
 
     return `<span class="${className}"></span>`;
   }).join("");
-}
-
-function getHpPercent(hp: number, maxHp: number): number {
-  if (maxHp <= 0) {
-    return 0;
-  }
-
-  return Math.max(0, Math.min(100, Math.round((hp / maxHp) * 100)));
 }
