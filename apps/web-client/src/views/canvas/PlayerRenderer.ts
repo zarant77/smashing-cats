@@ -17,6 +17,11 @@ type SmashLandingState = {
   wasSmashing: boolean;
 };
 
+type RenderSize = {
+  width: number;
+  height: number;
+};
+
 const DEATH_JUMP_VELOCITY = -520;
 const DEATH_GRAVITY = 1400;
 const DEATH_DRIFT_X = 120;
@@ -52,16 +57,18 @@ export class PlayerRenderer {
     const screenX = viewport.worldToScreenSize(player.x);
     const screenY = viewport.worldToScreenY(player.y);
 
-    const width = viewport.worldToScreenSize(worldWidth);
-    const height = viewport.worldToScreenSize(worldHeight);
+    const physicsWidth = viewport.worldToScreenSize(worldWidth);
+    const physicsHeight = viewport.worldToScreenSize(worldHeight);
 
     const image = assets.get(`/players/${player.kind}.png`);
+    const renderSize = getRenderSize(image, physicsWidth, physicsHeight);
+
     const shouldBlinkOff = player.invulnerable && Math.floor(snapshot.tick / 2) % 2 === 0;
 
-    this.updateSmashLandingEffect(player, effects, screenX, screenY, width, height, viewport.scale);
+    this.updateSmashLandingEffect(player, effects, screenX, screenY, physicsWidth, physicsHeight, viewport.scale);
 
     if (!player.alive) {
-      this.drawDeadPlayer(ctx, viewport, player, image, screenX, screenY, width, height, isLocal);
+      this.drawDeadPlayer(ctx, viewport, player, image, screenX, screenY, physicsWidth, physicsHeight, renderSize, isLocal);
       return;
     }
 
@@ -71,8 +78,8 @@ export class PlayerRenderer {
       id: player.id,
       x: screenX,
       y: screenY,
-      width,
-      height,
+      width: physicsWidth,
+      height: physicsHeight,
       groundY: GAME_CONFIG.groundY,
       entityY: player.y + player.size[1],
       alive: player.alive,
@@ -92,15 +99,15 @@ export class PlayerRenderer {
 
     ctx.globalAlpha = shouldBlinkOff ? 0.35 : transform.alpha;
 
-    ctx.translate(transform.x, transform.y + height / 2);
+    ctx.translate(transform.x, transform.y + physicsHeight / 2);
     ctx.rotate(transform.rotation);
     ctx.scale(-transform.scaleX, transform.scaleY);
 
     if (image.complete && image.naturalWidth > 0) {
-      ctx.drawImage(image, -width / 2, -height, width, height);
+      ctx.drawImage(image, -renderSize.width / 2, -renderSize.height, renderSize.width, renderSize.height);
     } else {
       ctx.fillStyle = isLocal ? "#ffcc33" : "#f58ad4";
-      ctx.fillRect(-width / 2, -height, width, height);
+      ctx.fillRect(-renderSize.width / 2, -renderSize.height, renderSize.width, renderSize.height);
     }
 
     ctx.restore();
@@ -150,8 +157,9 @@ export class PlayerRenderer {
     image: HTMLImageElement,
     screenX: number,
     screenY: number,
-    width: number,
-    height: number,
+    physicsWidth: number,
+    physicsHeight: number,
+    renderSize: RenderSize,
     isLocal: boolean,
   ): void {
     const state = this.getDeathState(player.id, screenX, screenY);
@@ -161,20 +169,20 @@ export class PlayerRenderer {
     const y = state.y + DEATH_JUMP_VELOCITY * elapsed * viewport.scale + DEATH_GRAVITY * elapsed * elapsed * viewport.scale;
 
     const rotation = elapsed * DEATH_ROTATION_SPEED;
-    const alpha = y > ctx.canvas.height + height ? 0 : 1;
+    const alpha = y > ctx.canvas.height + renderSize.height ? 0 : 1;
 
     ctx.save();
 
     ctx.globalAlpha = alpha;
-    ctx.translate(x + width / 2, y + height / 2);
+    ctx.translate(x + physicsWidth / 2, y + physicsHeight / 2);
     ctx.rotate(rotation);
     ctx.scale(-1, 1);
 
     if (image.complete && image.naturalWidth > 0) {
-      ctx.drawImage(image, -width / 2, -height / 2, width, height);
+      ctx.drawImage(image, -renderSize.width / 2, -renderSize.height / 2, renderSize.width, renderSize.height);
     } else {
       ctx.fillStyle = isLocal ? "#ffcc33" : "#f58ad4";
-      ctx.fillRect(-width / 2, -height / 2, width, height);
+      ctx.fillRect(-renderSize.width / 2, -renderSize.height / 2, renderSize.width, renderSize.height);
     }
 
     ctx.restore();
@@ -214,4 +222,18 @@ export class PlayerRenderer {
 
     return state;
   }
+}
+
+function getRenderSize(image: HTMLImageElement, fallbackWidth: number, fallbackHeight: number): RenderSize {
+  if (!image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
+    return {
+      width: fallbackWidth,
+      height: fallbackHeight,
+    };
+  }
+
+  return {
+    width: fallbackWidth,
+    height: fallbackWidth * (image.naturalHeight / image.naturalWidth),
+  };
 }

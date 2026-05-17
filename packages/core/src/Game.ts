@@ -9,7 +9,7 @@ import { createGameEvent } from "./event/gameEventFactory.js";
 import { EntityHistoryFrame, recordEntityHistory } from "./history/entityHistory.js";
 import { MAX_ENTITY_HISTORY_TICKS } from "./history/historyConfig.js";
 import { intersectsCompensatedEntity } from "./history/lagCompensation.js";
-import { applyPlayerInput } from "./input/applyPlayerInput.js";
+import { applyPlayerInput, clearJumpRequest } from "./input/applyPlayerInput.js";
 import { updatePlayers } from "./player/playerSystem.js";
 import { createPlayer } from "./player/playerFactory.js";
 import { createGameSnapshot } from "./snapshot/snapshotFactory.js";
@@ -102,6 +102,8 @@ export class Game {
       right: false,
       jump: false,
     };
+
+    clearJumpRequest(player);
 
     if (paused) {
       player.invulnerableUntilTick = Number.POSITIVE_INFINITY;

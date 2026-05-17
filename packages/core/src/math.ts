@@ -8,3 +8,11 @@ export function randomInt(v1: number, v2: number): number {
 
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
+
+export function randomId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}

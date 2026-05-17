@@ -1,7 +1,7 @@
 [
   {
     "kind": "baba",
-    "size": [92, 80],
+    "size": [100, 100],
     "hurt": [36, 0, 0],
     "damage": 0,
     "score": 100,
@@ -14,7 +14,7 @@
   },
   {
     "kind": "dido",
-    "size": [92, 80],
+    "size": [100, 100],
     "hurt": [36, 0, 0],
     "damage": 0,
     "score": 100,

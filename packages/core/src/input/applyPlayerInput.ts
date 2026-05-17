@@ -12,10 +12,31 @@ type ApplyPlayerInputOptions = {
   inputSeq: number | undefined;
 };
 
+const jumpRequests = new WeakSet<Player>();
+
 export function applyPlayerInput({ player, input, snapshotTick, inputSeq }: ApplyPlayerInputOptions): void {
-  player.lastInput = normalizeInput(input);
+  const normalizedInput = normalizeInput(input);
+  const wasJumpPressed = player.lastInput.jump;
 
+  if (normalizedInput.jump && !wasJumpPressed) {
+    jumpRequests.add(player);
+  }
+
+  player.lastInput = normalizedInput;
   player.lastInputSnapshotTick = normalizeSnapshotTick(snapshotTick);
-
   player.lastReceivedInputSeq = normalizeInputSeq(inputSeq, player.lastReceivedInputSeq);
+}
+
+export function consumeJumpRequest(player: Player): boolean {
+  if (!jumpRequests.has(player)) {
+    return false;
+  }
+
+  jumpRequests.delete(player);
+
+  return true;
+}
+
+export function clearJumpRequest(player: Player): void {
+  jumpRequests.delete(player);
 }

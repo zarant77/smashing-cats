@@ -13,7 +13,7 @@ type ParallaxLayer = {
 
 const LAYERS: ParallaxLayer[] = [
   { path: "/environments/sky.png", speed: 0, y: 0, height: 1 },
-  { path: "/environments/mountains.png", speed: 0.05, y: 220, height: 0.4, mirror: true },
+  { path: "/environments/mountains.png", speed: 0.05, y: 220, height: 0.22, mirror: true },
   { path: "/environments/clouds.png", speed: 0.1, y: 0, height: 0.6 },
   { path: "/environments/fog.png", speed: 0.3, y: 200, height: 0.4, mirror: true },
   { path: "/environments/forest.png", speed: 0.6, y: 210, height: 0.4 },

@@ -1,5 +1,6 @@
 import type { GameSnapshot, PlayerId, PlayerSnapshot } from "@smashing-cats/protocol";
 import type { RenderViewport } from "./viewport.js";
+import { randomId } from "@smashing-cats/core";
 
 type FloatingText = {
   id: string;
@@ -115,7 +116,7 @@ export class FloatingTextRenderer {
   private spawn(data: Omit<FloatingText, "id" | "createdAt">): void {
     this.texts.push({
       ...data,
-      id: crypto.randomUUID(),
+      id: randomId(),
       createdAt: performance.now(),
     });
   }

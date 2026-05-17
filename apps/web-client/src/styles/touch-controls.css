@@ -1,4 +1,7 @@
 .touch-controls {
+  --button-size: 12vh;
+  --joy-width: 45vh;
+
   position: fixed;
   inset: 0;
 
@@ -9,75 +12,119 @@
   touch-action: none;
   user-select: none;
 
-  pointer-events: none;
-}
-
-.touch-zone {
-  position: absolute;
-
   pointer-events: auto;
-  touch-action: none;
 }
 
-.touch-zone-jump {
-  left: 0;
-  top: 0;
-
-  width: 100%;
-  height: 50%;
-}
-
-.touch-zone-left {
-  left: 0;
-  bottom: 0;
-
-  width: 50%;
-  height: 50%;
-}
-
-.touch-zone-right {
-  right: 0;
-  bottom: 0;
-
-  width: 50%;
-  height: 50%;
+.touch-controls-gesture {
+  background: transparent;
 }
 
 .touch-hint {
   position: absolute;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  font-size: 120px;
-  font-weight: 700;
-
-  color: rgba(255, 255, 255, 0.18);
-
-  text-shadow:
-    0 0 12px rgba(255, 255, 255, 0.15),
-    0 0 24px rgba(255, 255, 255, 0.08);
-
   pointer-events: none;
   user-select: none;
+
+  opacity: 0.6;
+
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.18)) drop-shadow(0 0 24px rgba(255, 255, 255, 0.08));
 }
 
-.touch-hint-jump {
-  top: 18%;
+/* Movement hint */
+
+.touch-hint-move {
+  left: 7%;
+  bottom: 8%;
+
+  width: var(--joy-width);
+  height: var(--button-size);
+}
+
+.touch-hint-move .joy-center {
+  position: absolute;
+
   left: 50%;
+  top: 50%;
 
-  transform: translateX(-50%);
+  width: var(--button-size);
+  height: var(--button-size);
+
+  transform: translate(-50%, -50%);
+
+  background: url("/ui/joy_center.png") center / contain no-repeat;
 }
 
-.touch-hint-left {
-  left: 20%;
-  bottom: 18%;
+.touch-hint-move .joy-arrow {
+  position: absolute;
+
+  top: 50%;
+
+  width: var(--button-size);
+  height: var(--button-size);
+
+  transform: translateY(-50%);
+
+  background: url("/ui/joy_arrow.png") center / contain no-repeat;
 }
 
-.touch-hint-right {
-  right: 20%;
-  bottom: 18%;
+.touch-hint-move .joy-arrow-left {
+  left: 0;
+}
+
+.touch-hint-move .joy-arrow-right {
+  right: 0;
+
+  transform: translateY(-50%) scaleX(-1);
+}
+
+/* Jump button */
+
+.touch-hint-action {
+  right: 8%;
+  bottom: 10%;
+
+  width: var(--button-size);
+  height: var(--button-size);
+
+  background: url("/ui/joy_jump.png") center / contain no-repeat;
+}
+
+/* Responsive */
+
+@media (max-width: 900px) {
+  .touch-hint-move {
+    width: 150px;
+    height: 150px;
+  }
+
+  .touch-hint-move .joy-center,
+  .touch-hint-move .joy-arrow {
+    width: 60px;
+    height: 60px;
+  }
+
+  .touch-hint-action {
+    width: 100px;
+    height: 100px;
+  }
+}
+
+@media (max-width: 600px) {
+  .touch-hint-move {
+    width: 124px;
+    height: 124px;
+  }
+
+  .touch-hint-move .joy-center,
+  .touch-hint-move .joy-arrow {
+    width: 50px;
+    height: 50px;
+  }
+
+  .touch-hint-action {
+    width: 82px;
+    height: 82px;
+  }
 }
 
 @media (pointer: coarse) {

@@ -1,4 +1,5 @@
 import { GAME_CONFIG, getCharacterConfig } from "../config.js";
+import { clearJumpRequest, consumeJumpRequest } from "../input/applyPlayerInput.js";
 import { simulatePlayerMovement } from "../movement.js";
 import { updateDeadPlayer } from "./playerState.js";
 
@@ -15,12 +16,14 @@ export function updatePlayers({ players, dt }: UpdatePlayersOptions): void {
     player.previousY = player.y;
 
     if (!player.alive) {
+      clearJumpRequest(player);
       player.smashingForCollision = false;
       updateDeadPlayer(player, dt);
       continue;
     }
 
     if (player.paused) {
+      clearJumpRequest(player);
       player.vx = 0;
       player.vy = 0;
       player.smashing = false;
@@ -32,9 +35,14 @@ export function updatePlayers({ players, dt }: UpdatePlayersOptions): void {
 
     const characterConfig = getCharacterConfig(player.kind);
 
+    const actionInput = {
+      ...player.lastInput,
+      jump: consumeJumpRequest(player),
+    };
+
     const result = simulatePlayerMovement(
       player,
-      player.lastInput,
+      actionInput,
       characterConfig,
       {
         width: GAME_CONFIG.worldWidth,

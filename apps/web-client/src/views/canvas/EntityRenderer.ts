@@ -6,6 +6,11 @@ import type { EffectRenderer } from "./EffectRenderer.js";
 import { SpriteAnimation } from "./SpriteAnimation.js";
 import type { RenderViewport } from "./viewport.js";
 
+type RenderSize = {
+  width: number;
+  height: number;
+};
+
 export class EntityRenderer {
   private readonly animation = new SpriteAnimation();
 
@@ -22,21 +27,23 @@ export class EntityRenderer {
 
     const screenX = viewport.worldToScreenX(entity.x);
     const screenY = viewport.worldToScreenY(entity.y);
-    const width = viewport.worldToScreenSize(worldWidth);
-    const height = viewport.worldToScreenSize(worldHeight);
 
-    if (screenX + width < 0 || screenX > canvasWidth) {
+    const physicsWidth = viewport.worldToScreenSize(worldWidth);
+    const physicsHeight = viewport.worldToScreenSize(worldHeight);
+
+    if (screenX + physicsWidth < 0 || screenX > canvasWidth) {
       return;
     }
 
     const image = assets.get(getEntityImagePath(entity));
+    const renderSize = getRenderSize(image, physicsWidth, physicsHeight);
 
     const transform = this.animation.getTransform({
       id: entity.id,
       x: screenX,
       y: screenY,
-      width,
-      height,
+      width: physicsWidth,
+      height: physicsHeight,
       groundY: GAME_CONFIG.groundY,
       entityY: entity.y + entity.size[1],
       alive: entity.alive,
@@ -58,15 +65,15 @@ export class EntityRenderer {
 
     ctx.globalAlpha = transform.alpha;
 
-    ctx.translate(transform.x, transform.y + height / 2);
+    ctx.translate(transform.x, transform.y + physicsHeight / 2);
     ctx.rotate(transform.rotation);
     ctx.scale(transform.scaleX, transform.scaleY);
 
     if (image.complete && image.naturalWidth > 0) {
-      ctx.drawImage(image, -width / 2, -height, width, height);
+      ctx.drawImage(image, -renderSize.width / 2, -renderSize.height, renderSize.width, renderSize.height);
     } else {
       ctx.fillStyle = getEntityFallbackColor(entity);
-      ctx.fillRect(-width / 2, -height, width, height);
+      ctx.fillRect(-renderSize.width / 2, -renderSize.height, renderSize.width, renderSize.height);
     }
 
     ctx.restore();
@@ -105,4 +112,18 @@ function getEntityFallbackColor(entity: EntitySnapshot): string {
   }
 
   return "#8b3a3a";
+}
+
+function getRenderSize(image: HTMLImageElement, fallbackWidth: number, fallbackHeight: number): RenderSize {
+  if (!image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
+    return {
+      width: fallbackWidth,
+      height: fallbackHeight,
+    };
+  }
+
+  return {
+    width: fallbackWidth,
+    height: fallbackWidth * (image.naturalHeight / image.naturalWidth),
+  };
 }

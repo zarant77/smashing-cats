@@ -26,6 +26,9 @@ export function resizeCanvasToRoot(canvas: HTMLCanvasElement, root: HTMLElement)
   if (canvas.height !== nextHeight) {
     canvas.height = nextHeight;
   }
+
+  canvas.style.width = `${rootWidth}px`;
+  canvas.style.height = `${rootHeight}px`;
 }
 
 export function createRenderViewport(canvas: HTMLCanvasElement, snapshot: GameSnapshot): RenderViewport {
@@ -34,10 +37,10 @@ export function createRenderViewport(canvas: HTMLCanvasElement, snapshot: GameSn
   return {
     scale,
 
-    worldToScreenX: (x) => (x - snapshot.world.scrollX) * scale,
+    worldToScreenX: (x): number => (x - snapshot.world.scrollX) * scale,
 
-    worldToScreenY: (y) => y * scale,
+    worldToScreenY: (y): number => y * scale,
 
-    worldToScreenSize: (value) => value * scale,
+    worldToScreenSize: (value): number => value * scale,
   };
 }

@@ -131,7 +131,7 @@ async function bootstrap(): Promise<void> {
     pauseOverlay.render(undefined, undefined);
   };
 
-  const touchControls = TouchControls.isTouchDevice() ? new TouchControls(uiRoot) : undefined;
+  const touchControls = TouchControls.isTouchDevice() ? new TouchControls(uiRoot, t) : undefined;
 
   const gameOverPopup = new GameOverPopup(uiRoot, t, {
     onRestart: restartGame,

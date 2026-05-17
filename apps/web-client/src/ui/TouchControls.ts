@@ -1,106 +1,201 @@
+import type { Translator } from "@smashing-cats/i18n";
 import type { PlayerInput } from "@smashing-cats/protocol";
+
+type TouchState = {
+  pointerId: number;
+  startX: number;
+  x: number;
+};
+
+const MOVE_ENTER_RATIO = 0.05;
+const MOVE_EXIT_RATIO = 0.04;
+const JOY_CENTER_MAX_OFFSET_RATIO = 0.05;
 
 export class TouchControls {
   private readonly root: HTMLDivElement;
+  private readonly joyCenter: HTMLDivElement;
+
+  private touch: TouchState | undefined;
 
   private leftPressed = false;
   private rightPressed = false;
   private jumpPressed = false;
 
-  public constructor(parent: HTMLElement) {
+  public constructor(parent: HTMLElement, _t: Translator) {
     this.root = document.createElement("div");
-    this.root.className = "touch-controls";
+    this.root.className = "touch-controls touch-controls-gesture";
 
-    const jumpZone = this.createZone("touch-zone-jump");
-    const leftZone = this.createZone("touch-zone-left");
-    const rightZone = this.createZone("touch-zone-right");
+    const moveHint = this.createMoveHint();
+    const actionHint = this.createActionHint();
 
-    const jumpHint = this.createHint("⬆", "touch-hint-jump");
-    const leftHint = this.createHint("⬅", "touch-hint-left");
-    const rightHint = this.createHint("➡", "touch-hint-right");
+    this.joyCenter = moveHint.querySelector(".joy-center") as HTMLDivElement;
 
-    this.bindZone(jumpZone, "jump");
-    this.bindZone(leftZone, "left");
-    this.bindZone(rightZone, "right");
-
-    this.root.append(
-      jumpZone,
-      leftZone,
-      rightZone,
-
-      jumpHint,
-      leftHint,
-      rightHint,
-    );
-
+    this.root.append(moveHint, actionHint);
     parent.append(this.root);
+
+    this.bindGestures();
   }
 
   public static isTouchDevice(): boolean {
-    // return "ontouchstart" in window || navigator.maxTouchPoints > 0;
     return navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches;
   }
 
   public getInput(): PlayerInput {
-    return {
+    const input: PlayerInput = {
       left: this.leftPressed,
       right: this.rightPressed,
       jump: this.jumpPressed,
     };
+
+    this.jumpPressed = false;
+
+    return input;
   }
 
-  private createZone(className: string): HTMLDivElement {
+  private createMoveHint(): HTMLDivElement {
     const element = document.createElement("div");
 
-    element.className = `touch-zone ${className}`;
+    element.className = "touch-hint touch-hint-move";
+
+    element.innerHTML = `
+      <div class="joy-arrow joy-arrow-left"></div>
+      <div class="joy-center"></div>
+      <div class="joy-arrow joy-arrow-right"></div>
+    `;
 
     return element;
   }
 
-  private createHint(text: string, className: string): HTMLDivElement {
+  private createActionHint(): HTMLDivElement {
     const element = document.createElement("div");
 
-    element.className = `touch-hint ${className}`;
-    element.textContent = text;
+    element.className = "touch-hint touch-hint-action";
 
     return element;
   }
 
-  private bindZone(element: HTMLElement, action: "left" | "right" | "jump"): void {
-    element.addEventListener("pointerdown", (event) => {
+  private bindGestures(): void {
+    this.root.addEventListener("pointerdown", (event) => {
       event.preventDefault();
 
-      element.setPointerCapture(event.pointerId);
+      const isRightHalf = event.clientX >= window.innerWidth / 2;
 
-      this.setPressed(action, true);
+      if (isRightHalf) {
+        this.jumpPressed = true;
+        return;
+      }
+
+      if (this.touch !== undefined) {
+        return;
+      }
+
+      this.root.setPointerCapture(event.pointerId);
+
+      this.touch = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        x: event.clientX,
+      };
+
+      this.leftPressed = false;
+      this.rightPressed = false;
+
+      this.updateJoyCenter(0);
     });
 
-    element.addEventListener("pointerup", (event) => {
+    this.root.addEventListener("pointermove", (event) => {
+      if (this.touch === undefined || event.pointerId !== this.touch.pointerId) {
+        return;
+      }
+
       event.preventDefault();
 
-      this.setPressed(action, false);
+      this.touch.x = event.clientX;
+
+      this.updateMovement();
+      this.updateJoyCenter(this.touch.x - this.touch.startX);
     });
 
-    element.addEventListener("pointercancel", () => {
-      this.setPressed(action, false);
+    this.root.addEventListener("pointerup", (event) => {
+      if (this.touch === undefined || event.pointerId !== this.touch.pointerId) {
+        return;
+      }
+
+      event.preventDefault();
+
+      this.resetMovement();
     });
 
-    element.addEventListener("lostpointercapture", () => {
-      this.setPressed(action, false);
+    this.root.addEventListener("pointercancel", (event) => {
+      if (this.touch === undefined || event.pointerId !== this.touch.pointerId) {
+        return;
+      }
+
+      this.resetMovement();
+    });
+
+    this.root.addEventListener("lostpointercapture", (event) => {
+      if (this.touch === undefined || event.pointerId !== this.touch.pointerId) {
+        return;
+      }
+
+      this.resetMovement();
     });
   }
 
-  private setPressed(action: "left" | "right" | "jump", pressed: boolean): void {
-    if (action === "left") {
-      this.leftPressed = pressed;
+  private getMoveEnterThreshold(): number {
+    return window.innerHeight * MOVE_ENTER_RATIO;
+  }
+
+  private getMoveExitThreshold(): number {
+    return window.innerHeight * MOVE_EXIT_RATIO;
+  }
+
+  private getJoyCenterMaxOffset(): number {
+    return window.innerHeight * JOY_CENTER_MAX_OFFSET_RATIO;
+  }
+
+  private updateMovement(): void {
+    if (this.touch === undefined) {
       return;
     }
 
-    if (action === "right") {
-      this.rightPressed = pressed;
+    const deltaX = this.touch.x - this.touch.startX;
+
+    const enterThreshold = this.getMoveEnterThreshold();
+    const exitThreshold = this.getMoveExitThreshold();
+
+    if (!this.leftPressed && !this.rightPressed) {
+      this.leftPressed = deltaX < -enterThreshold;
+      this.rightPressed = deltaX > enterThreshold;
       return;
     }
 
-    this.jumpPressed = pressed;
+    if (this.leftPressed) {
+      this.leftPressed = deltaX < -exitThreshold;
+      this.rightPressed = deltaX > enterThreshold;
+      return;
+    }
+
+    if (this.rightPressed) {
+      this.rightPressed = deltaX > exitThreshold;
+      this.leftPressed = deltaX < -enterThreshold;
+    }
+  }
+
+  private updateJoyCenter(deltaX: number): void {
+    const maxOffset = this.getJoyCenterMaxOffset();
+    const offsetX = Math.max(-maxOffset, Math.min(maxOffset, deltaX));
+
+    this.joyCenter.style.transform = `translate(calc(-50% + ${offsetX}px), -50%)`;
+  }
+
+  private resetMovement(): void {
+    this.touch = undefined;
+
+    this.leftPressed = false;
+    this.rightPressed = false;
+
+    this.updateJoyCenter(0);
   }
 }

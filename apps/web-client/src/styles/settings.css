@@ -229,8 +229,7 @@
 }
 
 #fullscreen-toggle .audio-icon {
-  font-size: 24px;
-  transform: translateY(-1px);
+  font-size: 22px;
 }
 
 @media (max-height: 400px) and (orientation: landscape) {

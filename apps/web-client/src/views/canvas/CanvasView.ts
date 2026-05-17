@@ -43,8 +43,6 @@ export class CanvasView implements GameView {
 
     root.replaceChildren(this.canvas);
 
-    resizeCanvasToRoot(this.canvas, this.root);
-
     const context = this.canvas.getContext("2d");
 
     if (context === null) {
@@ -52,12 +50,15 @@ export class CanvasView implements GameView {
     }
 
     this.context = context;
+
+    this.resize();
+
+    window.addEventListener("resize", this.resize);
+    window.addEventListener("orientationchange", this.resize);
   }
 
   public render(snapshot: GameSnapshot | undefined, playerId: PlayerId | undefined): void {
     const ctx = this.context;
-
-    resizeCanvasToRoot(this.canvas, this.root);
 
     const now = performance.now();
     const rawDelta = (now - this.lastFrameTime) / 1000;
@@ -99,9 +100,7 @@ export class CanvasView implements GameView {
     }
 
     this.effects.draw(ctx, viewport);
-
     this.floatingTexts.draw(ctx, viewport);
-
     this.foreground.draw(ctx, this.canvas, snapshot, viewport);
 
     ctx.restore();
@@ -110,6 +109,17 @@ export class CanvasView implements GameView {
   public setLocale(_locale: string, t: Translator): void {
     this.t = t;
   }
+
+  public destroy(): void {
+    window.removeEventListener("resize", this.resize);
+    window.removeEventListener("orientationchange", this.resize);
+
+    this.canvas.remove();
+  }
+
+  private readonly resize = (): void => {
+    resizeCanvasToRoot(this.canvas, this.root);
+  };
 
   private drawCenteredText(text: string): void {
     const ctx = this.context;
