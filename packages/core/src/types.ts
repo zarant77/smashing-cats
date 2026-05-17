@@ -58,6 +58,7 @@ export type Player = Entity & {
   lockedWorldX: number | undefined;
 
   jumpStartY: number;
+  canJump: boolean;
   wasJumpPressed: boolean;
 
   lastInputSnapshotTick: number | undefined;

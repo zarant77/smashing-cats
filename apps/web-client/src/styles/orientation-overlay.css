@@ -32,11 +32,6 @@
 
   text-align: center;
 
-  box-shadow:
-    0 30px 100px rgba(0, 0, 0, 0.6),
-    0 0 50px rgba(255, 204, 51, 0.14);
-
-  backdrop-filter: blur(18px);
 }
 
 .orientation-icon {

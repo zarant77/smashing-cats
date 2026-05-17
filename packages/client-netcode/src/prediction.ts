@@ -136,6 +136,7 @@ export class LocalPlayerPredictor {
       this.state.smashing = reconciledState.smashing;
       this.state.smashingForCollision = reconciledState.smashingForCollision;
       this.state.jumpStartY = reconciledState.jumpStartY;
+      this.state.canJump = reconciledState.canJump;
       this.state.wasJumpPressed = reconciledState.wasJumpPressed;
       return;
     }
@@ -153,6 +154,7 @@ export class LocalPlayerPredictor {
     this.state.smashing = reconciledState.smashing;
     this.state.smashingForCollision = reconciledState.smashingForCollision;
     this.state.jumpStartY = reconciledState.jumpStartY;
+    this.state.canJump = reconciledState.canJump;
     this.state.wasJumpPressed = reconciledState.wasJumpPressed;
   }
 
@@ -203,6 +205,7 @@ function createMovementState(player: PlayerSnapshot): PlayerMovementState {
     smashing: player.smashing,
     smashingForCollision: player.smashing,
     jumpStartY: player.jumpStartY,
+    canJump: player.grounded,
     wasJumpPressed: player.wasJumpPressed,
   };
 }

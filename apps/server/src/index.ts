@@ -16,13 +16,4 @@ server.on("connection", (socket) => {
   room.addClient(socket);
 });
 
-setInterval(() => {
-  const memory = process.memoryUsage();
-
-  console.log("[metrics]", {
-    rssMb: Math.round(memory.rss / 1024 / 1024),
-    heapMb: Math.round(memory.heapUsed / 1024 / 1024),
-  });
-}, 10000);
-
 console.log(`Smash!ng Cats server listening on ws://localhost:${port}`);

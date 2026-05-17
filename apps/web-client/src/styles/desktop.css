@@ -1,0 +1,150 @@
+@media (pointer: fine) {
+  .character-select {
+    backdrop-filter: blur(10px);
+  }
+
+  .character-carousel-arrow {
+    box-shadow:
+      0 16px 36px rgba(0, 0, 0, 0.42),
+      0 0 24px rgba(255, 204, 51, 0.08);
+
+    transition:
+      transform 140ms ease,
+      border-color 140ms ease,
+      background 140ms ease,
+      box-shadow 140ms ease;
+  }
+
+  .character-carousel-arrow:hover,
+  .character-carousel-arrow:focus-visible {
+    box-shadow:
+      0 20px 44px rgba(0, 0, 0, 0.52),
+      0 0 32px rgba(255, 204, 51, 0.18);
+  }
+
+  .character-card {
+    box-shadow:
+      0 34px 90px rgba(0, 0, 0, 0.56),
+      0 0 44px rgba(255, 204, 51, 0.08);
+
+    transition:
+      transform 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease;
+  }
+
+  .character-card:hover,
+  .character-card:focus-visible {
+    box-shadow:
+      0 40px 100px rgba(0, 0, 0, 0.62),
+      0 0 54px rgba(255, 204, 51, 0.16);
+  }
+
+  .character-card-image {
+    filter: drop-shadow(0 24px 30px rgba(0, 0, 0, 0.48)) drop-shadow(0 0 34px rgba(255, 204, 51, 0.1));
+  }
+
+  .character-divider-paw {
+    filter: drop-shadow(0 0 8px rgba(255, 204, 51, 0.35));
+  }
+
+  .character-controls-hint kbd {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 6px 18px rgba(0, 0, 0, 0.34);
+  }
+
+  .hud-player {
+    backdrop-filter: blur(12px);
+
+    box-shadow:
+      0 calc(12px * var(--hud-scale)) calc(34px * var(--hud-scale)) rgba(0, 0, 0, 0.42),
+      0 0 calc(24px * var(--hud-scale)) rgba(255, 204, 51, 0.04);
+  }
+
+  .hud-player-local {
+    box-shadow:
+      0 calc(12px * var(--hud-scale)) calc(34px * var(--hud-scale)) rgba(0, 0, 0, 0.42),
+      0 0 calc(24px * var(--hud-scale)) rgba(255, 204, 51, 0.14);
+  }
+
+  .hud-hp-icon {
+    filter: drop-shadow(0 0 calc(8px * var(--hud-scale)) rgba(255, 80, 100, 0.4));
+  }
+
+  .hud-hp-segment-active {
+    box-shadow: 0 0 calc(10px * var(--hud-scale)) rgba(255, 80, 100, 0.35);
+  }
+
+  .settings-overlay {
+    backdrop-filter: blur(14px);
+
+    box-shadow:
+      0 10px 40px rgba(0, 0, 0, 0.45),
+      0 0 24px rgba(255, 204, 51, 0.05);
+  }
+
+  .settings-overlay select {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 4px 14px rgba(0, 0, 0, 0.24);
+
+    transition:
+      border-color 140ms ease,
+      background 140ms ease,
+      box-shadow 140ms ease;
+  }
+
+  .settings-overlay select:hover,
+  .settings-overlay select:focus {
+    box-shadow:
+      0 0 18px rgba(255, 204, 51, 0.12),
+      0 6px 18px rgba(0, 0, 0, 0.3);
+  }
+
+  .locale-flag {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 4px 14px rgba(0, 0, 0, 0.22);
+
+    transition:
+      transform 120ms ease,
+      border-color 140ms ease,
+      background 140ms ease,
+      box-shadow 140ms ease;
+  }
+
+  .locale-flag:hover {
+    box-shadow:
+      0 0 16px rgba(255, 204, 51, 0.1),
+      0 6px 18px rgba(0, 0, 0, 0.28);
+  }
+
+  .locale-flag.active {
+    box-shadow:
+      0 0 18px rgba(255, 204, 51, 0.16),
+      0 6px 18px rgba(0, 0, 0, 0.3);
+  }
+
+  .settings-overlay button.active {
+    box-shadow:
+      0 0 16px rgba(255, 204, 51, 0.35),
+      inset 0 0 12px rgba(255, 204, 51, 0.15);
+  }
+
+  .orientation-card {
+    box-shadow:
+      0 30px 100px rgba(0, 0, 0, 0.6),
+      0 0 50px rgba(255, 204, 51, 0.14);
+
+    backdrop-filter: blur(18px);
+  }
+
+  .touch-hint {
+    filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.18)) drop-shadow(0 0 24px rgba(255, 255, 255, 0.08));
+  }
+
+  .game-over-card {
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+  }
+}

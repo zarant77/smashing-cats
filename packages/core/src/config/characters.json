@@ -1,7 +1,7 @@
 {
   "common": {
     "size": [120, 120],
-    "hurt": [30, 20, 0],
+    "hurt": [30, 20, 10],
     "smash": [140, 0],
     "smashSpeed": 2000,
     "bounceSpeed": -360,

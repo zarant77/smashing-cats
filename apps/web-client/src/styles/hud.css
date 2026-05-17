@@ -32,21 +32,12 @@
 
   color: #ffffff;
 
-  backdrop-filter: blur(12px);
-
-  box-shadow:
-    0 calc(12px * var(--hud-scale)) calc(34px * var(--hud-scale)) rgba(0, 0, 0, 0.42),
-    0 0 calc(24px * var(--hud-scale)) rgba(255, 204, 51, 0.04);
-
   pointer-events: auto;
 }
 
 .hud-player-local {
   border-color: rgba(255, 204, 51, 0.7);
 
-  box-shadow:
-    0 calc(12px * var(--hud-scale)) calc(34px * var(--hud-scale)) rgba(0, 0, 0, 0.42),
-    0 0 calc(24px * var(--hud-scale)) rgba(255, 204, 51, 0.14);
 }
 
 .hud-player-portrait {
@@ -109,7 +100,6 @@
   font-size: calc(16px * var(--hud-scale));
   line-height: 1;
 
-  filter: drop-shadow(0 0 calc(8px * var(--hud-scale)) rgba(255, 80, 100, 0.4));
 }
 
 .hud-hp-segments {
@@ -135,7 +125,6 @@
 
   background: linear-gradient(90deg, #ff475f, #ffcc33);
 
-  box-shadow: 0 0 calc(10px * var(--hud-scale)) rgba(255, 80, 100, 0.35);
 }
 
 @media (max-width: 760px) {

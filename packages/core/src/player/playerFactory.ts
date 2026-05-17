@@ -62,6 +62,7 @@ export function createPlayer({ playerId, characterConfig, index, tick, groundY, 
     lockedWorldX: undefined,
 
     jumpStartY: y,
+    canJump: true,
     wasJumpPressed: false,
 
     lastInputSnapshotTick: undefined,
