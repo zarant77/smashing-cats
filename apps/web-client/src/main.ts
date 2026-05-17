@@ -38,7 +38,7 @@ async function bootstrap(): Promise<void> {
   await initAudio();
 
   const loadingScreen = document.querySelector("#loading");
-  // loadingScreen?.remove();
+  loadingScreen?.remove();
 
   const root = document.querySelector<HTMLElement>("#game-root");
   if (root === null) {
