@@ -115,26 +115,28 @@
 
     justify-items: start;
 
-    width: min(520px, calc(100vw - 32px));
-    padding: 18px 22px;
+    width: min(440px, calc(100vw - 32px));
   }
 
   .game-over-card h2 {
     grid-area: title;
+    margin: auto;
   }
 
   .game-over-cat {
     grid-area: cat;
 
-    width: min(140px, 28vh);
-    height: min(140px, 28vh);
+    width: min(140px, 32vh);
+    height: min(140px, 32vh);
   }
 
   .game-over-score {
     grid-area: score;
+    margin: auto;
   }
 
   .game-over-restart {
     grid-area: button;
+    margin: auto;
   }
 }

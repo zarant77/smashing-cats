@@ -1,6 +1,6 @@
 .touch-controls {
-  --button-size: 12vh;
-  --joy-width: 45vh;
+  --button-size: 18vh;
+  --joy-width: 56vh;
 
   position: fixed;
   inset: 0;
@@ -26,13 +26,10 @@
   user-select: none;
 
   opacity: 0.6;
-
 }
 
-/* Movement hint */
-
 .touch-hint-move {
-  left: 7%;
+  left: 2%;
   bottom: 8%;
 
   width: var(--joy-width);
@@ -76,7 +73,7 @@
   transform: translateY(-50%) scaleX(-1);
 }
 
-/* Jump button */
+/* Action hint */
 
 .touch-hint-action {
   right: 8%;
@@ -84,45 +81,42 @@
 
   width: var(--button-size);
   height: var(--button-size);
+}
 
-  background: url("/ui/joy_jump.png") center / contain no-repeat;
+.joy-action {
+  position: absolute;
+  inset: 0;
+
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.joy-jump {
+  background-image: url("/ui/joy_jump.png");
+}
+
+.joy-smash {
+  background-image: url("/ui/joy_smash.png");
+}
+
+.joy-action[hidden] {
+  display: none;
 }
 
 /* Responsive */
 
 @media (max-width: 900px) {
-  .touch-hint-move {
-    width: 150px;
-    height: 150px;
-  }
-
-  .touch-hint-move .joy-center,
-  .touch-hint-move .joy-arrow {
-    width: 60px;
-    height: 60px;
-  }
-
-  .touch-hint-action {
-    width: 100px;
-    height: 100px;
+  .touch-controls {
+    --button-size: 60px;
+    --joy-width: 150px;
   }
 }
 
 @media (max-width: 600px) {
-  .touch-hint-move {
-    width: 124px;
-    height: 124px;
-  }
-
-  .touch-hint-move .joy-center,
-  .touch-hint-move .joy-arrow {
-    width: 50px;
-    height: 50px;
-  }
-
-  .touch-hint-action {
-    width: 82px;
-    height: 82px;
+  .touch-controls {
+    --button-size: 50px;
+    --joy-width: 124px;
   }
 }
 

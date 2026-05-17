@@ -204,7 +204,7 @@
   font-size: 22px;
 }
 
-@media (max-height: 400px) and (orientation: landscape) {
+@media (max-height: 500px) {
   .settings-overlay {
     bottom: 2px;
     padding: 4px 6px 4px 6px;

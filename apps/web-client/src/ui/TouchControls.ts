@@ -1,11 +1,13 @@
 import type { Translator } from "@smashing-cats/i18n";
-import type { PlayerInput } from "@smashing-cats/protocol";
+import type { GameSnapshot, PlayerId, PlayerInput } from "@smashing-cats/protocol";
 
 type TouchState = {
   pointerId: number;
   startX: number;
   x: number;
 };
+
+type ActionMode = "jump" | "smash";
 
 const MOVE_ENTER_RATIO = 0.05;
 const MOVE_EXIT_RATIO = 0.04;
@@ -14,6 +16,8 @@ const JOY_CENTER_MAX_OFFSET_RATIO = 0.05;
 export class TouchControls {
   private readonly root: HTMLDivElement;
   private readonly joyCenter: HTMLDivElement;
+  private readonly jumpButton: HTMLDivElement;
+  private readonly smashButton: HTMLDivElement;
 
   private touch: TouchState | undefined;
 
@@ -28,16 +32,42 @@ export class TouchControls {
     const moveHint = this.createMoveHint();
     const actionHint = this.createActionHint();
 
-    this.joyCenter = moveHint.querySelector(".joy-center") as HTMLDivElement;
+    const joyCenter = moveHint.querySelector(".joy-center");
+    const jumpButton = actionHint.querySelector(".joy-jump");
+    const smashButton = actionHint.querySelector(".joy-smash");
+
+    if (!(joyCenter instanceof HTMLDivElement)) {
+      throw new Error("Missing .joy-center element");
+    }
+
+    if (!(jumpButton instanceof HTMLDivElement)) {
+      throw new Error("Missing .joy-jump element");
+    }
+
+    if (!(smashButton instanceof HTMLDivElement)) {
+      throw new Error("Missing .joy-smash element");
+    }
+
+    this.joyCenter = joyCenter;
+    this.jumpButton = jumpButton;
+    this.smashButton = smashButton;
 
     this.root.append(moveHint, actionHint);
+
     parent.append(this.root);
 
+    this.setActionMode("jump");
     this.bindGestures();
   }
 
   public static isTouchDevice(): boolean {
     return navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches;
+  }
+
+  public update(snapshot: GameSnapshot | undefined, playerId: PlayerId | undefined): void {
+    const player = snapshot?.players.find((item) => item.playerId === playerId);
+
+    this.setActionMode(player !== undefined && !player.grounded ? "smash" : "jump");
   }
 
   public getInput(): PlayerInput {
@@ -50,6 +80,13 @@ export class TouchControls {
     this.jumpPressed = false;
 
     return input;
+  }
+
+  private setActionMode(mode: ActionMode): void {
+    const isSmash = mode === "smash";
+
+    this.jumpButton.hidden = isSmash;
+    this.smashButton.hidden = !isSmash;
   }
 
   private createMoveHint(): HTMLDivElement {
@@ -70,6 +107,11 @@ export class TouchControls {
     const element = document.createElement("div");
 
     element.className = "touch-hint touch-hint-action";
+
+    element.innerHTML = `
+      <div class="joy-action joy-jump"></div>
+      <div class="joy-action joy-smash"></div>
+    `;
 
     return element;
   }
@@ -168,12 +210,14 @@ export class TouchControls {
     if (!this.leftPressed && !this.rightPressed) {
       this.leftPressed = deltaX < -enterThreshold;
       this.rightPressed = deltaX > enterThreshold;
+
       return;
     }
 
     if (this.leftPressed) {
       this.leftPressed = deltaX < -exitThreshold;
       this.rightPressed = deltaX > enterThreshold;
+
       return;
     }
 

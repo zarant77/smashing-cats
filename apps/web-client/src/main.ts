@@ -92,6 +92,7 @@ async function bootstrap(): Promise<void> {
       hud.render(snapshot, playerId);
       pauseOverlay.render(snapshot, playerId);
       gameOverPopup?.render(snapshot, playerId);
+      touchControls?.update(snapshot, playerId);
     },
   });
 
