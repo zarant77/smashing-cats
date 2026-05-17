@@ -21,35 +21,26 @@
   <meta name="twitter:description"
     content="A chaotic side-scrolling platformer where super-powered cats smash enemies, dodge traps, and rescue civilians through fast-paced levels full of destruction." />
   <meta name="twitter:image" content="https://smash.catemup.com/og-image.jpg" />
-
   <title>Smash!ng Cats</title>
-
   <link rel="icon" href="/favicon.png" type="image/png" />
 
   <style>
     #loading {
       position: fixed;
       inset: 0;
-
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: 18px;
-
-      background:
-        radial-gradient(circle at top, #2d3550 0%, #10131a 60%);
-
+      background: radial-gradient(circle at top, #2d3550 0%, #10131a 60%);
       z-index: 9999;
-
       font-family: Arial, sans-serif;
     }
 
     .loading-logo {
-      width: min(420px, 80vw);
-
+      width: min(60vh, 80vw);
       image-rendering: auto;
-
       animation: logo-float 2.2s ease-in-out infinite;
       filter:
         drop-shadow(0 10px 24px rgba(0, 0, 0, 0.45));
@@ -59,9 +50,7 @@
       font-size: 18px;
       font-weight: 600;
       letter-spacing: 0.08em;
-
       color: rgba(255, 255, 255, 0.75);
-
       animation: pulse 1.2s ease-in-out infinite;
     }
 

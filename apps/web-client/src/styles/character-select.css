@@ -9,7 +9,7 @@
 
   padding: clamp(12px, 2vw, 24px) clamp(16px, 3vw, 32px) 96px;
 
-  overflow: auto;
+  overflow: hidden;
 
   background:
     radial-gradient(circle at 50% 20%, rgba(255, 204, 51, 0.12), transparent 34%),
@@ -410,7 +410,7 @@
 
   .character-controls-hint {
     grid-area: controls;
-
+    margin-left: -130px;
     justify-content: flex-start;
   }
 
