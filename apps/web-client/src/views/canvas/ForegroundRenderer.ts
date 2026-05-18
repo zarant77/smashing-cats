@@ -25,16 +25,16 @@ type ForegroundObject = {
 };
 
 const SPRITES: ForegroundSprite[] = [
-  { path: "/environments/fg_tree1.png", minScale: 0.6, maxScale: 0.8, y: -20, speed: 1.35, weight: 1 },
-  { path: "/environments/fg_tree2.png", minScale: 0.6, maxScale: 0.8, y: -20, speed: 1.35, weight: 1 },
-  { path: "/environments/fg_tree3.png", minScale: 0.6, maxScale: 0.8, y: -20, speed: 1.35, weight: 1 },
-  { path: "/environments/fg_fence1.png", minScale: 0.8, maxScale: 1, y: 92, speed: 1, weight: 3 },
-  { path: "/environments/fg_stump1.png", minScale: 0.6, maxScale: 0.8, y: 90, speed: 1, weight: 5 },
-  { path: "/environments/fg_stump2.png", minScale: 0.6, maxScale: 0.8, y: 90, speed: 1, weight: 5 },
-  { path: "/environments/fg_stump3.png", minScale: 0.8, maxScale: 1, y: 90, speed: 1, weight: 5 },
-  { path: "/environments/fg_stump4.png", minScale: 0.8, maxScale: 1, y: 90, speed: 1, weight: 5 },
-  { path: "/environments/fg_pumpkin1.png", minScale: 0.6, maxScale: 1, y: 80, speed: 1, weight: 5 },
-  { path: "/environments/fg_pumpkin2.png", minScale: 0.6, maxScale: 1, y: 80, speed: 1, weight: 5 },
+  { path: "/canvas/environments/fg_tree1.png", minScale: 0.6, maxScale: 0.8, y: -20, speed: 1.35, weight: 1 },
+  { path: "/canvas/environments/fg_tree2.png", minScale: 0.6, maxScale: 0.8, y: -20, speed: 1.35, weight: 1 },
+  { path: "/canvas/environments/fg_tree3.png", minScale: 0.6, maxScale: 0.8, y: -20, speed: 1.35, weight: 1 },
+  { path: "/canvas/environments/fg_fence1.png", minScale: 0.8, maxScale: 1, y: 92, speed: 1, weight: 3 },
+  { path: "/canvas/environments/fg_stump1.png", minScale: 0.6, maxScale: 0.8, y: 90, speed: 1, weight: 5 },
+  { path: "/canvas/environments/fg_stump2.png", minScale: 0.6, maxScale: 0.8, y: 90, speed: 1, weight: 5 },
+  { path: "/canvas/environments/fg_stump3.png", minScale: 0.8, maxScale: 1, y: 90, speed: 1, weight: 5 },
+  { path: "/canvas/environments/fg_stump4.png", minScale: 0.8, maxScale: 1, y: 90, speed: 1, weight: 5 },
+  { path: "/canvas/environments/fg_pumpkin1.png", minScale: 0.6, maxScale: 1, y: 80, speed: 1, weight: 5 },
+  { path: "/canvas/environments/fg_pumpkin2.png", minScale: 0.6, maxScale: 1, y: 80, speed: 1, weight: 5 },
 ];
 
 const MIN_SPAWN_DISTANCE = 500;

@@ -72,7 +72,7 @@ export class GameOverPopup {
 
         <img
           class="game-over-cat"
-          src="/players/${kind}.png"
+          src="/canvas/players/${kind}.png"
           alt="${kind}"
         />
 

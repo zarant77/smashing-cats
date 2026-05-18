@@ -24,12 +24,12 @@ type Particle = {
 };
 
 const PARTICLE_SPRITES = [
-  "/environments/leaf1.png",
-  "/environments/leaf2.png",
-  "/environments/leaf3.png",
-  "/environments/leaf4.png",
-  "/environments/leaf5.png",
-  "/environments/leaf6.png",
+  "/canvas/environments/leaf1.png",
+  "/canvas/environments/leaf2.png",
+  "/canvas/environments/leaf3.png",
+  "/canvas/environments/leaf4.png",
+  "/canvas/environments/leaf5.png",
+  "/canvas/environments/leaf6.png",
 ] as const;
 
 const WORLD_WIDTH = 1600;

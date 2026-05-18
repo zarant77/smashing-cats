@@ -1,7 +1,6 @@
 import { type EntityKind } from "@smashing-cats/protocol";
 import { createTranslator } from "@smashing-cats/i18n";
 
-import { preloadAssets } from "./assets/assets.js";
 import { audio, initAudio, musicEvents, playSound } from "./audio/audio.js";
 import { GameRuntime } from "./game/GameRuntime.js";
 import { getMatchCode } from "./game/routing.js";
@@ -34,10 +33,7 @@ const CHARACTER_KEY = "smashing-cats-character";
 void bootstrap();
 
 async function bootstrap(): Promise<void> {
-  await preloadAssets();
   await initAudio();
-
-  document.querySelector("#loading")?.remove();
 
   const root = getRequiredElement<HTMLElement>("#game-root", "Game root");
   const uiRoot = getRequiredElement<HTMLElement>("#ui-root", "UI root");
@@ -58,7 +54,7 @@ async function bootstrap(): Promise<void> {
   let musicEnabled = localStorage.getItem(MUSIC_ENABLED_KEY) !== "false";
   let viewKind = parseViewKind(params.get("view") ?? localStorage.getItem(VIEW_KEY));
   let selectedCharacterKind = localStorage.getItem(CHARACTER_KEY) as EntityKind | null;
-  let view: GameView = createView(viewKind, root, { debug });
+  let view: GameView = await createView(viewKind, root, { debug });
   let characterSelect: CharacterSelect | undefined;
   let gameOverPopup: GameOverPopup | undefined;
   let runtime: GameRuntime | undefined;
@@ -220,14 +216,40 @@ function bindEngineSelect(
 
   engineSelect.value = initialViewKind;
 
+  let currentViewKind = initialViewKind;
+
   engineSelect.addEventListener("change", () => {
+    void switchView();
+  });
+
+  async function switchView(): Promise<void> {
+    if (!engineSelect) {
+      return;
+    }
+
     playSound("UiClick");
 
-    const viewKind = parseViewKind(engineSelect.value);
-    const view = createView(viewKind, root, { debug });
+    const nextViewKind = parseViewKind(engineSelect.value);
 
-    localStorage.setItem(VIEW_KEY, viewKind);
-    view.setLocale?.(getLocale(), getTranslator());
-    onViewChange(viewKind, view);
-  });
+    if (nextViewKind === currentViewKind) {
+      return;
+    }
+
+    engineSelect.disabled = true;
+
+    try {
+      const nextView = await createView(nextViewKind, root, { debug });
+
+      localStorage.setItem(VIEW_KEY, nextViewKind);
+      nextView.setLocale?.(getLocale(), getTranslator());
+
+      currentViewKind = nextViewKind;
+      onViewChange(nextViewKind, nextView);
+    } catch (error) {
+      console.error(error);
+      engineSelect.value = currentViewKind;
+    } finally {
+      engineSelect.disabled = false;
+    }
+  }
 }

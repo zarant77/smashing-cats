@@ -27,11 +27,11 @@ const DEATH_GRAVITY = 1400;
 const DEATH_DRIFT_X = 120;
 const DEATH_ROTATION_SPEED = -7;
 
-const SMASH_EFFECT_PATH = "/effects/smash.png";
+const SMASH_EFFECT_PATH = "/canvas/effects/smash.png";
 const SMASH_EFFECT_DURATION_MS = 200;
 
 const SMASH_EFFECT_OFFSET_X = 20;
-const SMASH_EFFECT_OFFSET_Y = -20;
+const SMASH_EFFECT_OFFSET_Y = 50;
 
 const SMASH_EFFECT_WIDTH = 64 * 3;
 const SMASH_EFFECT_HEIGHT = 23 * 3;
@@ -60,12 +60,12 @@ export class PlayerRenderer {
     const physicsWidth = viewport.worldToScreenSize(worldWidth);
     const physicsHeight = viewport.worldToScreenSize(worldHeight);
 
-    const image = assets.get(`/players/${player.kind}.png`);
+    const image = assets.get(`/canvas/players/${player.kind}.png`);
     const renderSize = getRenderSize(image, physicsWidth, physicsHeight);
 
     const shouldBlinkOff = player.invulnerable && Math.floor(snapshot.tick / 2) % 2 === 0;
 
-    this.updateSmashLandingEffect(player, effects, screenX, screenY, physicsWidth, physicsHeight, viewport.scale);
+    this.updateSmashLandingEffect(player, effects, screenX, snapshot.world.groundY, physicsWidth, physicsHeight, viewport.scale);
 
     if (!player.alive) {
       this.drawDeadPlayer(ctx, viewport, player, image, screenX, screenY, physicsWidth, physicsHeight, renderSize, isLocal);
@@ -134,7 +134,7 @@ export class PlayerRenderer {
       effects.add({
         imagePath: SMASH_EFFECT_PATH,
         x: screenX + width / 2 + SMASH_EFFECT_OFFSET_X * scale,
-        y: screenY + height + SMASH_EFFECT_OFFSET_Y * scale,
+        y: screenY + SMASH_EFFECT_OFFSET_Y * scale,
         startedAt: performance.now(),
         durationMs: SMASH_EFFECT_DURATION_MS,
         width: SMASH_EFFECT_WIDTH,

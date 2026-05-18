@@ -88,14 +88,14 @@ function getEntityImagePath(entity: EntitySnapshot): string {
   const postfix = entity.alive ? "" : "-dead";
 
   if (entity.type === "civilian") {
-    return `/civilians/${entity.kind}${postfix}.png`;
+    return `/canvas/civilians/${entity.kind}${postfix}.png`;
   }
 
   if (entity.type === "obstacle") {
-    return `/obstacles/${entity.kind}${postfix}.png`;
+    return `/canvas/obstacles/${entity.kind}${postfix}.png`;
   }
 
-  return `/enemies/${entity.kind}${postfix}.png`;
+  return `/canvas/enemies/${entity.kind}${postfix}.png`;
 }
 
 function getEntityFallbackColor(entity: EntitySnapshot): string {

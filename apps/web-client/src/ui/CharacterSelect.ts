@@ -296,5 +296,5 @@ function clampIndex(index: number, length: number): number {
 }
 
 function getCharacterImageSrc(character: CharacterDefinition): string {
-  return `/players/${character.kind}.png`;
+  return `/canvas/players/${character.kind}.png`;
 }

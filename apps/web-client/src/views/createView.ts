@@ -1,18 +1,25 @@
+import { preloadAssets } from "../assets/assets.js";
 import { CanvasView } from "./canvas/CanvasView.js";
 import { PhaserView } from "./phaser/PhaserView.js";
 import { ThreeView } from "./three/ThreeView.js";
 import type { GameView, ViewKind, ViewOptions } from "./types.js";
 
-export function createView(kind: ViewKind, root: HTMLElement, options: ViewOptions): GameView {
-  switch (kind) {
-    case "canvas":
-      return new CanvasView(root, options);
+const ViewList = {
+  canvas: CanvasView,
+  phaser: PhaserView,
+  three: ThreeView,
+};
 
-    case "phaser":
-      return new PhaserView(root, options);
+export async function createView(kind: ViewKind, root: HTMLElement, options: ViewOptions): Promise<GameView> {
+  showSplash(true);
 
-    case "three":
-      return new ThreeView(root, options);
+  const View = ViewList[kind];
+
+  try {
+    await preloadAssets(kind);
+    return new View(root, options);
+  } finally {
+    showSplash(false);
   }
 }
 
@@ -24,5 +31,13 @@ export function parseViewKind(value: string | null): ViewKind {
 
     default:
       return "canvas";
+  }
+}
+
+function showSplash(isShow: boolean): void {
+  const splash = document.getElementById("loading");
+
+  if (splash) {
+    splash.style.display = isShow ? "flex" : "none";
   }
 }
