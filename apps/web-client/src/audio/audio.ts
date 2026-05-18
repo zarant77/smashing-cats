@@ -31,9 +31,8 @@ type SoundKey = keyof typeof Sounds;
 const MusicFiles = Object.values(Music).flat();
 
 export async function initAudio(): Promise<void> {
-  await audio.preload([...MusicFiles, ...Object.values(Sounds)]);
-
   setupAudioUnlock();
+  await audio.preload([...MusicFiles, ...Object.values(Sounds)]);
 }
 
 export function playSound(key: SoundKey, kind?: string) {

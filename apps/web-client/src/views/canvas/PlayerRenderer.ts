@@ -31,7 +31,7 @@ const SMASH_EFFECT_PATH = "/canvas/effects/smash.png";
 const SMASH_EFFECT_DURATION_MS = 200;
 
 const SMASH_EFFECT_OFFSET_X = 20;
-const SMASH_EFFECT_OFFSET_Y = 50;
+const SMASH_EFFECT_OFFSET_Y = -20;
 
 const SMASH_EFFECT_WIDTH = 64 * 3;
 const SMASH_EFFECT_HEIGHT = 23 * 3;
@@ -134,7 +134,7 @@ export class PlayerRenderer {
       effects.add({
         imagePath: SMASH_EFFECT_PATH,
         x: screenX + width / 2 + SMASH_EFFECT_OFFSET_X * scale,
-        y: screenY + SMASH_EFFECT_OFFSET_Y * scale,
+        y: (screenY + SMASH_EFFECT_OFFSET_Y) * scale,
         startedAt: performance.now(),
         durationMs: SMASH_EFFECT_DURATION_MS,
         width: SMASH_EFFECT_WIDTH,
