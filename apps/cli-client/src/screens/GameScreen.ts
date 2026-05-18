@@ -3,9 +3,10 @@ import clipboard from "clipboardy";
 import type { Translator } from "@smashing-cats/i18n";
 import type { CharacterDefinition, EntityKind, GameSnapshot, PlayerId, PlayerSnapshot } from "@smashing-cats/protocol";
 import { SnapshotInterpolator } from "@smashing-cats/client-netcode";
-import { CliConnection, type PlayerInput } from "../network/CliConnection.js";
+import { CliConnection } from "../network/CliConnection.js";
 import { GameAsciiRenderer } from "../render/GameAsciiRenderer.js";
 import { terminalBell } from "../audio/TerminalBell.js";
+import { TerminalInput } from "../input/TerminalInput.js";
 import { GameOverOverlay } from "./GameOverOverlay.js";
 import type { Screen } from "./Screen.js";
 
@@ -19,13 +20,17 @@ type GameScreenOptions = {
   onRestart: () => void;
 };
 
+const VIEW_WIDTH = 100;
+const VIEW_HEIGHT = 28;
+
 export class GameScreen implements Screen {
   private readonly root: blessed.Widgets.BoxElement;
   private readonly status: blessed.Widgets.BoxElement;
   private readonly viewport: blessed.Widgets.BoxElement;
   private readonly renderer = new GameAsciiRenderer();
-
   private readonly interpolator = new SnapshotInterpolator();
+
+  private readonly terminalInput: TerminalInput;
 
   private connection: CliConnection | undefined;
   private inputTimer: NodeJS.Timeout | undefined;
@@ -39,12 +44,6 @@ export class GameScreen implements Screen {
   private inputSeq = 1;
 
   private paused = false;
-
-  private input: PlayerInput = {
-    left: false,
-    right: false,
-    jump: false,
-  };
 
   public constructor(private readonly options: GameScreenOptions) {
     this.root = blessed.box({
@@ -104,12 +103,24 @@ export class GameScreen implements Screen {
       },
     });
 
+    this.terminalInput = new TerminalInput({
+      screen: this.options.screen,
+      onPause: () => {
+        this.togglePause();
+      },
+      onExit: () => {
+        process.exit(0);
+      },
+    });
+
     this.bindEvents();
   }
 
   public show(): void {
     this.options.screen.append(this.root);
     this.root.focus();
+
+    this.terminalInput.attach();
 
     this.connect();
     this.startInputLoop();
@@ -119,6 +130,8 @@ export class GameScreen implements Screen {
   }
 
   public destroy(): void {
+    this.terminalInput.detach();
+
     this.stopInputLoop();
     this.stopRenderLoop();
     this.connection?.close();
@@ -128,29 +141,6 @@ export class GameScreen implements Screen {
   }
 
   private bindEvents(): void {
-    this.root.key(["escape"], () => {
-      this.togglePause();
-    });
-
-    this.root.key(["C-c"], () => {
-      process.exit(0);
-    });
-
-    this.root.key(["left", "a"], () => {
-      this.input.left = true;
-      terminalBell.move();
-    });
-
-    this.root.key(["right", "d"], () => {
-      this.input.right = true;
-      terminalBell.move();
-    });
-
-    this.root.key(["up", "down", "space", "w", "s"], () => {
-      this.input.jump = true;
-      terminalBell.jump();
-    });
-
     this.status.on("click", async () => {
       await clipboard.write(this.options.matchCode);
       terminalBell.ui();
@@ -184,18 +174,14 @@ export class GameScreen implements Screen {
   private startInputLoop(): void {
     this.inputTimer = setInterval(() => {
       if (this.gameOverOverlay !== undefined || this.paused) {
+        this.terminalInput.clear();
         return;
       }
 
       const currentInputSeq = this.inputSeq++;
+      const input = this.terminalInput.read();
 
-      this.connection?.sendInput(currentInputSeq, this.input, this.interpolator.getRenderedTick());
-
-      this.input = {
-        left: false,
-        right: false,
-        jump: false,
-      };
+      this.connection?.sendInput(currentInputSeq, input, this.interpolator.getRenderedTick());
     }, 1000 / 30);
   }
 
@@ -262,6 +248,8 @@ export class GameScreen implements Screen {
   }
 
   private showGameOverOverlay(score: number): void {
+    this.terminalInput.clear();
+
     this.gameOverOverlay = new GameOverOverlay({
       parent: this.root,
       screen: this.options.screen,
@@ -313,12 +301,7 @@ export class GameScreen implements Screen {
     }
 
     this.paused = !this.paused;
-
-    this.input = {
-      left: false,
-      right: false,
-      jump: false,
-    };
+    this.terminalInput.clear();
 
     this.connection?.sendPause(this.paused);
     terminalBell.ui();

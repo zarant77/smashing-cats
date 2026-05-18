@@ -69,11 +69,27 @@ export class CanvasView implements GameView {
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     if (snapshot === undefined) {
-      ctx.fillStyle = "#87ceeb";
-      ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-      this.drawCenteredText(this.t("connecting"));
-      return;
+      snapshot = {
+        tick: 0,
+        seed: 0,
+        simulation: {
+          rngState: 0,
+          nextEntityIndex: 0,
+          nextEventIndex: 0,
+          nextSpawnX: 0,
+        },
+        world: {
+          scrollX: 0,
+          speed: 0,
+          width: 960,
+          height: 540,
+          groundY: 440,
+          gravity: 1700,
+        },
+        players: [],
+        entities: [],
+        events: [],
+      };
     }
 
     const viewport = createRenderViewport(this.canvas, snapshot);

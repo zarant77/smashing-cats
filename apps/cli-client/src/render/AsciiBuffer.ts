@@ -1,3 +1,5 @@
+import { ANSI_RESET } from "./sprites.js";
+
 export class AsciiBuffer {
   private readonly cells: string[][];
 
@@ -34,17 +36,24 @@ export class AsciiBuffer {
     this.cells[y]![x] = value;
   }
 
-  public drawText(x: number, y: number, text: string): void {
+  public drawText(x: number, y: number, text: string, color?: string): void {
     for (let i = 0; i < text.length; i++) {
-      this.set(x + i, y, text[i] ?? " ");
+      const char = text[i] ?? " ";
+
+      if (char === " " || color === undefined) {
+        this.set(x + i, y, char);
+        continue;
+      }
+
+      this.set(x + i, y, `${color}${char}${ANSI_RESET}`);
     }
   }
 
-  public drawSprite(x: number, bottomY: number, lines: string[]): void {
+  public drawSprite(x: number, bottomY: number, lines: string[], color?: string): void {
     const topY = bottomY - lines.length + 1;
 
     for (let rowIndex = 0; rowIndex < lines.length; rowIndex++) {
-      this.drawText(x, topY + rowIndex, lines[rowIndex] ?? "");
+      this.drawText(x, topY + rowIndex, lines[rowIndex] ?? "", color);
     }
   }
 
