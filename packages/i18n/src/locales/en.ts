@@ -1,6 +1,8 @@
 export const en = {
   title: "Smash!ng Cats",
-  engine: "Engine",
+  engineCanvas: "Canvas Engine",
+  enginePhaser: "Phaser Engine",
+  engineThree: "Three.js Engine",
   locale: "Locale",
   pause: "PAUSE",
   matchCode: "Session code",

@@ -1,8 +1,10 @@
 .touch-controls {
-  --button-size: 18vh;
-  --joy-width: 56vh;
+  --button-size: 8vw;
+  --joy-width: 28vw;
+  --joy-padding-side: 3vw;
+  --joy-padding-bottom: 2vw;
 
-  position: fixed;
+  position: absolute;
   inset: 0;
 
   z-index: 10;
@@ -29,8 +31,8 @@
 }
 
 .touch-hint-move {
-  left: 2%;
-  bottom: 8%;
+  left: var(--joy-padding-side);
+  bottom: var(--joy-padding-bottom);
 
   width: var(--joy-width);
   height: var(--button-size);
@@ -73,11 +75,9 @@
   transform: translateY(-50%) scaleX(-1);
 }
 
-/* Action hint */
-
 .touch-hint-action {
-  right: 8%;
-  bottom: 10%;
+  right: var(--joy-padding-side);
+  bottom: var(--joy-padding-bottom);
 
   width: var(--button-size);
   height: var(--button-size);
@@ -104,24 +104,12 @@
   display: none;
 }
 
-/* Responsive */
-
-@media (max-width: 900px) {
-  .touch-controls {
-    --button-size: 60px;
-    --joy-width: 150px;
-  }
-}
-
-@media (max-width: 600px) {
-  .touch-controls {
-    --button-size: 50px;
-    --joy-width: 124px;
-  }
-}
-
 @media (pointer: coarse) {
   .touch-controls {
     display: block;
+  }
+
+  .settings-overlay {
+    left: 60%;
   }
 }

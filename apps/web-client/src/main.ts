@@ -73,7 +73,7 @@ async function bootstrap(): Promise<void> {
 
   const hud = new Hud(uiRoot, t);
   const pauseOverlay = new PauseOverlay(uiRoot, t);
-  const touchControls = TouchControls.isTouchDevice() ? new TouchControls(uiRoot, t) : undefined;
+  const touchControls = TouchControls.isTouchDevice() ? new TouchControls() : undefined;
   const renderCharacterSelect = (): void => {
     if (characterSelect === undefined || runtime === undefined) {
       return;

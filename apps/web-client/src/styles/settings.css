@@ -1,5 +1,5 @@
 .settings-overlay {
-  position: fixed;
+  position: absolute;
   left: 50%;
   bottom: 16px;
 
@@ -59,7 +59,6 @@
   border-color: rgba(255, 204, 51, 0.6);
 
   background: linear-gradient(180deg, rgba(255, 204, 51, 0.08), rgba(255, 204, 51, 0.03));
-
 }
 
 #engine-select {
@@ -103,14 +102,12 @@
   border-color: rgba(255, 204, 51, 0.45);
 
   background: linear-gradient(180deg, rgba(255, 204, 51, 0.1), rgba(255, 204, 51, 0.04));
-
 }
 
 .locale-flag.active {
   border-color: rgba(255, 204, 51, 0.75);
 
   background: linear-gradient(180deg, rgba(255, 204, 51, 0.2), rgba(255, 204, 51, 0.07));
-
 }
 
 .audio-toggles {
@@ -156,13 +153,13 @@
 }
 
 .audio-icon {
+  color: #ffff00;
+
   font-size: 18px;
   line-height: 1;
 
   user-select: none;
   pointer-events: none;
-
-  color: #ffff00;
 }
 
 .audio-cross {
@@ -197,17 +194,8 @@
 
 .settings-overlay button.active {
   border-color: rgba(255, 204, 51, 0.8);
-
 }
 
 #fullscreen-toggle .audio-icon {
   font-size: 22px;
-}
-
-@media (max-height: 500px) {
-  .settings-overlay {
-    bottom: 2px;
-    padding: 4px 6px 4px 6px;
-    border-radius: 12px;
-  }
 }

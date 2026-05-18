@@ -25,8 +25,8 @@ export class TouchControls {
   private rightPressed = false;
   private jumpPressed = false;
 
-  public constructor(parent: HTMLElement, _t: Translator) {
-    this.root = document.createElement("div");
+  public constructor() {
+    this.root = document.querySelector<HTMLDivElement>("#touch-control-placeholder") as HTMLDivElement;
     this.root.className = "touch-controls touch-controls-gesture";
 
     const moveHint = this.createMoveHint();
@@ -53,8 +53,6 @@ export class TouchControls {
     this.smashButton = smashButton;
 
     this.root.append(moveHint, actionHint);
-
-    parent.append(this.root);
 
     this.setActionMode("jump");
     this.bindGestures();

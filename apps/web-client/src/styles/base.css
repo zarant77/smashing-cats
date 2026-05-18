@@ -1,16 +1,18 @@
 html,
 body {
   width: 100%;
-  min-width: 320px;
   height: 100%;
   margin: 0;
+
+  overflow: hidden;
+
   -webkit-user-select: none;
   user-select: none;
+
   overscroll-behavior: none;
 }
 
 body {
-  overflow: hidden;
   font-family: system-ui, sans-serif;
   background: #20242a;
   touch-action: none;
@@ -28,32 +30,4 @@ button {
 label {
   color: #ffffff;
   font-size: 13px;
-}
-
-:root {
-  --ui-scale: 1;
-}
-
-@media (max-width: 760px) {
-  :root {
-    --ui-scale: 0.82;
-  }
-}
-
-@media (max-width: 420px) {
-  :root {
-    --ui-scale: 0.68;
-  }
-}
-
-@media (max-width: 360px) {
-  :root {
-    --ui-scale: 0.6;
-  }
-}
-
-@media (max-height: 520px) and (orientation: landscape) {
-  :root {
-    --ui-scale: 0.58;
-  }
 }

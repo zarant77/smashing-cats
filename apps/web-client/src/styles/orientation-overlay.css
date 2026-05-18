@@ -1,13 +1,11 @@
 .orientation-overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
 
   z-index: 50;
 
   display: none;
   place-items: center;
-
-  padding: 24px;
 
   background:
     radial-gradient(circle at 50% 20%, rgba(255, 204, 51, 0.22), transparent 36%),
@@ -21,57 +19,50 @@
 .orientation-card {
   display: grid;
   justify-items: center;
-  gap: 20px;
+  gap: 8vw;
 
-  padding: 48px 40px;
+  padding: 12vw 8vw;
 
   border: 2px solid rgba(255, 204, 51, 0.32);
-  border-radius: 36px;
+  border-radius: 8vw;
 
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04));
 
   text-align: center;
-
 }
 
 .orientation-icon {
-  font-size: clamp(84px, 16vw, 160px);
+  font-size: 32vw;
   line-height: 1;
 
   animation: orientation-float 2s ease-in-out infinite;
 }
 
 .orientation-card strong {
-  font-size: clamp(34px, 7vw, 56px);
+  font-size: 6vw;
   font-weight: 900;
   line-height: 1.05;
-
-  text-wrap: balance;
 }
 
 .orientation-card span {
-  max-width: 100%;
-
   color: rgba(255, 255, 255, 0.78);
 
-  font-size: clamp(18px, 3.8vw, 28px);
+  font-size: 4vw;
   font-weight: 700;
   line-height: 1.35;
-
-  text-wrap: balance;
 }
 
 @keyframes orientation-float {
   0% {
-    transform: translateY(0px) rotate(-6deg);
+    transform: rotate(-6deg);
   }
 
   50% {
-    transform: translateY(-10px) rotate(6deg);
+    transform: rotate(6deg);
   }
 
   100% {
-    transform: translateY(0px) rotate(-6deg);
+    transform: rotate(-6deg);
   }
 }
 

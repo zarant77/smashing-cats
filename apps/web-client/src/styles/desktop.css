@@ -58,22 +58,22 @@
     backdrop-filter: blur(12px);
 
     box-shadow:
-      0 calc(12px * var(--hud-scale)) calc(34px * var(--hud-scale)) rgba(0, 0, 0, 0.42),
-      0 0 calc(24px * var(--hud-scale)) rgba(255, 204, 51, 0.04);
+      0 12px 34px rgba(0, 0, 0, 0.42),
+      0 0 24px rgba(255, 204, 51, 0.04);
   }
 
   .hud-player-local {
     box-shadow:
-      0 calc(12px * var(--hud-scale)) calc(34px * var(--hud-scale)) rgba(0, 0, 0, 0.42),
-      0 0 calc(24px * var(--hud-scale)) rgba(255, 204, 51, 0.14);
+      0 12px 34px rgba(0, 0, 0, 0.42),
+      0 0 24px rgba(255, 204, 51, 0.14);
   }
 
   .hud-hp-icon {
-    filter: drop-shadow(0 0 calc(8px * var(--hud-scale)) rgba(255, 80, 100, 0.4));
+    filter: drop-shadow(0 0 8px rgba(255, 80, 100, 0.4));
   }
 
   .hud-hp-segment-active {
-    box-shadow: 0 0 calc(10px * var(--hud-scale)) rgba(255, 80, 100, 0.35);
+    box-shadow: 0 0 10px rgba(255, 80, 100, 0.35);
   }
 
   .settings-overlay {

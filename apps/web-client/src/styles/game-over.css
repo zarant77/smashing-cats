@@ -1,12 +1,12 @@
 .game-over-popup {
   position: absolute;
   inset: 0;
+
   z-index: 30;
 
   display: grid;
   place-items: center;
 
-  background: rgba(0, 0, 0, 0.48);
   pointer-events: auto;
 }
 
@@ -19,7 +19,7 @@
   justify-items: center;
   gap: 18px;
 
-  width: min(360px, calc(100vw - 32px));
+  width: 600px;
   padding: 28px;
 
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -31,21 +31,23 @@
 .game-over-card h2 {
   margin: 0;
 
-  color: white;
+  color: #ffffff;
+
   font-size: 28px;
   text-align: center;
 }
 
 .game-over-cat {
-  width: 180px;
-  height: 180px;
+  width: 200px;
+  height: 150px;
 
   object-fit: contain;
   image-rendering: auto;
 }
 
 .game-over-score {
-  color: white;
+  color: #ffffff;
+
   font-size: 22px;
   font-weight: 700;
 }
@@ -60,7 +62,7 @@
   color: #151515;
   background: #ffd166;
 
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 800;
 
   cursor: pointer;
@@ -69,74 +71,4 @@
 .game-over-restart:hover {
   transform: translateY(-1px);
   filter: brightness(1.08);
-}
-
-@media (max-width: 520px) {
-  .game-over-popup {
-    padding: 16px;
-    box-sizing: border-box;
-  }
-
-  .game-over-card {
-    width: 100%;
-    max-width: 340px;
-
-    gap: 14px;
-    padding: 22px;
-
-    border-radius: 24px;
-  }
-
-  .game-over-card h2 {
-    font-size: 24px;
-  }
-
-  .game-over-cat {
-    width: min(160px, 42vw);
-    height: min(160px, 42vw);
-  }
-
-  .game-over-score {
-    font-size: 19px;
-  }
-
-  .game-over-restart {
-    width: 100%;
-  }
-}
-
-@media (max-height: 520px) and (orientation: landscape) {
-  .game-over-card {
-    grid-template-columns: auto 1fr;
-    grid-template-areas:
-      "cat title"
-      "cat score"
-      "cat button";
-
-    justify-items: start;
-
-    width: min(440px, calc(100vw - 32px));
-  }
-
-  .game-over-card h2 {
-    grid-area: title;
-    margin: auto;
-  }
-
-  .game-over-cat {
-    grid-area: cat;
-
-    width: min(140px, 32vh);
-    height: min(140px, 32vh);
-  }
-
-  .game-over-score {
-    grid-area: score;
-    margin: auto;
-  }
-
-  .game-over-restart {
-    grid-area: button;
-    margin: auto;
-  }
 }

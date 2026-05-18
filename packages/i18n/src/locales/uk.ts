@@ -1,6 +1,8 @@
 export const uk = {
   title: "Руйн!вні Коти",
-  engine: "Рушій",
+  engineCanvas: "Canvas Рушій",
+  enginePhaser: "Phaser Рушій",
+  engineThree: "Three.js Рушій",
   locale: "Мова",
   pause: "ПАУЗА",
   matchCode: "Код сесії",
