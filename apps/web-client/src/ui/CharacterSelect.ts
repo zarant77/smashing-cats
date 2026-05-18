@@ -81,10 +81,6 @@ export class CharacterSelect {
     const panel = document.createElement("div");
     panel.className = "character-select-panel";
 
-    const title = document.createElement("h1");
-    title.className = "character-select-title";
-    title.textContent = this.t("chooseCat");
-
     const carousel = document.createElement("div");
     carousel.className = "character-carousel";
 
@@ -99,7 +95,7 @@ export class CharacterSelect {
     const card = this.createCharacterCard(character, ranges);
 
     carousel.append(previousButton, card, nextButton);
-    panel.append(title, carousel);
+    panel.append(carousel);
 
     this.element.replaceChildren(panel);
   }
