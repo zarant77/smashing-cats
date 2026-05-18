@@ -21,15 +21,6 @@
   touch-action: none;
 }
 
-#ui-root {
-  position: absolute;
-  inset: 0;
-
-  z-index: 10;
-
-  pointer-events: none;
-}
-
 .placeholder-view {
   display: grid;
   place-items: center;

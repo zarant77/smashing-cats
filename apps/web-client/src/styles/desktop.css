@@ -1,8 +1,4 @@
 @media (pointer: fine) {
-  .character-select {
-    backdrop-filter: blur(10px);
-  }
-
   .character-carousel-arrow {
     box-shadow:
       0 16px 36px rgba(0, 0, 0, 0.42),
