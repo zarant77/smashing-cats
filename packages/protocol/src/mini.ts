@@ -19,6 +19,12 @@ const FIELD_MAP = {
   characters: "c",
   snapshot: "ss",
   delta: "d",
+  playerInput: "pi",
+  simulation: "sm",
+  rngState: "rs",
+  nextEntityIndex: "nei",
+  nextEventIndex: "nev",
+  nextSpawnX: "nsx",
 } as const;
 
 const NORMAL_FIELD_MAP = Object.fromEntries(Object.entries(FIELD_MAP).map(([normal, mini]) => [mini, normal])) as Record<string, string>;

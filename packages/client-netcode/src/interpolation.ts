@@ -1,9 +1,15 @@
 import type { EntitySnapshot, GameSnapshot, PlayerId, PlayerSnapshot } from "@smashing-cats/protocol";
 
-const REMOTE_PLAYER_INTERPOLATION_DELAY_MS = 35;
+const INITIAL_INTERPOLATION_DELAY_MS = 70;
+const MIN_INTERPOLATION_DELAY_MS = 45;
+const MAX_INTERPOLATION_DELAY_MS = 160;
+const INTERPOLATION_DELAY_PADDING_MS = 12;
+const INTERPOLATION_DELAY_SMOOTHING = 0.08;
+const JITTER_MULTIPLIER = 2.2;
 const MAX_EXTRAPOLATION_MS = 80;
-const MAX_BUFFERED_SNAPSHOTS = 12;
+const MAX_BUFFERED_SNAPSHOTS = 24;
 const WORLD_CORRECTION_SMOOTHING_MS = 70;
+const NETWORK_TIMING_SMOOTHING = 0.12;
 
 type BufferedSnapshot = {
   snapshot: GameSnapshot;
@@ -14,12 +20,19 @@ export class SnapshotInterpolator {
   private readonly snapshots: BufferedSnapshot[] = [];
   private smoothedScrollX: { value: number; updatedAt: number } | undefined;
   private renderedTick: number | undefined;
+  private interpolationDelayMs = INITIAL_INTERPOLATION_DELAY_MS;
+  private smoothedSnapshotIntervalMs: number | undefined;
+  private smoothedJitterMs = 0;
 
   public add(snapshot: GameSnapshot, receivedAt = performance.now()): void {
     const last = this.snapshots.at(-1);
 
     if (last !== undefined && snapshot.tick <= last.snapshot.tick) {
       return;
+    }
+
+    if (last !== undefined) {
+      this.updateNetworkTiming(receivedAt - last.receivedAt);
     }
 
     this.snapshots.push({ snapshot, receivedAt });
@@ -40,7 +53,7 @@ export class SnapshotInterpolator {
       return this.setRenderedTick(this.smoothScrollX(this.extrapolateWorld(this.snapshots[0], now), now));
     }
 
-    const renderTime = now - REMOTE_PLAYER_INTERPOLATION_DELAY_MS;
+    const renderTime = now - this.interpolationDelayMs;
 
     let previous = this.snapshots[0];
     let next = this.snapshots.at(-1);
@@ -80,6 +93,40 @@ export class SnapshotInterpolator {
 
   public getLatest(): GameSnapshot | undefined {
     return this.snapshots.at(-1)?.snapshot;
+  }
+
+  public getInterpolationDelayMs(): number {
+    return this.interpolationDelayMs;
+  }
+
+  private updateNetworkTiming(intervalMs: number): void {
+    if (!Number.isFinite(intervalMs) || intervalMs <= 0) {
+      return;
+    }
+
+    if (this.smoothedSnapshotIntervalMs === undefined) {
+      this.smoothedSnapshotIntervalMs = intervalMs;
+      this.smoothedJitterMs = 0;
+      this.interpolationDelayMs = clamp(
+        intervalMs + INTERPOLATION_DELAY_PADDING_MS,
+        MIN_INTERPOLATION_DELAY_MS,
+        MAX_INTERPOLATION_DELAY_MS,
+      );
+      return;
+    }
+
+    const intervalDelta = Math.abs(intervalMs - this.smoothedSnapshotIntervalMs);
+
+    this.smoothedSnapshotIntervalMs = lerp(this.smoothedSnapshotIntervalMs, intervalMs, NETWORK_TIMING_SMOOTHING);
+    this.smoothedJitterMs = lerp(this.smoothedJitterMs, intervalDelta, NETWORK_TIMING_SMOOTHING);
+
+    const targetDelay = clamp(
+      this.smoothedSnapshotIntervalMs + this.smoothedJitterMs * JITTER_MULTIPLIER + INTERPOLATION_DELAY_PADDING_MS,
+      MIN_INTERPOLATION_DELAY_MS,
+      MAX_INTERPOLATION_DELAY_MS,
+    );
+
+    this.interpolationDelayMs = lerp(this.interpolationDelayMs, targetDelay, INTERPOLATION_DELAY_SMOOTHING);
   }
 
   private setRenderedTick(snapshot: GameSnapshot | undefined): GameSnapshot | undefined {
@@ -189,5 +236,9 @@ function lerp(from: number, to: number, alpha: number): number {
 }
 
 function clamp01(value: number): number {
-  return Math.max(0, Math.min(1, value));
+  return clamp(value, 0, 1);
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
 }

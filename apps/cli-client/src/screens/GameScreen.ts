@@ -2,7 +2,7 @@ import blessed from "blessed";
 import clipboard from "clipboardy";
 import type { Translator } from "@smashing-cats/i18n";
 import type { CharacterDefinition, EntityKind, GameSnapshot, PlayerId, PlayerSnapshot } from "@smashing-cats/protocol";
-import { LocalPlayerPredictor, SnapshotInterpolator } from "@smashing-cats/client-netcode";
+import { SnapshotInterpolator } from "@smashing-cats/client-netcode";
 import { CliConnection, type PlayerInput } from "../network/CliConnection.js";
 import { GameAsciiRenderer } from "../render/GameAsciiRenderer.js";
 import { terminalBell } from "../audio/TerminalBell.js";
@@ -26,7 +26,6 @@ export class GameScreen implements Screen {
   private readonly renderer = new GameAsciiRenderer();
 
   private readonly interpolator = new SnapshotInterpolator();
-  private readonly predictor = new LocalPlayerPredictor();
 
   private connection: CliConnection | undefined;
   private inputTimer: NodeJS.Timeout | undefined;
@@ -202,14 +201,7 @@ export class GameScreen implements Screen {
 
   private startRenderLoop(): void {
     this.renderTimer = setInterval(() => {
-      const snapshot = this.predictor.apply(
-        this.interpolator.get(this.playerId),
-        this.interpolator.getLatest(),
-        this.playerId,
-        this.inputSeq,
-        this.input,
-        this.characters,
-      );
+      const snapshot = this.interpolator.get(undefined);
 
       const content = this.renderer.render(snapshot, this.playerId, this.options.t);
       this.viewport.setContent(this.paused ? this.withPauseOverlay(content) : content);

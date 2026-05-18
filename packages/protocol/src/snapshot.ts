@@ -56,6 +56,7 @@ export type GameEvent = {
 export type GameSnapshot = {
   tick: number;
   seed: number;
+  simulation: GameSimulationState;
   world: {
     scrollX: number;
     speed: number;
@@ -67,6 +68,13 @@ export type GameSnapshot = {
   players: PlayerSnapshot[];
   entities: EntitySnapshot[];
   events: GameEvent[];
+};
+
+export type GameSimulationState = {
+  rngState: number;
+  nextEntityIndex: number;
+  nextEventIndex: number;
+  nextSpawnX: number;
 };
 
 export type EntityPatch = {
@@ -93,6 +101,7 @@ export type PlayerPatch = EntityPatch & {
 
 export type DeltaSnapshot = {
   tick: number;
+  simulation?: GameSimulationState;
   scrollX?: number;
 
   addedPlayers?: PlayerSnapshot[];

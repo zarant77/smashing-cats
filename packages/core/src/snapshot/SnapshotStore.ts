@@ -18,6 +18,10 @@ export class SnapshotStore {
     snapshot.tick = delta.tick;
     snapshot.events = delta.events ?? [];
 
+    if (delta.simulation !== undefined) {
+      snapshot.simulation = { ...delta.simulation };
+    }
+
     if (delta.scrollX !== undefined) {
       snapshot.world.scrollX = delta.scrollX;
     }
@@ -73,6 +77,7 @@ function cloneSnapshot(snapshot: GameSnapshot): GameSnapshot {
   return {
     tick: snapshot.tick,
     seed: snapshot.seed,
+    simulation: { ...snapshot.simulation },
     world: { ...snapshot.world },
     players: snapshot.players.map(clonePlayerSnapshot),
     entities: snapshot.entities.map(cloneEntitySnapshot),

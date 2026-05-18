@@ -10,6 +10,14 @@ export class Random {
     return this.state;
   }
 
+  public getState(): number {
+    return this.state;
+  }
+
+  public setState(state: number): void {
+    this.state = state >>> 0;
+  }
+
   public nextFloat(): number {
     return this.next() / 0xffffffff;
   }

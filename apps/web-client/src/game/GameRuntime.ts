@@ -1,12 +1,13 @@
-import { CHARACTERS, type Game, SnapshotStore } from "@smashing-cats/core";
-import { LocalPlayerPredictor, SnapshotInterpolator } from "@smashing-cats/client-netcode";
+import { CHARACTERS, FIXED_DT, Game, SnapshotStore } from "@smashing-cats/core";
 import type {
   CharacterDefinition,
+  EntitySnapshot,
   EntityKind,
   GameSnapshot,
   InputMessage,
   PlayerId,
   PlayerInput,
+  PlayerSnapshot,
   ServerToClientMessage,
 } from "@smashing-cats/protocol";
 
@@ -40,14 +41,14 @@ export class GameRuntime {
   private inputSeq = 1;
   private wasJumpPressed = false;
   private wasSmashing = false;
-  private interpolator = new SnapshotInterpolator();
   private snapshotStore = new SnapshotStore();
-  private predictor = new LocalPlayerPredictor();
   private audioEventPlayer = new AudioEventPlayer();
   private socket: WebSocket | undefined;
   private localGame: Game | undefined;
+  private previousLocalSnapshot: GameSnapshot | undefined;
   private localSnapshot: GameSnapshot | undefined;
   private lastLocalUpdateAt = performance.now();
+  private localUpdateAccumulator = 0;
 
   public constructor(options: GameRuntimeOptions) {
     this.multiplayer = options.multiplayer;
@@ -79,12 +80,12 @@ export class GameRuntime {
     this.wasJumpPressed = false;
     this.wasSmashing = false;
     this.charactersValue = this.multiplayer ? [] : [...CHARACTERS];
-    this.interpolator = new SnapshotInterpolator();
     this.snapshotStore = new SnapshotStore();
-    this.predictor = new LocalPlayerPredictor();
     this.audioEventPlayer = new AudioEventPlayer();
+    this.previousLocalSnapshot = undefined;
     this.localSnapshot = undefined;
     this.lastLocalUpdateAt = performance.now();
+    this.localUpdateAccumulator = 0;
 
     if (this.multiplayer) {
       this.socket?.close();
@@ -128,6 +129,7 @@ export class GameRuntime {
     this.localGame = createLocalGame();
     this.localGame.addPlayer(this.playerId, characterKind);
     this.localSnapshot = this.localGame.createSnapshot();
+    this.previousLocalSnapshot = this.localSnapshot;
 
     return true;
   }
@@ -164,7 +166,7 @@ export class GameRuntime {
 
     if (message.type === "snapshot") {
       const snapshot = this.snapshotStore.setFullSnapshot(message.snapshot);
-      this.interpolator.add(snapshot);
+      this.loadServerSnapshot(snapshot);
       return;
     }
 
@@ -172,15 +174,21 @@ export class GameRuntime {
       const snapshot = this.snapshotStore.applyDelta(message.delta);
 
       if (snapshot !== undefined) {
-        this.interpolator.add(snapshot);
+        this.loadServerSnapshot(snapshot);
       }
+
+      return;
+    }
+
+    if (message.type === "playerInput") {
+      this.applyRemoteInput(message.playerId, message.input, message.snapshotTick, message.inputSeq);
     }
   }
 
   private frame(): void {
     const currentPlayerId = this.playerId;
     const canPlay = currentPlayerId !== undefined && this.hasSelectedCharacterValue;
-    const canSend = this.multiplayer && this.socket?.readyState === WebSocket.OPEN && canPlay;
+    const canSend = this.multiplayer && this.socket?.readyState === WebSocket.OPEN && currentPlayerId !== undefined;
 
     if (consumePauseToggle() && canPlay) {
       if (this.multiplayer) {
@@ -198,7 +206,7 @@ export class GameRuntime {
     const jumpPressed = input.jump && !this.wasJumpPressed;
     this.wasJumpPressed = input.jump;
 
-    if (canSend && !isPaused()) {
+    if (canSend && canPlay && !isPaused()) {
       this.sendInput(currentInputSeq, input);
     }
 
@@ -230,7 +238,7 @@ export class GameRuntime {
   }
 
   private sendInput(inputSeq: number, input: PlayerInput): void {
-    const snapshotTick = this.interpolator.getRenderedTick();
+    const snapshotTick = this.localSnapshot?.tick;
 
     const inputMessage: InputMessage =
       snapshotTick === undefined
@@ -255,8 +263,9 @@ export class GameRuntime {
     currentInputSeq: number,
     input: PlayerInput,
   ): void {
-    if (this.multiplayer || !canPlay || this.localGame === undefined || currentPlayerId === undefined) {
+    if (!canPlay || this.localGame === undefined || currentPlayerId === undefined) {
       this.lastLocalUpdateAt = performance.now();
+      this.localUpdateAccumulator = 0;
       return;
     }
 
@@ -267,31 +276,210 @@ export class GameRuntime {
     const now = performance.now();
     const dt = Math.min(0.25, (now - this.lastLocalUpdateAt) / 1000);
     this.lastLocalUpdateAt = now;
+    this.localUpdateAccumulator += dt;
 
-    this.localGame.update(dt);
-    this.localSnapshot = this.localGame.createSnapshot();
+    while (this.localUpdateAccumulator >= FIXED_DT) {
+      this.previousLocalSnapshot = this.localSnapshot;
+      this.localGame.update(FIXED_DT);
+      this.localSnapshot = this.localGame.createSnapshot();
+      this.localUpdateAccumulator -= FIXED_DT;
+    }
   }
 
   private getRenderSnapshot(currentInputSeq: number, input: PlayerInput): GameSnapshot | undefined {
+    void currentInputSeq;
+    void input;
+
+    return interpolateSnapshot(this.previousLocalSnapshot, this.localSnapshot, this.localUpdateAccumulator / FIXED_DT);
+  }
+
+  private loadServerSnapshot(snapshot: GameSnapshot): void {
     if (!this.multiplayer) {
-      return this.localSnapshot;
+      return;
     }
 
-    const interpolatedSnapshot = this.interpolator.get(this.playerId);
-    const latestSnapshot = this.interpolator.getLatest();
-    const localPlayer = latestSnapshot?.players.find((player) => player.playerId === this.playerId);
+    const isNewLocalGame = this.localGame === undefined || this.localSnapshot?.seed !== snapshot.seed;
 
-    if (localPlayer?.paused === true) {
-      return interpolatedSnapshot;
+    if (!isNewLocalGame && !this.shouldApplyServerSnapshot(snapshot)) {
+      return;
     }
 
-    return this.predictor.apply(
-      interpolatedSnapshot,
-      latestSnapshot,
-      this.playerId,
-      currentInputSeq,
-      input,
-      this.charactersValue,
+    const nextSnapshot = this.withOptimisticLocalPlayer(snapshot);
+    const previousSnapshot = this.localSnapshot;
+
+    const localGame = isNewLocalGame ? new Game(nextSnapshot.seed) : this.localGame;
+
+    if (localGame === undefined) {
+      return;
+    }
+
+    this.localGame = localGame;
+    localGame.loadSnapshot(nextSnapshot);
+    this.localSnapshot = localGame.createSnapshot();
+
+    if (isNewLocalGame) {
+      this.previousLocalSnapshot = this.localSnapshot;
+      this.lastLocalUpdateAt = performance.now();
+      this.localUpdateAccumulator = 0;
+      return;
+    }
+
+    this.previousLocalSnapshot = previousSnapshot ?? this.localSnapshot;
+  }
+
+  private applyRemoteInput(
+    playerId: PlayerId,
+    input: PlayerInput,
+    snapshotTick: number | undefined,
+    inputSeq: number | undefined,
+  ): void {
+    if (!this.multiplayer || playerId === this.playerId || this.localGame === undefined) {
+      return;
+    }
+
+    this.localGame.setInput(playerId, input, snapshotTick, inputSeq);
+  }
+
+  private shouldApplyServerSnapshot(snapshot: GameSnapshot): boolean {
+    if (this.localSnapshot === undefined || snapshot.tick > this.localSnapshot.tick) {
+      return true;
+    }
+
+    if (snapshot.events.length > 0) {
+      return true;
+    }
+
+    if (haveDifferentIds(this.localSnapshot.players, snapshot.players, "playerId")) {
+      return true;
+    }
+
+    if (haveDifferentIds(this.localSnapshot.entities, snapshot.entities, "id")) {
+      return true;
+    }
+
+    const localPlayerId = this.playerId;
+    const localPlayer = this.localSnapshot.players.find((player) => player.playerId === localPlayerId);
+    const serverPlayer = snapshot.players.find((player) => player.playerId === localPlayerId);
+
+    return (
+      localPlayer !== undefined &&
+      serverPlayer !== undefined &&
+      (localPlayer.hp !== serverPlayer.hp ||
+        localPlayer.score !== serverPlayer.score ||
+        localPlayer.alive !== serverPlayer.alive ||
+        localPlayer.paused !== serverPlayer.paused)
     );
   }
+
+  private withOptimisticLocalPlayer(snapshot: GameSnapshot): GameSnapshot {
+    const localPlayerId = this.playerId;
+
+    if (localPlayerId === undefined || this.localSnapshot === undefined) {
+      return snapshot;
+    }
+
+    const optimisticPlayer = this.localSnapshot.players.find((player) => player.playerId === localPlayerId);
+
+    if (optimisticPlayer === undefined || !optimisticPlayer.alive) {
+      return snapshot;
+    }
+
+    return {
+      ...snapshot,
+      players: snapshot.players.map((player) => {
+        if (player.playerId !== localPlayerId || !player.alive) {
+          return player;
+        }
+
+        return {
+          ...player,
+          x: optimisticPlayer.x,
+          y: optimisticPlayer.y,
+          vx: optimisticPlayer.vx,
+          vy: optimisticPlayer.vy,
+          grounded: optimisticPlayer.grounded,
+          smashing: optimisticPlayer.smashing,
+          jumpStartY: optimisticPlayer.jumpStartY,
+          wasJumpPressed: optimisticPlayer.wasJumpPressed,
+        };
+      }),
+    };
+  }
+}
+
+function interpolateSnapshot(
+  previous: GameSnapshot | undefined,
+  current: GameSnapshot | undefined,
+  alpha: number,
+): GameSnapshot | undefined {
+  if (current === undefined) {
+    return undefined;
+  }
+
+  if (previous === undefined || previous.tick >= current.tick) {
+    return current;
+  }
+
+  const clampedAlpha = clamp01(alpha);
+
+  return {
+    ...current,
+    tick: Math.round(lerp(previous.tick, current.tick, clampedAlpha)),
+    world: {
+      ...current.world,
+      scrollX: lerp(previous.world.scrollX, current.world.scrollX, clampedAlpha),
+    },
+    players: current.players.map((player) => interpolatePlayer(previous.players, player, clampedAlpha)),
+    entities: current.entities.map((entity) => interpolateEntity(previous.entities, entity, clampedAlpha)),
+  };
+}
+
+function interpolatePlayer(previousPlayers: PlayerSnapshot[], current: PlayerSnapshot, alpha: number): PlayerSnapshot {
+  const previous = previousPlayers.find((player) => player.playerId === current.playerId);
+
+  if (previous === undefined) {
+    return current;
+  }
+
+  return {
+    ...current,
+    x: lerp(previous.x, current.x, alpha),
+    y: lerp(previous.y, current.y, alpha),
+  };
+}
+
+function interpolateEntity(previousEntities: EntitySnapshot[], current: EntitySnapshot, alpha: number): EntitySnapshot {
+  const previous = previousEntities.find((entity) => entity.id === current.id);
+
+  if (previous === undefined) {
+    return current;
+  }
+
+  return {
+    ...current,
+    x: lerp(previous.x, current.x, alpha),
+    y: lerp(previous.y, current.y, alpha),
+  };
+}
+
+function lerp(from: number, to: number, alpha: number): number {
+  return from + (to - from) * alpha;
+}
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+function haveDifferentIds<TItem extends Record<TKey, string>, TKey extends keyof TItem>(
+  left: TItem[],
+  right: TItem[],
+  key: TKey,
+): boolean {
+  if (left.length !== right.length) {
+    return true;
+  }
+
+  const leftIds = new Set(left.map((item) => item[key]));
+
+  return right.some((item) => !leftIds.has(item[key]));
 }

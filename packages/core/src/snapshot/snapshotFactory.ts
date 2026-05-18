@@ -8,16 +8,18 @@ import type { Entity, Player } from "../types.js";
 type CreateGameSnapshotOptions = {
   tick: number;
   seed: number;
+  simulation: GameSnapshot["simulation"];
   scrollX: number;
   players: Iterable<Player>;
   entities: Entity[];
   events: GameEvent[];
 };
 
-export function createGameSnapshot({ tick, seed, scrollX, players, entities, events }: CreateGameSnapshotOptions): GameSnapshot {
+export function createGameSnapshot({ tick, seed, simulation, scrollX, players, entities, events }: CreateGameSnapshotOptions): GameSnapshot {
   return {
     tick,
     seed,
+    simulation: { ...simulation },
     world: {
       scrollX,
       speed: GAME_CONFIG.scrollSpeed,

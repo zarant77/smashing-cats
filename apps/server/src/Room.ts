@@ -229,7 +229,7 @@ export class Room {
     match.lastSnapshot = snapshot;
     match.ticksSinceFullSnapshot = 0;
 
-    this.send(client.socket, {
+    this.broadcastToMatch(match, {
       type: "snapshot",
       snapshot,
     });
@@ -245,6 +245,14 @@ export class Room {
     }
 
     match.game.setInput(playerId, message.input, message.snapshotTick, message.inputSeq);
+
+    this.broadcastToMatch(match, {
+      type: "playerInput",
+      playerId,
+      inputSeq: message.inputSeq,
+      ...(message.snapshotTick === undefined ? {} : { snapshotTick: message.snapshotTick }),
+      input: message.input,
+    });
   }
 
   private handlePause(playerId: string, paused: boolean): void {

@@ -178,11 +178,56 @@ export class Game {
     return createGameSnapshot({
       tick: this.tick,
       seed: this.seed,
+      simulation: {
+        rngState: this.rng.getState(),
+        nextEntityIndex: this.nextEntityIndex,
+        nextEventIndex: this.nextEventIndex,
+        nextSpawnX: this.nextSpawnX,
+      },
       scrollX: this.scrollX,
       players: this.players.values(),
       entities: this.entities,
       events: this.events,
     });
+  }
+
+  public loadSnapshot(snapshot: GameSnapshot): void {
+    if (snapshot.seed !== this.seed) {
+      throw new Error(`Cannot load snapshot with seed ${snapshot.seed} into game with seed ${this.seed}`);
+    }
+
+    this.tick = snapshot.tick;
+    this.scrollX = snapshot.world.scrollX;
+    this.nextEntityIndex = snapshot.simulation.nextEntityIndex;
+    this.nextEventIndex = snapshot.simulation.nextEventIndex;
+    this.nextSpawnX = snapshot.simulation.nextSpawnX;
+    this.rng.setState(snapshot.simulation.rngState);
+    this.entityHistory.length = 0;
+    this.events = snapshot.events.map((event) => ({ ...event }));
+    this.entities = snapshot.entities.map((entity) => ({ ...entity }));
+    this.players.clear();
+
+    for (const playerSnapshot of snapshot.players) {
+      this.players.set(playerSnapshot.playerId, {
+        ...playerSnapshot,
+        previousX: playerSnapshot.x,
+        previousY: playerSnapshot.y,
+        lockedWorldX: undefined,
+        invulnerableUntilTick: playerSnapshot.invulnerable ? this.tick + 1 : 0,
+        smashingForCollision: playerSnapshot.smashing,
+        canJump: playerSnapshot.grounded,
+        lastInputSnapshotTick: undefined,
+        lastReceivedInputSeq: playerSnapshot.lastProcessedInputSeq,
+        lastProcessedInputSeq: playerSnapshot.lastProcessedInputSeq,
+        lastInput: {
+          left: playerSnapshot.vx < 0,
+          right: playerSnapshot.vx > 0,
+          jump: false,
+        },
+        smashSnapshotTick: playerSnapshot.smashing ? this.tick : undefined,
+        damagedByEntityIds: new Set(),
+      });
+    }
   }
 
   public createDeltaSnapshot(previousSnapshot: GameSnapshot): DeltaSnapshot {

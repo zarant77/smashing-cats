@@ -14,6 +14,7 @@ export function createDeltaSnapshot(previous: GameSnapshot, next: GameSnapshot):
     tick: next.tick,
   };
 
+  assignOptional(delta, "simulation", getSimulationDelta(previous, next));
   assignOptional(delta, "scrollX", changed(previous.world.scrollX, next.world.scrollX));
   assignOptional(delta, "addedPlayers", getAddedPlayers(previous.players, next.players));
   assignOptional(delta, "updatedPlayers", getUpdatedPlayers(previous.players, next.players));
@@ -27,6 +28,15 @@ export function createDeltaSnapshot(previous: GameSnapshot, next: GameSnapshot):
   }
 
   return delta;
+}
+
+function getSimulationDelta(previous: GameSnapshot, next: GameSnapshot): GameSnapshot["simulation"] | undefined {
+  return Object.is(previous.simulation.rngState, next.simulation.rngState) &&
+    Object.is(previous.simulation.nextEntityIndex, next.simulation.nextEntityIndex) &&
+    Object.is(previous.simulation.nextEventIndex, next.simulation.nextEventIndex) &&
+    Object.is(previous.simulation.nextSpawnX, next.simulation.nextSpawnX)
+    ? undefined
+    : { ...next.simulation };
 }
 
 function assignOptional<TObject extends object, TKey extends keyof TObject>(
@@ -171,6 +181,7 @@ function hasPlayerPatchChanges(patch: PlayerPatch): boolean {
 function compactDelta(delta: DeltaSnapshot): DeltaSnapshot {
   return {
     tick: delta.tick,
+    ...(delta.simulation !== undefined ? { simulation: delta.simulation } : {}),
     ...(delta.scrollX !== undefined ? { scrollX: delta.scrollX } : {}),
 
     ...(delta.addedPlayers !== undefined ? { addedPlayers: delta.addedPlayers } : {}),
