@@ -1,25 +1,33 @@
 import { preloadAssets } from "../assets/assets.js";
-import { CanvasView } from "./canvas/CanvasView.js";
-import { PhaserView } from "./phaser/PhaserView.js";
-import { ThreeView } from "./three/ThreeView.js";
 import type { GameView, ViewKind, ViewOptions } from "./types.js";
-
-const ViewList = {
-  canvas: CanvasView,
-  phaser: PhaserView,
-  three: ThreeView,
-};
 
 export async function createView(kind: ViewKind, root: HTMLElement, options: ViewOptions): Promise<GameView> {
   showSplash(true);
 
-  const View = ViewList[kind];
-
   try {
     await preloadAssets(kind);
-    return new View(root, options);
+    return await createLoadedView(kind, root, options);
   } finally {
     showSplash(false);
+  }
+}
+
+async function createLoadedView(kind: ViewKind, root: HTMLElement, options: ViewOptions): Promise<GameView> {
+  switch (kind) {
+    case "canvas": {
+      const { CanvasView } = await import("./canvas/CanvasView.js");
+      return new CanvasView(root, options);
+    }
+
+    case "phaser": {
+      const { PhaserView } = await import("./phaser/PhaserView.js");
+      return new PhaserView(root, options);
+    }
+
+    case "three": {
+      const { ThreeView } = await import("./three/ThreeView.js");
+      return new ThreeView(root, options);
+    }
   }
 }
 
@@ -37,7 +45,7 @@ export function parseViewKind(value: string | null): ViewKind {
 function showSplash(isShow: boolean): void {
   const splash = document.getElementById("loading");
 
-  if (splash) {
+  if (splash !== null) {
     splash.style.display = isShow ? "flex" : "none";
   }
 }

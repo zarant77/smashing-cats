@@ -3,6 +3,7 @@ import type {
   CharacterDefinition,
   EntitySnapshot,
   EntityKind,
+  GameEvent,
   GameSnapshot,
   InputMessage,
   PlayerId,
@@ -41,6 +42,7 @@ export class GameRuntime {
   private inputSeq = 1;
   private wasJumpPressed = false;
   private wasSmashing = false;
+  private readonly seenEventKeys = new Set<string>();
   private snapshotStore = new SnapshotStore();
   private audioEventPlayer = new AudioEventPlayer();
   private socket: WebSocket | undefined;
@@ -80,6 +82,7 @@ export class GameRuntime {
     this.inputSeq = 1;
     this.wasJumpPressed = false;
     this.wasSmashing = false;
+    this.seenEventKeys.clear();
     this.charactersValue = this.multiplayer ? [] : [...CHARACTERS];
     this.snapshotStore = new SnapshotStore();
     this.audioEventPlayer = new AudioEventPlayer();
@@ -294,9 +297,7 @@ export class GameRuntime {
     return {
       ...snapshot,
 
-      events: snapshot.events.filter((event) => {
-        return event.type !== "playerHit" || event.playerId !== this.playerId;
-      }),
+      events: this.filterDuplicateEvents(snapshot.events),
 
       players: snapshot.players.map((player) => {
         if (player.playerId !== this.playerId || serverLocalPlayer === undefined) {
@@ -424,6 +425,31 @@ export class GameRuntime {
       }),
     };
   }
+
+  private filterDuplicateEvents(events: GameEvent[]): GameEvent[] {
+    const uniqueEvents: GameEvent[] = [];
+
+    for (const event of events) {
+      const key = getEventKey(event);
+
+      if (this.seenEventKeys.has(key)) {
+        continue;
+      }
+
+      this.seenEventKeys.add(key);
+      uniqueEvents.push(event);
+    }
+
+    if (this.seenEventKeys.size > 500) {
+      this.seenEventKeys.clear();
+    }
+
+    return uniqueEvents;
+  }
+}
+
+function getEventKey(event: GameEvent): string {
+  return `${event.type}:${event.playerId ?? ""}:${event.entityId}`;
 }
 
 function interpolateSnapshot(
