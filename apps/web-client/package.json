@@ -7,18 +7,25 @@
     "build": "vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "preview": "vite preview",
-    "start": "node server.js"
+    "start": "node server.js",
+    "cap:init": "cap init \"Smashing Cats\" \"com.catemup.smashingcats\" --web-dir=dist",
+    "cap:add": "cap add android",
+    "cap:sync": "cap sync android",
+    "cap:open": "cap open android"
   },
   "dependencies": {
-    "@smashing-cats/core": "workspace:*",
-    "@smashing-cats/protocol": "workspace:*",
-    "@smashing-cats/i18n": "workspace:*",
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
     "@smashing-cats/client-netcode": "workspace:*",
+    "@smashing-cats/core": "workspace:*",
+    "@smashing-cats/i18n": "workspace:*",
+    "@smashing-cats/protocol": "workspace:*",
     "phaser": "^4.1.0",
     "three": "^0.184.0",
     "vite": "^8.0.12"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.3.4",
     "@types/three": "^0.184.1"
   }
 }
