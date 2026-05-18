@@ -196,6 +196,8 @@ export class Game {
       throw new Error(`Cannot load snapshot with seed ${snapshot.seed} into game with seed ${this.seed}`);
     }
 
+    const previousPlayers = new Map(this.players);
+
     this.tick = snapshot.tick;
     this.scrollX = snapshot.world.scrollX;
     this.nextEntityIndex = snapshot.simulation.nextEntityIndex;
@@ -208,6 +210,8 @@ export class Game {
     this.players.clear();
 
     for (const playerSnapshot of snapshot.players) {
+      const previousPlayer = previousPlayers.get(playerSnapshot.playerId);
+
       this.players.set(playerSnapshot.playerId, {
         ...playerSnapshot,
         previousX: playerSnapshot.x,
@@ -225,7 +229,7 @@ export class Game {
           jump: false,
         },
         smashSnapshotTick: playerSnapshot.smashing ? this.tick : undefined,
-        damagedByEntityIds: new Set(),
+        damagedByEntityIds: new Set(previousPlayer?.damagedByEntityIds),
       });
     }
   }

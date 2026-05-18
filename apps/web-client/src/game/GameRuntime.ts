@@ -46,6 +46,7 @@ export class GameRuntime {
   private socket: WebSocket | undefined;
   private localGame: Game | undefined;
   private previousLocalSnapshot: GameSnapshot | undefined;
+  private serverLocalPlayer: PlayerSnapshot | undefined;
   private localSnapshot: GameSnapshot | undefined;
   private lastLocalUpdateAt = performance.now();
   private localUpdateAccumulator = 0;
@@ -100,10 +101,7 @@ export class GameRuntime {
   }
 
   public selectCharacter(characterKind: EntityKind): boolean {
-    if (
-      this.multiplayer &&
-      (this.socket?.readyState !== WebSocket.OPEN || this.playerId === undefined || this.matchCode === undefined)
-    ) {
+    if (this.multiplayer && (this.socket?.readyState !== WebSocket.OPEN || this.playerId === undefined || this.matchCode === undefined)) {
       return false;
     }
 
@@ -257,12 +255,7 @@ export class GameRuntime {
     sendClientMessage(this.socket, inputMessage);
   }
 
-  private updateLocalGame(
-    canPlay: boolean,
-    currentPlayerId: PlayerId | undefined,
-    currentInputSeq: number,
-    input: PlayerInput,
-  ): void {
+  private updateLocalGame(canPlay: boolean, currentPlayerId: PlayerId | undefined, currentInputSeq: number, input: PlayerInput): void {
     if (!canPlay || this.localGame === undefined || currentPlayerId === undefined) {
       this.lastLocalUpdateAt = performance.now();
       this.localUpdateAccumulator = 0;
@@ -290,13 +283,44 @@ export class GameRuntime {
     void currentInputSeq;
     void input;
 
-    return interpolateSnapshot(this.previousLocalSnapshot, this.localSnapshot, this.localUpdateAccumulator / FIXED_DT);
+    const snapshot = interpolateSnapshot(this.previousLocalSnapshot, this.localSnapshot, this.localUpdateAccumulator / FIXED_DT);
+
+    if (!this.multiplayer || snapshot === undefined || this.playerId === undefined) {
+      return snapshot;
+    }
+
+    const serverLocalPlayer = this.serverLocalPlayer;
+
+    return {
+      ...snapshot,
+
+      events: snapshot.events.filter((event) => {
+        return event.type !== "playerHit" || event.playerId !== this.playerId;
+      }),
+
+      players: snapshot.players.map((player) => {
+        if (player.playerId !== this.playerId || serverLocalPlayer === undefined) {
+          return player;
+        }
+
+        return {
+          ...player,
+          hp: serverLocalPlayer.hp,
+          alive: serverLocalPlayer.alive,
+          score: serverLocalPlayer.score,
+          invulnerable: serverLocalPlayer.invulnerable,
+          paused: serverLocalPlayer.paused,
+        };
+      }),
+    };
   }
 
   private loadServerSnapshot(snapshot: GameSnapshot): void {
     if (!this.multiplayer) {
       return;
     }
+
+    this.serverLocalPlayer = snapshot.players.find((player) => player.playerId === this.playerId);
 
     const isNewLocalGame = this.localGame === undefined || this.localSnapshot?.seed !== snapshot.seed;
 
@@ -327,12 +351,7 @@ export class GameRuntime {
     this.previousLocalSnapshot = previousSnapshot ?? this.localSnapshot;
   }
 
-  private applyRemoteInput(
-    playerId: PlayerId,
-    input: PlayerInput,
-    snapshotTick: number | undefined,
-    inputSeq: number | undefined,
-  ): void {
+  private applyRemoteInput(playerId: PlayerId, input: PlayerInput, snapshotTick: number | undefined, inputSeq: number | undefined): void {
     if (!this.multiplayer || playerId === this.playerId || this.localGame === undefined) {
       return;
     }
@@ -470,11 +489,7 @@ function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
 
-function haveDifferentIds<TItem extends Record<TKey, string>, TKey extends keyof TItem>(
-  left: TItem[],
-  right: TItem[],
-  key: TKey,
-): boolean {
+function haveDifferentIds<TItem extends Record<TKey, string>, TKey extends keyof TItem>(left: TItem[], right: TItem[], key: TKey): boolean {
   if (left.length !== right.length) {
     return true;
   }
