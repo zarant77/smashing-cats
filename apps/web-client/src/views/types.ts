@@ -11,4 +11,5 @@ export type GameView = {
 
 export type ViewOptions = {
   debug: boolean;
+  onReady?: () => void;
 };
