@@ -254,7 +254,7 @@ export class GameRuntime {
   }
 
   private shouldSendInput(input: PlayerInput): boolean {
-    return this.lastSentInput === undefined || !isSameInput(this.lastSentInput, input);
+    return hasActiveInput(input) || this.lastSentInput === undefined || !isSameInput(this.lastSentInput, input);
   }
 
   private sendInput(inputSeq: number, input: PlayerInput): void {
@@ -395,4 +395,8 @@ function clamp01(value: number): number {
 
 function isSameInput(left: PlayerInput, right: PlayerInput): boolean {
   return left.left === right.left && left.right === right.right && left.jump === right.jump;
+}
+
+function hasActiveInput(input: PlayerInput): boolean {
+  return input.left || input.right || input.jump;
 }

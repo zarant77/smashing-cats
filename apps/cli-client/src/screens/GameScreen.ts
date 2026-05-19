@@ -334,7 +334,7 @@ export class GameScreen implements Screen {
   }
 
   private shouldSendInput(input: PlayerInput): boolean {
-    return this.lastSentInput === undefined || !isSameInput(this.lastSentInput, input);
+    return hasActiveInput(input) || this.lastSentInput === undefined || !isSameInput(this.lastSentInput, input);
   }
 
   private withPauseOverlay(content: string): string {
@@ -362,4 +362,8 @@ export class GameScreen implements Screen {
 
 function isSameInput(left: PlayerInput, right: PlayerInput): boolean {
   return left.left === right.left && left.right === right.right && left.jump === right.jump;
+}
+
+function hasActiveInput(input: PlayerInput): boolean {
+  return input.left || input.right || input.jump;
 }

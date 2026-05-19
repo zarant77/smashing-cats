@@ -13,7 +13,6 @@ const SNAP_POSITION_ERROR = 96;
 const VISUAL_CORRECTION_SMOOTHING_MS = 110;
 
 type PendingInput = {
-  tick: number;
   inputSeq: number;
   actionInput: PlayerInput;
 };
@@ -24,7 +23,6 @@ export class LocalPlayerPredictor {
   private pendingInputs: PendingInput[] = [];
   private lastRawInput: PlayerInput | undefined;
   private jumpRequested = false;
-  private predictedTick: number | undefined;
   private lastUpdatedAt: number | undefined;
   private accumulator = 0;
   private lastAuthoritativeTick: number | undefined;
@@ -67,7 +65,6 @@ export class LocalPlayerPredictor {
       this.pendingInputs = [];
       this.lastRawInput = input;
       this.jumpRequested = false;
-      this.predictedTick = latest.tick;
       this.lastUpdatedAt = now;
       this.accumulator = 0;
       this.lastAuthoritativeTick = latest.tick;
@@ -106,10 +103,8 @@ export class LocalPlayerPredictor {
         ...input,
         jump: this.consumeJumpRequest(),
       };
-      const tick = (this.predictedTick ?? snapshot.tick) + 1;
 
       this.pendingInputs.push({
-        tick,
         inputSeq,
         actionInput,
       });
@@ -119,7 +114,6 @@ export class LocalPlayerPredictor {
       }
 
       simulatePlayerMovement(this.state, actionInput, character, createGameConfig(snapshot.world), FIXED_DT);
-      this.predictedTick = tick;
       this.accumulator -= FIXED_DT;
     }
   }
@@ -129,14 +123,12 @@ export class LocalPlayerPredictor {
       return;
     }
 
-    this.pendingInputs = this.pendingInputs.filter((pendingInput) => pendingInput.tick > snapshot.tick);
+    this.pendingInputs = this.pendingInputs.filter((pendingInput) => pendingInput.inputSeq > authoritativePlayer.lastProcessedInputSeq);
 
     const reconciledState = createMovementState(authoritativePlayer);
-    this.predictedTick = snapshot.tick;
 
     for (const pendingInput of this.pendingInputs) {
       simulatePlayerMovement(reconciledState, pendingInput.actionInput, character, createGameConfig(snapshot.world), FIXED_DT);
-      this.predictedTick = pendingInput.tick;
     }
 
     this.applyReconciledState(reconciledState, now);
@@ -289,7 +281,6 @@ export class LocalPlayerPredictor {
     this.pendingInputs = [];
     this.lastRawInput = undefined;
     this.jumpRequested = false;
-    this.predictedTick = undefined;
     this.lastUpdatedAt = undefined;
     this.accumulator = 0;
     this.lastAuthoritativeTick = undefined;

@@ -1,21 +1,19 @@
 import type { DeltaSnapshot, EntitySnapshot, GameSnapshot, PlayerSnapshot } from "@smashing-cats/protocol";
 
 export class SnapshotStore {
-  private fullSnapshot: GameSnapshot | undefined;
   private snapshot: GameSnapshot | undefined;
 
   public setFullSnapshot(snapshot: GameSnapshot): GameSnapshot {
-    this.fullSnapshot = cloneSnapshot(snapshot);
     this.snapshot = cloneSnapshot(snapshot);
     return this.snapshot;
   }
 
   public applyDelta(delta: DeltaSnapshot): GameSnapshot | undefined {
-    if (this.fullSnapshot === undefined) {
+    if (this.snapshot === undefined) {
       return undefined;
     }
 
-    const snapshot = cloneSnapshot(this.fullSnapshot);
+    const snapshot = cloneSnapshot(this.snapshot);
 
     snapshot.tick = delta.tick;
     snapshot.events = delta.events ?? [];

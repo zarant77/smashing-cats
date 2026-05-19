@@ -20,6 +20,7 @@ type Match = {
   game: Game;
   playerIds: Set<string>;
   lastFullSnapshot: GameSnapshot | undefined;
+  lastNetworkSnapshot: GameSnapshot | undefined;
   ticksSinceFullSnapshot: number;
   cleanupTimeout: NodeJS.Timeout | undefined;
 };
@@ -154,13 +155,14 @@ export class Room {
       });
 
       match.lastFullSnapshot = snapshot;
+      match.lastNetworkSnapshot = snapshot;
       match.ticksSinceFullSnapshot = 0;
 
       return;
     }
 
-    if (match.lastFullSnapshot !== undefined) {
-      const delta = match.game.createDeltaSnapshot(match.lastFullSnapshot);
+    if (match.lastNetworkSnapshot !== undefined) {
+      const delta = match.game.createDeltaSnapshot(match.lastNetworkSnapshot);
 
       if (!hasDeltaChanges(delta)) {
         return;
@@ -170,6 +172,8 @@ export class Room {
         type: "delta",
         delta,
       });
+
+      match.lastNetworkSnapshot = snapshot;
     }
   }
 
@@ -236,6 +240,7 @@ export class Room {
     const snapshot = match.game.createSnapshot();
 
     match.lastFullSnapshot = snapshot;
+    match.lastNetworkSnapshot = snapshot;
     match.ticksSinceFullSnapshot = 0;
 
     this.broadcastToMatch(match, {
@@ -279,6 +284,7 @@ export class Room {
       game: new Game(1337),
       playerIds: new Set<string>(),
       lastFullSnapshot: undefined,
+      lastNetworkSnapshot: undefined,
       ticksSinceFullSnapshot: 0,
       cleanupTimeout: undefined,
     };
