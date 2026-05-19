@@ -2,8 +2,8 @@ import blessed from "blessed";
 import clipboard from "clipboardy";
 import type { Translator } from "@smashing-cats/i18n";
 import type { CharacterDefinition, EntityKind, GameSnapshot, PlayerId, PlayerSnapshot } from "@smashing-cats/protocol";
-import { SnapshotInterpolator } from "@smashing-cats/client-netcode";
-import { CliConnection } from "../network/CliConnection.js";
+import { LocalPlayerPredictor, SnapshotInterpolator } from "@smashing-cats/client-netcode";
+import { CliConnection, type PlayerInput } from "../network/CliConnection.js";
 import { GameAsciiRenderer } from "../render/GameAsciiRenderer.js";
 import { terminalBell } from "../audio/TerminalBell.js";
 import { TerminalInput } from "../input/TerminalInput.js";
@@ -29,6 +29,7 @@ export class GameScreen implements Screen {
   private readonly viewport: blessed.Widgets.BoxElement;
   private readonly renderer = new GameAsciiRenderer();
   private readonly interpolator = new SnapshotInterpolator();
+  private readonly predictor = new LocalPlayerPredictor();
 
   private readonly terminalInput: TerminalInput;
 
@@ -42,6 +43,12 @@ export class GameScreen implements Screen {
 
   private characters: CharacterDefinition[] = [];
   private inputSeq = 1;
+  private latestInputSeq = 0;
+  private latestInput: PlayerInput = {
+    left: false,
+    right: false,
+    jump: false,
+  };
 
   private paused = false;
 
@@ -175,11 +182,18 @@ export class GameScreen implements Screen {
     this.inputTimer = setInterval(() => {
       if (this.gameOverOverlay !== undefined || this.paused) {
         this.terminalInput.clear();
+        this.latestInput = {
+          left: false,
+          right: false,
+          jump: false,
+        };
         return;
       }
 
       const currentInputSeq = this.inputSeq++;
       const input = this.terminalInput.read();
+      this.latestInputSeq = currentInputSeq;
+      this.latestInput = input;
 
       this.connection?.sendInput(currentInputSeq, input, this.interpolator.getRenderedTick());
     }, 1000 / 30);
@@ -187,7 +201,14 @@ export class GameScreen implements Screen {
 
   private startRenderLoop(): void {
     this.renderTimer = setInterval(() => {
-      const snapshot = this.interpolator.get(undefined);
+      const snapshot = this.predictor.apply(
+        this.interpolator.get(this.playerId),
+        this.interpolator.getLatest(),
+        this.playerId,
+        this.latestInputSeq,
+        this.latestInput,
+        this.characters,
+      );
 
       const content = this.renderer.render(snapshot, this.playerId, this.options.t);
       this.viewport.setContent(this.paused ? this.withPauseOverlay(content) : content);

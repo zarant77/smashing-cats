@@ -93,6 +93,7 @@ export class PlayerRenderer {
       scale: viewport.scale,
       screenWidth: canvasWidth,
       screenHeight: ctx.canvas.height,
+      disableGroundYMotion: isLocal && player.grounded && !player.smashing,
     });
 
     ctx.save();

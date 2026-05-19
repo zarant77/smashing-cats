@@ -43,12 +43,4 @@ export type DeltaSnapshotMessage = {
   delta: DeltaSnapshot;
 };
 
-export type PlayerInputMessage = {
-  type: "playerInput";
-  playerId: PlayerId;
-  inputSeq: number;
-  snapshotTick?: number;
-  input: PlayerInput;
-};
-
-export type ServerToClientMessage = WelcomeMessage | SnapshotMessage | DeltaSnapshotMessage | PlayerInputMessage;
+export type ServerToClientMessage = WelcomeMessage | SnapshotMessage | DeltaSnapshotMessage;

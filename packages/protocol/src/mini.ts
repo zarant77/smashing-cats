@@ -19,7 +19,6 @@ const FIELD_MAP = {
   characters: "c",
   snapshot: "ss",
   delta: "d",
-  playerInput: "pi",
   simulation: "sm",
   rngState: "rs",
   nextEntityIndex: "nei",

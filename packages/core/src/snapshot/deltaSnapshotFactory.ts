@@ -27,7 +27,7 @@ export function createDeltaSnapshot(previous: GameSnapshot, next: GameSnapshot):
     delta.events = [...next.events];
   }
 
-  return delta;
+  return compactDelta(delta);
 }
 
 function getSimulationDelta(previous: GameSnapshot, next: GameSnapshot): GameSnapshot["simulation"] | undefined {

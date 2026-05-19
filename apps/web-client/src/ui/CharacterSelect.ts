@@ -84,11 +84,11 @@ export class CharacterSelect {
     const carousel = document.createElement("div");
     carousel.className = "character-carousel";
 
-    const previousButton = createArrowButton("‹", "Previous character", () => {
+    const previousButton = createArrowButton("‹", this.t("previousCharacter"), () => {
       this.selectPreviousCharacter();
     });
 
-    const nextButton = createArrowButton("›", "Next character", () => {
+    const nextButton = createArrowButton("›", this.t("nextCharacter"), () => {
       this.selectNextCharacter();
     });
 
@@ -192,21 +192,11 @@ export class CharacterSelect {
 
     controls.className = "character-controls-hint";
 
-    controls.innerHTML = `
-      <div class="character-control-group">
-        <kbd>←</kbd>
-        <kbd>→</kbd>
-        <span>Change</span>
-      </div>
-
-      <div class="character-control-separator"></div>
-
-      <div class="character-control-group">
-        <kbd>Enter</kbd>
-        <kbd>Space</kbd>
-        <span>Select</span>
-      </div>
-    `;
+    controls.append(
+      createControlHint(["←", "→"], this.t("changeCharacter")),
+      createControlSeparator(),
+      createControlHint(["Enter", "Space"], this.t("selectCharacter")),
+    );
 
     button.append(image, name, divider, stats, controls);
 
@@ -237,6 +227,35 @@ function createArrowButton(label: string, ariaLabel: string, onClick: () => void
   button.addEventListener("click", onClick);
 
   return button;
+}
+
+function createControlHint(keys: string[], label: string): HTMLDivElement {
+  const group = document.createElement("div");
+  const labelElement = document.createElement("span");
+
+  group.className = "character-control-group";
+  labelElement.className = "character-control-label";
+  labelElement.textContent = label;
+
+  group.append(...keys.map(createKeyLabel), labelElement);
+
+  return group;
+}
+
+function createKeyLabel(label: string): HTMLElement {
+  const key = document.createElement("kbd");
+
+  key.textContent = label;
+
+  return key;
+}
+
+function createControlSeparator(): HTMLDivElement {
+  const separator = document.createElement("div");
+
+  separator.className = "character-control-separator";
+
+  return separator;
 }
 
 function stat(icon: string, label: string, value: number, range: StatRange): HTMLElement {

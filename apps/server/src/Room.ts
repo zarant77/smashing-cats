@@ -1,4 +1,4 @@
-import { CHARACTERS, FIXED_DT, Game, TICK_RATE } from "@smashing-cats/core";
+import { CHARACTERS, FIXED_DT, Game, SNAPSHOT_INTERVAL_TICKS, TICK_RATE } from "@smashing-cats/core";
 import {
   normalizeMessage,
   minifyMessage,
@@ -18,7 +18,7 @@ type Match = {
   code: string;
   game: Game;
   playerIds: Set<string>;
-  lastSnapshot: GameSnapshot | undefined;
+  lastFullSnapshot: GameSnapshot | undefined;
   ticksSinceFullSnapshot: number;
   cleanupTimeout: NodeJS.Timeout | undefined;
 };
@@ -138,8 +138,13 @@ export class Room {
     }
 
     match.game.update(FIXED_DT);
+    match.ticksSinceFullSnapshot += 1;
 
     const snapshot = match.game.createSnapshot();
+
+    if (snapshot.tick % SNAPSHOT_INTERVAL_TICKS !== 0) {
+      return;
+    }
 
     if (this.shouldSendFullSnapshot(match)) {
       this.broadcastToMatch(match, {
@@ -147,21 +152,18 @@ export class Room {
         snapshot,
       });
 
-      match.lastSnapshot = snapshot;
+      match.lastFullSnapshot = snapshot;
       match.ticksSinceFullSnapshot = 0;
 
       return;
     }
 
-    if (match.lastSnapshot !== undefined) {
+    if (match.lastFullSnapshot !== undefined) {
       this.broadcastToMatch(match, {
         type: "delta",
-        delta: match.game.createDeltaSnapshot(match.lastSnapshot),
+        delta: match.game.createDeltaSnapshot(match.lastFullSnapshot),
       });
     }
-
-    match.lastSnapshot = snapshot;
-    match.ticksSinceFullSnapshot += 1;
   }
 
   private removeClient(playerId: string): void {
@@ -226,7 +228,7 @@ export class Room {
 
     const snapshot = match.game.createSnapshot();
 
-    match.lastSnapshot = snapshot;
+    match.lastFullSnapshot = snapshot;
     match.ticksSinceFullSnapshot = 0;
 
     this.broadcastToMatch(match, {
@@ -245,14 +247,6 @@ export class Room {
     }
 
     match.game.setInput(playerId, message.input, message.snapshotTick, message.inputSeq);
-
-    this.broadcastToMatch(match, {
-      type: "playerInput",
-      playerId,
-      inputSeq: message.inputSeq,
-      ...(message.snapshotTick === undefined ? {} : { snapshotTick: message.snapshotTick }),
-      input: message.input,
-    });
   }
 
   private handlePause(playerId: string, paused: boolean): void {
@@ -277,7 +271,7 @@ export class Room {
       code,
       game: new Game(1337),
       playerIds: new Set<string>(),
-      lastSnapshot: undefined,
+      lastFullSnapshot: undefined,
       ticksSinceFullSnapshot: 0,
       cleanupTimeout: undefined,
     };
@@ -310,9 +304,6 @@ export class Room {
     match.game.removePlayer(playerId);
     this.playerMatchCodes.delete(playerId);
 
-    match.lastSnapshot = match.game.createSnapshot();
-    match.ticksSinceFullSnapshot = 0;
-
     if (match.playerIds.size === 0) {
       this.scheduleMatchCleanup(match);
     }
@@ -342,7 +333,7 @@ export class Room {
   }
 
   private shouldSendFullSnapshot(match: Match): boolean {
-    return match.lastSnapshot === undefined || match.ticksSinceFullSnapshot >= FULL_SNAPSHOT_INTERVAL_TICKS;
+    return match.lastFullSnapshot === undefined || match.ticksSinceFullSnapshot >= FULL_SNAPSHOT_INTERVAL_TICKS;
   }
 
   private broadcastToMatch(match: Match, message: ServerToClientMessage): void {

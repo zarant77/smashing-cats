@@ -12,7 +12,6 @@ export type LocalizedText = {
 };
 
 export type GameConfig = {
-  tickRate: number;
   worldWidth: number;
   worldHeight: number;
   groundY: number;
@@ -90,7 +89,9 @@ export const OBSTACLES = fromJson<ObstacleConfig[]>(obstaclesData);
 
 export const SPAWNABLES = [...OBSTACLES, ...ENEMIES, ...CIVILIANS] satisfies SpawnableConfig[];
 
-export const TICK_RATE = GAME_CONFIG.tickRate;
+export const TICK_RATE = 60;
+export const SNAPSHOT_RATE = 15;
+export const SNAPSHOT_INTERVAL_TICKS = TICK_RATE / SNAPSHOT_RATE;
 export const FIXED_DT = 1 / TICK_RATE;
 
 export function getCharacterConfig(kind: EntityKind): CharacterConfig {

@@ -27,6 +27,10 @@ export const en = {
   gameScreenHint: "A/D or ←/→ move | W/Space/↑ jump | ESC back | Ctrl+C quit",
   rotateDeviceTitle: "Rotate your device",
   rotateDeviceDescription: "This game is best played in landscape mode",
+  previousCharacter: "Previous cat",
+  nextCharacter: "Next cat",
+  changeCharacter: "Change cat",
+  selectCharacter: "Choose your cat",
 
   batcat: "Batcat",
   ironcat: "Ironcat",

@@ -8,10 +8,11 @@ export function getBounceImpact(now: number, input: TransformInput): AnimationIm
   const wave = Math.sin(now * SPEED);
   const wave2 = Math.sin(now * SPEED * 2);
   const bounce = Math.abs(wave);
+  const y = input.disableGroundYMotion === true ? 0 : -bounce * BOUNCE_POWER * input.scale;
 
   return {
     ...DEFAULT_IMPACT,
-    y: -bounce * BOUNCE_POWER * input.scale,
+    y,
     scaleX: 1 - wave2 * SQUASH_POWER,
     scaleY: 1 + wave2 * SQUASH_POWER,
   };

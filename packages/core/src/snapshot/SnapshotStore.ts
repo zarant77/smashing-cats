@@ -1,19 +1,21 @@
 import type { DeltaSnapshot, EntitySnapshot, GameSnapshot, PlayerSnapshot } from "@smashing-cats/protocol";
 
 export class SnapshotStore {
+  private fullSnapshot: GameSnapshot | undefined;
   private snapshot: GameSnapshot | undefined;
 
   public setFullSnapshot(snapshot: GameSnapshot): GameSnapshot {
+    this.fullSnapshot = cloneSnapshot(snapshot);
     this.snapshot = cloneSnapshot(snapshot);
     return this.snapshot;
   }
 
   public applyDelta(delta: DeltaSnapshot): GameSnapshot | undefined {
-    if (this.snapshot === undefined) {
+    if (this.fullSnapshot === undefined) {
       return undefined;
     }
 
-    const snapshot = cloneSnapshot(this.snapshot);
+    const snapshot = cloneSnapshot(this.fullSnapshot);
 
     snapshot.tick = delta.tick;
     snapshot.events = delta.events ?? [];
@@ -27,7 +29,7 @@ export class SnapshotStore {
     }
 
     if (delta.addedPlayers !== undefined) {
-      snapshot.players.push(...delta.addedPlayers.map(clonePlayerSnapshot));
+      upsertByKey(snapshot.players, delta.addedPlayers.map(clonePlayerSnapshot), "playerId");
     }
 
     if (delta.updatedPlayers !== undefined) {
@@ -46,7 +48,7 @@ export class SnapshotStore {
     }
 
     if (delta.addedEntities !== undefined) {
-      snapshot.entities.push(...delta.addedEntities.map(cloneEntitySnapshot));
+      upsertByKey(snapshot.entities, delta.addedEntities.map(cloneEntitySnapshot), "id");
     }
 
     if (delta.updatedEntities !== undefined) {
@@ -95,4 +97,21 @@ function cloneEntitySnapshot(entity: EntitySnapshot): EntitySnapshot {
   return {
     ...entity,
   };
+}
+
+function upsertByKey<TItem extends Record<TKey, string>, TKey extends keyof TItem>(
+  target: TItem[],
+  items: TItem[],
+  key: TKey,
+): void {
+  for (const item of items) {
+    const existingIndex = target.findIndex((candidate) => candidate[key] === item[key]);
+
+    if (existingIndex === -1) {
+      target.push(item);
+      continue;
+    }
+
+    target[existingIndex] = item;
+  }
 }

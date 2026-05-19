@@ -27,6 +27,10 @@ export const uk = {
   gameScreenHint: "Керування: A/D або ←/→ рух | W/S/Пробіл/↑ стрибок | ESC назад | Ctrl+C вийти з гри",
   rotateDeviceTitle: "Переверніть девайс",
   rotateDeviceDescription: "Грати зручно тільки в landscape",
+  previousCharacter: "Попередній кіт",
+  nextCharacter: "Наступний кіт",
+  changeCharacter: "Змінити кота",
+  selectCharacter: "Обрати цього кота",
 
   batcat: "КажанКіт",
   ironcat: "Залізна Котина",

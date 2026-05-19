@@ -5,6 +5,7 @@ const SHAKE_STRENGTH = 10;
 
 export class ScreenShake {
   private readonly seenEventIds = new Set<string>();
+  private shakeStartedAt = -Infinity;
   private shakeUntil = 0;
   private wasSmashing = false;
 
@@ -40,21 +41,24 @@ export class ScreenShake {
   }
 
   public getOffset(scale: number): { x: number; y: number } {
-    const remaining = this.shakeUntil - performance.now();
+    const now = performance.now();
+    const remaining = this.shakeUntil - now;
 
     if (remaining <= 0) {
       return { x: 0, y: 0 };
     }
 
+    const elapsed = now - this.shakeStartedAt;
     const strength = SHAKE_STRENGTH * scale * (remaining / SHAKE_DURATION_MS);
 
     return {
-      x: (Math.random() * 2 - 1) * strength,
-      y: (Math.random() * 2 - 1) * strength,
+      x: Math.sin(elapsed * 0.11) * strength,
+      y: Math.sin(elapsed * 0.17 + Math.PI / 3) * strength,
     };
   }
 
   private shake(): void {
-    this.shakeUntil = performance.now() + SHAKE_DURATION_MS;
+    this.shakeStartedAt = performance.now();
+    this.shakeUntil = this.shakeStartedAt + SHAKE_DURATION_MS;
   }
 }

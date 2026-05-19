@@ -1,4 +1,16 @@
-export { CHARACTERS, CIVILIANS, ENEMIES, FIXED_DT, GAME_CONFIG, getCharacterConfig, OBSTACLES, SPAWNABLES, TICK_RATE } from "./config.js";
+export {
+  CHARACTERS,
+  CIVILIANS,
+  ENEMIES,
+  FIXED_DT,
+  GAME_CONFIG,
+  getCharacterConfig,
+  OBSTACLES,
+  SNAPSHOT_INTERVAL_TICKS,
+  SNAPSHOT_RATE,
+  SPAWNABLES,
+  TICK_RATE,
+} from "./config.js";
 export { intersects } from "./collision/collisions.js";
 export { Game } from "./Game.js";
 export { Random } from "./Random.js";

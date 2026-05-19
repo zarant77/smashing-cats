@@ -42,6 +42,7 @@ export type TransformInput = {
   screenHeight: number;
   velocityX?: number;
   velocityY?: number;
+  disableGroundYMotion?: boolean;
 };
 
 export type AnimationState = {

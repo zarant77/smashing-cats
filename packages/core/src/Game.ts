@@ -1,6 +1,6 @@
 import type { DeltaSnapshot, EntityKind, GameEvent, GameSnapshot, PlayerId, PlayerInput } from "@smashing-cats/protocol";
 import type { Entity, Player } from "./types.js";
-import { type CharacterConfig, GAME_CONFIG, getCharacterConfig } from "./config.js";
+import { type CharacterConfig, GAME_CONFIG, TICK_RATE, getCharacterConfig } from "./config.js";
 import { Random } from "./Random.js";
 import { resolveEnemyCivilianCollisions, resolvePlayerEntityCollisions } from "./collision/collisionSystem.js";
 import { spawnAhead } from "./entity/entitySpawner.js";
@@ -56,7 +56,7 @@ export class Game {
       index: this.players.size,
       tick: this.tick,
       groundY: GAME_CONFIG.groundY,
-      tickRate: GAME_CONFIG.tickRate,
+      tickRate: TICK_RATE,
     });
 
     this.players.set(playerId, player);
@@ -110,7 +110,7 @@ export class Game {
       return;
     }
 
-    player.invulnerableUntilTick = this.tick + Math.ceil(UNPAUSE_INVULNERABILITY_SECONDS * GAME_CONFIG.tickRate);
+    player.invulnerableUntilTick = this.tick + Math.ceil(UNPAUSE_INVULNERABILITY_SECONDS * TICK_RATE);
   }
 
   public update(dt: number): void {
