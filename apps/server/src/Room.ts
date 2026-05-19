@@ -1,9 +1,10 @@
-import { CHARACTERS, FIXED_DT, Game, SNAPSHOT_INTERVAL_TICKS, TICK_RATE } from "@smashing-cats/core";
+import { CHARACTERS, FIXED_DT, Game, SNAPSHOT_INTERVAL_TICKS, TICK_RATE, createDeltaSnapshot } from "@smashing-cats/core";
 import {
   normalizeMessage,
   minifyMessage,
   type ClientToServerMessage,
   type DeltaSnapshot,
+  type GameEvent,
   type GameSnapshot,
   type ServerToClientMessage,
   EntityKind,
@@ -21,6 +22,7 @@ type Match = {
   playerIds: Set<string>;
   lastFullSnapshot: GameSnapshot | undefined;
   lastNetworkSnapshot: GameSnapshot | undefined;
+  pendingEvents: GameEvent[];
   ticksSinceFullSnapshot: number;
   cleanupTimeout: NodeJS.Timeout | undefined;
 };
@@ -143,26 +145,30 @@ export class Room {
     match.ticksSinceFullSnapshot += 1;
 
     const snapshot = match.game.createSnapshot();
+    match.pendingEvents.push(...snapshot.events);
 
     if (snapshot.tick % SNAPSHOT_INTERVAL_TICKS !== 0) {
       return;
     }
 
+    const networkSnapshot = withEvents(snapshot, match.pendingEvents);
+
     if (this.shouldSendFullSnapshot(match)) {
       this.broadcastToMatch(match, {
         type: "snapshot",
-        snapshot,
+        snapshot: networkSnapshot,
       });
 
-      match.lastFullSnapshot = snapshot;
-      match.lastNetworkSnapshot = snapshot;
+      match.lastFullSnapshot = networkSnapshot;
+      match.lastNetworkSnapshot = networkSnapshot;
+      match.pendingEvents = [];
       match.ticksSinceFullSnapshot = 0;
 
       return;
     }
 
     if (match.lastNetworkSnapshot !== undefined) {
-      const delta = match.game.createDeltaSnapshot(match.lastNetworkSnapshot);
+      const delta = createDeltaSnapshot(match.lastNetworkSnapshot, networkSnapshot);
 
       if (!hasDeltaChanges(delta)) {
         return;
@@ -173,7 +179,8 @@ export class Room {
         delta,
       });
 
-      match.lastNetworkSnapshot = snapshot;
+      match.lastNetworkSnapshot = networkSnapshot;
+      match.pendingEvents = [];
     }
   }
 
@@ -285,6 +292,7 @@ export class Room {
       playerIds: new Set<string>(),
       lastFullSnapshot: undefined,
       lastNetworkSnapshot: undefined,
+      pendingEvents: [],
       ticksSinceFullSnapshot: 0,
       cleanupTimeout: undefined,
     };
@@ -390,4 +398,11 @@ function parseClientMessage(raw: string): ClientToServerMessage | undefined {
 
 function hasDeltaChanges(delta: DeltaSnapshot): boolean {
   return Object.keys(delta).some((key) => key !== "tick");
+}
+
+function withEvents(snapshot: GameSnapshot, events: GameEvent[]): GameSnapshot {
+  return {
+    ...snapshot,
+    events: events.map((event) => ({ ...event })),
+  };
 }

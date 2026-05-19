@@ -15,6 +15,7 @@ export { intersects } from "./collision/collisions.js";
 export { Game } from "./Game.js";
 export { Random } from "./Random.js";
 export { simulatePlayerMovement } from "./movement.js";
+export { createDeltaSnapshot } from "./snapshot/deltaSnapshotFactory.js";
 export * from "./snapshot/SnapshotStore.js";
 export * from "./math.js";
 export type { PlayerMovementState } from "./movement.js";
