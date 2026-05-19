@@ -4,7 +4,7 @@ import { assets } from "../../assets/assets.js";
 import { drawDebugShape } from "./DebugShapeRenderer.js";
 import type { EffectRenderer } from "./EffectRenderer.js";
 import { SpriteAnimation } from "./SpriteAnimation.js";
-import type { RenderViewport } from "./viewport.js";
+import type { RenderViewport } from "../viewport.js";
 
 type DeathState = {
   startedAt: number;

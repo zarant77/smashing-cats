@@ -1,5 +1,5 @@
 import { assets } from "../../assets/assets.js";
-import type { RenderViewport } from "./viewport.js";
+import type { RenderViewport } from "../viewport.js";
 
 export type EffectSpace = "screen" | "world";
 

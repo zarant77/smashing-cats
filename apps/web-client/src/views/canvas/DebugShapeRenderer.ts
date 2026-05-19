@@ -1,5 +1,5 @@
 import type { HurtCircle, Size, SmashBox } from "@smashing-cats/protocol";
-import type { RenderViewport } from "./viewport.js";
+import type { RenderViewport } from "../viewport.js";
 
 export function drawDebugShape(
   ctx: CanvasRenderingContext2D,

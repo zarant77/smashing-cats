@@ -10,7 +10,8 @@ import { GroundRenderer } from "./GroundRenderer.js";
 import { ParticlesRenderer } from "./ParticlesRenderer.js";
 import { PlayerRenderer } from "./PlayerRenderer.js";
 import { ScreenShake } from "./ScreenShake.js";
-import { createRenderViewport, resizeCanvasToRoot } from "./viewport.js";
+import { createRenderViewport, getViewSize } from "../viewport.js";
+import { EMPTY_SNAPSHOT } from "../emptySnapshot.js";
 
 export class CanvasView implements GameView {
   private readonly context: CanvasRenderingContext2D;
@@ -69,30 +70,10 @@ export class CanvasView implements GameView {
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     if (snapshot === undefined) {
-      snapshot = {
-        tick: 0,
-        seed: 0,
-        simulation: {
-          rngState: 0,
-          nextEntityIndex: 0,
-          nextEventIndex: 0,
-          nextSpawnX: 0,
-        },
-        world: {
-          scrollX: 0,
-          speed: 0,
-          width: 960,
-          height: 540,
-          groundY: 440,
-          gravity: 1700,
-        },
-        players: [],
-        entities: [],
-        events: [],
-      };
+      snapshot = EMPTY_SNAPSHOT;
     }
 
-    const viewport = createRenderViewport(this.canvas, snapshot);
+    const viewport = createRenderViewport(this.canvas.width, this.canvas.height, snapshot);
 
     this.screenShake.update(snapshot, playerId);
     this.floatingTexts.update(snapshot);
@@ -134,18 +115,17 @@ export class CanvasView implements GameView {
   }
 
   private readonly resize = (): void => {
-    resizeCanvasToRoot(this.canvas, this.root);
+    const size = getViewSize(this.root);
+
+    if (this.canvas.width !== size.width) {
+      this.canvas.width = size.width;
+    }
+
+    if (this.canvas.height !== size.height) {
+      this.canvas.height = size.height;
+    }
+
+    this.canvas.style.width = `${size.styleWidth}px`;
+    this.canvas.style.height = `${size.styleHeight}px`;
   };
-
-  private drawCenteredText(text: string): void {
-    const ctx = this.context;
-
-    ctx.fillStyle = "#111111";
-    ctx.font = "24px sans-serif";
-    ctx.textAlign = "center";
-
-    ctx.fillText(text, this.canvas.width / 2, this.canvas.height / 2);
-
-    ctx.textAlign = "start";
-  }
 }

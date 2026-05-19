@@ -1,5 +1,5 @@
 import type { GameSnapshot, PlayerId, PlayerSnapshot } from "@smashing-cats/protocol";
-import type { RenderViewport } from "./viewport.js";
+import type { RenderViewport } from "../viewport.js";
 import { randomId } from "@smashing-cats/core";
 
 type FloatingText = {

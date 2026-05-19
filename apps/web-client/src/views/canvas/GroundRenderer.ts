@@ -1,6 +1,6 @@
 import type { GameSnapshot } from "@smashing-cats/protocol";
 import { assets } from "../../assets/assets.js";
-import type { RenderViewport } from "./viewport.js";
+import type { RenderViewport } from "../viewport.js";
 
 const TILE_PATH = "/canvas/environments/ground.png";
 

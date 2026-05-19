@@ -1,4 +1,4 @@
-import { type EntityKind } from "@smashing-cats/protocol";
+import { GameSnapshot, PlayerId, type EntityKind } from "@smashing-cats/protocol";
 import { createTranslator } from "@smashing-cats/i18n";
 
 import { audio, initAudio, musicEvents, playSound } from "./audio/audio.js";
@@ -58,6 +58,8 @@ async function bootstrap(): Promise<void> {
   let characterSelect: CharacterSelect | undefined;
   let gameOverPopup: GameOverPopup | undefined;
   let runtime: GameRuntime | undefined;
+  let lastSnapshot: GameSnapshot | undefined;
+  let lastPlayerId: PlayerId | undefined;
 
   audio.setSoundsEnabled(soundsEnabled);
   audio.setMusicEnabled(musicEnabled);
@@ -84,6 +86,8 @@ async function bootstrap(): Promise<void> {
     touchControls,
     onCharacterStateChange: renderCharacterSelect,
     render: (snapshot, playerId) => {
+      lastSnapshot = snapshot;
+      lastPlayerId = playerId;
       view.render(snapshot, playerId);
       hud.render(snapshot, playerId);
       pauseOverlay.render(snapshot, playerId);
@@ -126,8 +130,11 @@ async function bootstrap(): Promise<void> {
     viewKind,
     root,
     debug,
+    () => view,
     () => locale,
     () => t,
+    () => lastSnapshot,
+    () => lastPlayerId,
     (nextViewKind, nextView) => {
       viewKind = nextViewKind;
       view = nextView;
@@ -206,50 +213,59 @@ function bindEngineSelect(
   initialViewKind: ViewKind,
   root: HTMLElement,
   debug: boolean,
+  getCurrentView: () => GameView,
   getLocale: () => string,
   getTranslator: () => ReturnType<typeof createTranslator>,
+  getLastSnapshot: () => GameSnapshot | undefined,
+  getLastPlayerId: () => PlayerId | undefined,
   onViewChange: (viewKind: ViewKind, view: GameView) => void,
 ): void {
   if (engineSelect === null) {
     return;
   }
 
-  engineSelect.value = initialViewKind;
+  const select = engineSelect;
+
+  select.value = initialViewKind;
 
   let currentViewKind = initialViewKind;
 
-  engineSelect.addEventListener("change", () => {
+  select.addEventListener("change", () => {
     void switchView();
   });
 
   async function switchView(): Promise<void> {
-    if (!engineSelect) {
-      return;
-    }
-
     playSound("UiClick");
 
-    const nextViewKind = parseViewKind(engineSelect.value);
+    const nextViewKind = parseViewKind(select.value);
 
     if (nextViewKind === currentViewKind) {
       return;
     }
 
-    engineSelect.disabled = true;
+    select.disabled = true;
 
     try {
+      const previousView = getCurrentView();
+      const snapshot = getLastSnapshot();
+      const playerId = getLastPlayerId();
+
+      previousView.destroy();
+
       const nextView = await createView(nextViewKind, root, { debug });
 
       localStorage.setItem(VIEW_KEY, nextViewKind);
+
       nextView.setLocale?.(getLocale(), getTranslator());
+      nextView.render(snapshot, playerId);
 
       currentViewKind = nextViewKind;
       onViewChange(nextViewKind, nextView);
     } catch (error) {
       console.error(error);
-      engineSelect.value = currentViewKind;
+      select.value = currentViewKind;
     } finally {
-      engineSelect.disabled = false;
+      select.disabled = false;
     }
   }
 }
