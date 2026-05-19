@@ -40,6 +40,8 @@ export class GameRuntime {
   private hasSelectedCharacterValue = false;
   private playerId: PlayerId | undefined;
   private inputSeq = 1;
+  private lastSentInputSeq = 0;
+  private lastSentInput: PlayerInput | undefined;
   private wasJumpPressed = false;
   private wasSmashing = false;
   private interpolator = new SnapshotInterpolator();
@@ -80,6 +82,8 @@ export class GameRuntime {
     this.hasSelectedCharacterValue = false;
     this.playerId = this.multiplayer ? undefined : LOCAL_PLAYER_ID;
     this.inputSeq = 1;
+    this.lastSentInputSeq = 0;
+    this.lastSentInput = undefined;
     this.wasJumpPressed = false;
     this.wasSmashing = false;
     this.charactersValue = this.multiplayer ? [] : [...CHARACTERS];
@@ -195,19 +199,16 @@ export class GameRuntime {
           type: "pause",
           paused: isPaused(),
         });
+        this.lastSentInput = undefined;
       } else {
         this.localGame?.setPaused(currentPlayerId, isPaused());
       }
     }
 
     const input = this.readPlayerInput();
-    const currentInputSeq = this.inputSeq++;
+    const currentInputSeq = this.getCurrentInputSeq(canSend && !isPaused(), input);
     const jumpPressed = input.jump && !this.wasJumpPressed;
     this.wasJumpPressed = input.jump;
-
-    if (canSend && !isPaused()) {
-      this.sendInput(currentInputSeq, input);
-    }
 
     this.updateLocalGame(canPlay, currentPlayerId, currentInputSeq, input);
 
@@ -234,6 +235,26 @@ export class GameRuntime {
       right: keyboardInput.right || touchInput?.right === true,
       jump: keyboardInput.jump || touchInput?.jump === true,
     };
+  }
+
+  private getCurrentInputSeq(canSend: boolean, input: PlayerInput): number {
+    if (!this.multiplayer) {
+      return this.inputSeq++;
+    }
+
+    if (canSend && this.shouldSendInput(input)) {
+      const inputSeq = this.inputSeq++;
+
+      this.sendInput(inputSeq, input);
+      this.lastSentInputSeq = inputSeq;
+      this.lastSentInput = { ...input };
+    }
+
+    return this.lastSentInputSeq;
+  }
+
+  private shouldSendInput(input: PlayerInput): boolean {
+    return this.lastSentInput === undefined || !isSameInput(this.lastSentInput, input);
   }
 
   private sendInput(inputSeq: number, input: PlayerInput): void {
@@ -370,4 +391,8 @@ function lerp(from: number, to: number, alpha: number): number {
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
+}
+
+function isSameInput(left: PlayerInput, right: PlayerInput): boolean {
+  return left.left === right.left && left.right === right.right && left.jump === right.jump;
 }

@@ -3,6 +3,7 @@ import {
   normalizeMessage,
   minifyMessage,
   type ClientToServerMessage,
+  type DeltaSnapshot,
   type GameSnapshot,
   type ServerToClientMessage,
   EntityKind,
@@ -159,9 +160,15 @@ export class Room {
     }
 
     if (match.lastFullSnapshot !== undefined) {
+      const delta = match.game.createDeltaSnapshot(match.lastFullSnapshot);
+
+      if (!hasDeltaChanges(delta)) {
+        return;
+      }
+
       this.broadcastToMatch(match, {
         type: "delta",
-        delta: match.game.createDeltaSnapshot(match.lastFullSnapshot),
+        delta,
       });
     }
   }
@@ -373,4 +380,8 @@ function parseClientMessage(raw: string): ClientToServerMessage | undefined {
   } catch {
     return undefined;
   }
+}
+
+function hasDeltaChanges(delta: DeltaSnapshot): boolean {
+  return Object.keys(delta).some((key) => key !== "tick");
 }

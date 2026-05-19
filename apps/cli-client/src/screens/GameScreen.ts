@@ -49,6 +49,7 @@ export class GameScreen implements Screen {
     right: false,
     jump: false,
   };
+  private lastSentInput: PlayerInput | undefined;
 
   private paused = false;
 
@@ -192,10 +193,13 @@ export class GameScreen implements Screen {
 
       const currentInputSeq = this.inputSeq++;
       const input = this.terminalInput.read();
-      this.latestInputSeq = currentInputSeq;
       this.latestInput = input;
 
-      this.connection?.sendInput(currentInputSeq, input, this.interpolator.getRenderedTick());
+      if (this.shouldSendInput(input)) {
+        this.latestInputSeq = currentInputSeq;
+        this.lastSentInput = { ...input };
+        this.connection?.sendInput(currentInputSeq, input, this.interpolator.getRenderedTick());
+      }
     }, 1000 / 30);
   }
 
@@ -323,9 +327,14 @@ export class GameScreen implements Screen {
 
     this.paused = !this.paused;
     this.terminalInput.clear();
+    this.lastSentInput = undefined;
 
     this.connection?.sendPause(this.paused);
     terminalBell.ui();
+  }
+
+  private shouldSendInput(input: PlayerInput): boolean {
+    return this.lastSentInput === undefined || !isSameInput(this.lastSentInput, input);
   }
 
   private withPauseOverlay(content: string): string {
@@ -349,4 +358,8 @@ export class GameScreen implements Screen {
 
     return lines.join("\n");
   }
+}
+
+function isSameInput(left: PlayerInput, right: PlayerInput): boolean {
+  return left.left === right.left && left.right === right.right && left.jump === right.jump;
 }
