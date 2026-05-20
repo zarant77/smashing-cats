@@ -3,12 +3,14 @@ import type { Translator } from "@smashing-cats/i18n";
 import type { GameView, ViewOptions } from "../types.js";
 import { EMPTY_SNAPSHOT } from "../emptySnapshot.js";
 import { getViewSize } from "../viewport.js";
+import { AudioEventPlayer } from "./AudioEventPlayer.js";
 import { SmashingCatsThreeScene } from "./SmashingCatsThreeScene.js";
 import { ThreeModelFactory } from "./models/ThreeModelFactory.js";
 
 export class ThreeView implements GameView {
   private readonly models = new ThreeModelFactory();
   private readonly scene: SmashingCatsThreeScene;
+  private readonly audioEventPlayer = new AudioEventPlayer();
 
   private ready = false;
   private pendingSnapshot: GameSnapshot | undefined = EMPTY_SNAPSHOT;
@@ -41,6 +43,8 @@ export class ThreeView implements GameView {
     if (!this.ready) {
       return;
     }
+
+    this.audioEventPlayer.play(snapshot, playerId);
 
     this.scene.setState(snapshot, playerId);
     this.scene.render();

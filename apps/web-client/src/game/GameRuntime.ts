@@ -12,8 +12,6 @@ import type {
   ServerToClientMessage,
 } from "@smashing-cats/protocol";
 
-import { AudioEventPlayer } from "../audio/AudioEventPlayer.js";
-import { playSound } from "../audio/audio.js";
 import { consumePauseToggle, isPaused, readInput } from "../input.js";
 import { createSocket, parseServerMessage, sendClientMessage } from "../network/clientConnection.js";
 import type { TouchControls } from "../ui/TouchControls.js";
@@ -42,12 +40,9 @@ export class GameRuntime {
   private inputSeq = 1;
   private lastSentInputSeq = 0;
   private lastSentInput: PlayerInput | undefined;
-  private wasJumpPressed = false;
-  private wasSmashing = false;
   private interpolator = new SnapshotInterpolator();
   private snapshotStore = new SnapshotStore();
   private predictor = new LocalPlayerPredictor();
-  private audioEventPlayer = new AudioEventPlayer();
   private socket: WebSocket | undefined;
   private localGame: Game | undefined;
   private previousLocalSnapshot: GameSnapshot | undefined;
@@ -84,13 +79,10 @@ export class GameRuntime {
     this.inputSeq = 1;
     this.lastSentInputSeq = 0;
     this.lastSentInput = undefined;
-    this.wasJumpPressed = false;
-    this.wasSmashing = false;
     this.charactersValue = this.multiplayer ? [] : [...CHARACTERS];
     this.interpolator = new SnapshotInterpolator();
     this.snapshotStore = new SnapshotStore();
     this.predictor = new LocalPlayerPredictor();
-    this.audioEventPlayer = new AudioEventPlayer();
     this.previousLocalSnapshot = undefined;
     this.localSnapshot = undefined;
     this.lastLocalUpdateAt = performance.now();
@@ -109,10 +101,7 @@ export class GameRuntime {
   }
 
   public selectCharacter(characterKind: EntityKind): boolean {
-    if (
-      this.multiplayer &&
-      (this.socket?.readyState !== WebSocket.OPEN || this.playerId === undefined || this.matchCode === undefined)
-    ) {
+    if (this.multiplayer && (this.socket?.readyState !== WebSocket.OPEN || this.playerId === undefined || this.matchCode === undefined)) {
       return false;
     }
 
@@ -207,20 +196,11 @@ export class GameRuntime {
 
     const input = this.readPlayerInput();
     const currentInputSeq = this.getCurrentInputSeq(canSend && !isPaused(), input);
-    const jumpPressed = input.jump && !this.wasJumpPressed;
-    this.wasJumpPressed = input.jump;
 
     this.updateLocalGame(canPlay, currentPlayerId, currentInputSeq, input);
 
     const snapshot = this.getRenderSnapshot(currentInputSeq, input);
-    const renderedPlayer = snapshot?.players.find((player) => player.playerId === this.playerId);
 
-    if (jumpPressed && this.hasSelectedCharacterValue && renderedPlayer !== undefined && !isPaused()) {
-      playSound(renderedPlayer.smashing && !this.wasSmashing ? "sound.player_smash" : "sound.player_jump");
-    }
-
-    this.wasSmashing = renderedPlayer?.smashing ?? false;
-    this.audioEventPlayer.play(snapshot, this.playerId);
     this.renderFrame(snapshot, this.playerId);
 
     requestAnimationFrame(() => this.frame());
@@ -277,12 +257,7 @@ export class GameRuntime {
     sendClientMessage(this.socket, inputMessage);
   }
 
-  private updateLocalGame(
-    canPlay: boolean,
-    currentPlayerId: PlayerId | undefined,
-    currentInputSeq: number,
-    input: PlayerInput,
-  ): void {
+  private updateLocalGame(canPlay: boolean, currentPlayerId: PlayerId | undefined, currentInputSeq: number, input: PlayerInput): void {
     if (this.multiplayer || !canPlay || this.localGame === undefined || currentPlayerId === undefined) {
       this.lastLocalUpdateAt = performance.now();
       this.localUpdateAccumulator = 0;
@@ -319,14 +294,7 @@ export class GameRuntime {
       return interpolatedSnapshot;
     }
 
-    return this.predictor.apply(
-      interpolatedSnapshot,
-      latestSnapshot,
-      this.playerId,
-      currentInputSeq,
-      input,
-      this.charactersValue,
-    );
+    return this.predictor.apply(interpolatedSnapshot, latestSnapshot, this.playerId, currentInputSeq, input, this.charactersValue);
   }
 }
 

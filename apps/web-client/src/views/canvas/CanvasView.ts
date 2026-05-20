@@ -1,6 +1,7 @@
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
 import type { Translator } from "@smashing-cats/i18n";
 import type { GameView, ViewOptions } from "../types.js";
+import { AudioEventPlayer } from "./AudioEventPlayer.js";
 import { BackgroundRenderer } from "./BackgroundRenderer.js";
 import { ForegroundRenderer } from "./ForegroundRenderer.js";
 import { EffectRenderer } from "./EffectRenderer.js";
@@ -17,6 +18,7 @@ export class CanvasView implements GameView {
   private readonly context: CanvasRenderingContext2D;
   private readonly canvas: HTMLCanvasElement;
 
+  private readonly audioEventPlayer = new AudioEventPlayer();
   private readonly background = new BackgroundRenderer();
   private readonly foreground = new ForegroundRenderer();
   private readonly ground = new GroundRenderer();
@@ -64,6 +66,8 @@ export class CanvasView implements GameView {
     const now = performance.now();
     const rawDelta = (now - this.lastFrameTime) / 1000;
     const deltaTime = Math.min(rawDelta, 0.033);
+
+    this.audioEventPlayer.play(snapshot, playerId);
 
     this.lastFrameTime = now;
 

@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
 import type { Translator } from "@smashing-cats/i18n";
 import type { GameView, ViewOptions } from "../types.js";
+import { AudioEventPlayer } from "./AudioEventPlayer.js";
 import { SmashingCatsScene } from "./SmashingCatsScene.js";
 import { EMPTY_SNAPSHOT } from "../emptySnapshot.js";
 import { getViewSize } from "../viewport.js";
@@ -9,6 +10,7 @@ import { getViewSize } from "../viewport.js";
 export class PhaserView implements GameView {
   private readonly game: Phaser.Game;
   private readonly scene: SmashingCatsScene;
+  private readonly audioEventPlayer = new AudioEventPlayer();
 
   public constructor(
     private readonly root: HTMLElement,
@@ -41,6 +43,7 @@ export class PhaserView implements GameView {
   }
 
   public render(snapshot: GameSnapshot | undefined, playerId: PlayerId | undefined): void {
+    this.audioEventPlayer.play(snapshot, playerId);
     this.scene.setState(snapshot, playerId);
   }
 
