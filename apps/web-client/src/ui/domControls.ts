@@ -14,7 +14,7 @@ export function applyStaticTranslations(locale: string, t: Translator): void {
   document.documentElement.lang = locale;
 
   for (const element of document.querySelectorAll<HTMLElement>("[data-i18n]")) {
-    element.textContent = t(element.dataset.i18n ?? "");
+    element.innerHTML = t(element.dataset.i18n ?? "");
   }
 }
 

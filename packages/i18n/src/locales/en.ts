@@ -31,6 +31,7 @@ export const en = {
   nextCharacter: "Next cat",
   changeCharacter: "Change cat",
   selectCharacter: "Choose your cat",
+  underConstruction: "Under <s>Destruction</s> Construction",
 
   batcat: "Batcat",
   ironcat: "Ironcat",

@@ -31,6 +31,7 @@ export const uk = {
   nextCharacter: "Наступний кіт",
   changeCharacter: "Змінити кота",
   selectCharacter: "Обрати цього кота",
+  underConstruction: "Ще <s>Розбивається</s> Розробляється",
 
   batcat: "КажанКіт",
   ironcat: "Залізна Котина",
