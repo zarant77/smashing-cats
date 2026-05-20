@@ -1,8 +1,7 @@
 import * as THREE from "three";
 import type { GameSnapshot } from "@smashing-cats/protocol";
 import type { RenderViewport } from "../../viewport.js";
-import { ThreeModels } from "../models/threeModels.js";
-import type { ThreeModelCache } from "../models/ThreeModelCache.js";
+import type { ThreeModelFactory } from "../models/ThreeModelFactory.js";
 
 const GROUND_OFFSET_Y = -55;
 const GROUND_BASE_SCALE = 500;
@@ -12,16 +11,21 @@ const RENDER_ORDER = 10;
 
 export class GroundRenderer {
   private readonly tiles: THREE.Group[] = [];
+  private destroyed = false;
 
   private modelWidth = 1;
 
   public constructor(
     private readonly scene: THREE.Scene,
-    private readonly models: ThreeModelCache,
+    private readonly modelFactory: ThreeModelFactory,
   ) {}
 
   public async init(): Promise<void> {
-    const model = await this.models.clone(ThreeModels.Environments.ground);
+    const model = await this.modelFactory.create("environment.ground");
+
+    if (this.destroyed) {
+      return;
+    }
 
     this.modelWidth = this.getModelWidth(model);
 
@@ -67,6 +71,8 @@ export class GroundRenderer {
   }
 
   public destroy(): void {
+    this.destroyed = true;
+
     for (const tile of this.tiles) {
       this.scene.remove(tile);
     }
@@ -76,7 +82,11 @@ export class GroundRenderer {
 
   private async ensureTiles(count: number): Promise<void> {
     while (this.tiles.length < count) {
-      const model = await this.models.clone(ThreeModels.Environments.ground);
+      const model = await this.modelFactory.create("environment.ground");
+
+      if (this.destroyed) {
+        return;
+      }
 
       this.prepareModel(model);
 

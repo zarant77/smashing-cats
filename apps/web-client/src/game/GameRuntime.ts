@@ -216,7 +216,7 @@ export class GameRuntime {
     const renderedPlayer = snapshot?.players.find((player) => player.playerId === this.playerId);
 
     if (jumpPressed && this.hasSelectedCharacterValue && renderedPlayer !== undefined && !isPaused()) {
-      playSound(renderedPlayer.smashing && !this.wasSmashing ? "PlayerSmash" : "PlayerJump");
+      playSound(renderedPlayer.smashing && !this.wasSmashing ? "sound.player_smash" : "sound.player_jump");
     }
 
     this.wasSmashing = renderedPlayer?.smashing ?? false;

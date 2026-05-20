@@ -130,13 +130,13 @@ export class CharacterSelect {
   private selectPreviousCharacter(): void {
     this.currentIndex = wrapIndex(this.currentIndex - 1, this.lastCharacters.length);
     this.render(this.lastCharacters, false);
-    playSound("UiClick");
+    playSound("sound.ui_click");
   }
 
   private selectNextCharacter(): void {
     this.currentIndex = wrapIndex(this.currentIndex + 1, this.lastCharacters.length);
     this.render(this.lastCharacters, false);
-    playSound("UiClick");
+    playSound("sound.ui_click");
   }
 
   private selectCurrentCharacter(): void {
@@ -146,7 +146,7 @@ export class CharacterSelect {
       return;
     }
 
-    playSound("UiClick");
+    playSound("sound.ui_click");
     this.onSelect(character.kind);
   }
 

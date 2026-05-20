@@ -1,6 +1,6 @@
 import type { GameSnapshot, PlayerSnapshot } from "@smashing-cats/protocol";
 import { GAME_CONFIG } from "@smashing-cats/core";
-import { assets } from "../../assets/assets.js";
+import { getImageAsset, images } from "../../assets/assets.js";
 import { drawDebugShape } from "./DebugShapeRenderer.js";
 import type { EffectRenderer } from "./EffectRenderer.js";
 import { SpriteAnimation } from "./SpriteAnimation.js";
@@ -27,7 +27,7 @@ const DEATH_GRAVITY = 1400;
 const DEATH_DRIFT_X = 120;
 const DEATH_ROTATION_SPEED = -7;
 
-const SMASH_EFFECT_PATH = "/canvas/effects/smash.png";
+const SMASH_EFFECT_KEY = "effect.smash";
 const SMASH_EFFECT_DURATION_MS = 200;
 
 const SMASH_EFFECT_OFFSET_X = 20;
@@ -60,7 +60,8 @@ export class PlayerRenderer {
     const physicsWidth = viewport.worldToScreenSize(worldWidth);
     const physicsHeight = viewport.worldToScreenSize(worldHeight);
 
-    const image = assets.get(`/canvas/players/${player.kind}.png`);
+    const imagePath = getImageAsset(`player.${player.kind}`);
+    const image = images.getLoaded(imagePath);
     const renderSize = getRenderSize(image, physicsWidth, physicsHeight);
 
     const shouldBlinkOff = player.invulnerable && Math.floor(snapshot.tick / 2) % 2 === 0;
@@ -69,6 +70,7 @@ export class PlayerRenderer {
 
     if (!player.alive) {
       this.drawDeadPlayer(ctx, viewport, player, image, screenX, screenY, physicsWidth, physicsHeight, renderSize, isLocal);
+
       return;
     }
 
@@ -104,12 +106,7 @@ export class PlayerRenderer {
     ctx.rotate(transform.rotation);
     ctx.scale(-transform.scaleX, transform.scaleY);
 
-    if (image.complete && image.naturalWidth > 0) {
-      ctx.drawImage(image, -renderSize.width / 2, -renderSize.height, renderSize.width, renderSize.height);
-    } else {
-      ctx.fillStyle = isLocal ? "#ffcc33" : "#f58ad4";
-      ctx.fillRect(-renderSize.width / 2, -renderSize.height, renderSize.width, renderSize.height);
-    }
+    ctx.drawImage(image, -renderSize.width / 2, -renderSize.height, renderSize.width, renderSize.height);
 
     ctx.restore();
 
@@ -124,7 +121,7 @@ export class PlayerRenderer {
     screenX: number,
     screenY: number,
     width: number,
-    height: number,
+    _height: number,
     scale: number,
   ): void {
     const state = this.getSmashLandingState(player);
@@ -133,7 +130,7 @@ export class PlayerRenderer {
 
     if (justLanded && state.wasSmashing) {
       effects.add({
-        imagePath: SMASH_EFFECT_PATH,
+        imageKey: SMASH_EFFECT_KEY,
         x: screenX + width / 2 + SMASH_EFFECT_OFFSET_X * scale,
         y: (screenY + SMASH_EFFECT_OFFSET_Y) * scale,
         startedAt: performance.now(),
@@ -179,12 +176,7 @@ export class PlayerRenderer {
     ctx.rotate(rotation);
     ctx.scale(-1, 1);
 
-    if (image.complete && image.naturalWidth > 0) {
-      ctx.drawImage(image, -renderSize.width / 2, -renderSize.height / 2, renderSize.width, renderSize.height);
-    } else {
-      ctx.fillStyle = isLocal ? "#ffcc33" : "#f58ad4";
-      ctx.fillRect(-renderSize.width / 2, -renderSize.height / 2, renderSize.width, renderSize.height);
-    }
+    ctx.drawImage(image, -renderSize.width / 2, -renderSize.height / 2, renderSize.width, renderSize.height);
 
     ctx.restore();
   }

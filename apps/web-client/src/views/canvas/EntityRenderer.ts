@@ -1,6 +1,6 @@
 import { GAME_CONFIG } from "@smashing-cats/core";
 import type { EntitySnapshot } from "@smashing-cats/protocol";
-import { assets } from "../../assets/assets.js";
+import { getImageAsset, images } from "../../assets/assets.js";
 import { drawDebugShape } from "./DebugShapeRenderer.js";
 import type { EffectRenderer } from "./EffectRenderer.js";
 import { SpriteAnimation } from "./SpriteAnimation.js";
@@ -35,7 +35,7 @@ export class EntityRenderer {
       return;
     }
 
-    const image = assets.get(getEntityImagePath(entity));
+    const image = images.getLoaded(getEntityImagePath(entity));
     const renderSize = getRenderSize(image, physicsWidth, physicsHeight);
 
     const transform = this.animation.getTransform({
@@ -85,17 +85,13 @@ export class EntityRenderer {
 }
 
 function getEntityImagePath(entity: EntitySnapshot): string {
-  const postfix = entity.alive ? "" : "-dead";
+  return getImageAsset(getEntityImageKey(entity));
+}
 
-  if (entity.type === "civilian") {
-    return `/canvas/civilians/${entity.kind}${postfix}.png`;
-  }
+function getEntityImageKey(entity: EntitySnapshot): string {
+  const postfix = entity.alive ? "" : "_dead";
 
-  if (entity.type === "obstacle") {
-    return `/canvas/obstacles/${entity.kind}${postfix}.png`;
-  }
-
-  return `/canvas/enemies/${entity.kind}${postfix}.png`;
+  return `${entity.type}.${entity.kind}${postfix}`;
 }
 
 function getEntityFallbackColor(entity: EntitySnapshot): string {

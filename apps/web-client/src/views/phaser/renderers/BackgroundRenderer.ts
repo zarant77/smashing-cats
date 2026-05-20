@@ -1,11 +1,11 @@
 import Phaser from "phaser";
 import type { GameSnapshot } from "@smashing-cats/protocol";
 import type { Translator } from "@smashing-cats/i18n";
-import { assets } from "../../../assets/assets.js";
+import { getImageAsset, images } from "../../../assets/assets.js";
 import type { RenderViewport } from "../../viewport.js";
 
 type ParallaxLayer = {
-  path: string;
+  key: string;
   speed: number;
   y: number;
   height: number;
@@ -22,12 +22,12 @@ type LayerState = {
 };
 
 const LAYERS: ParallaxLayer[] = [
-  { path: "/canvas/environments/sky.png", speed: 0, y: 0, height: 1 },
-  { path: "/canvas/environments/mountains.png", speed: 0.05, y: 220, height: 0.22, mirror: true },
-  { path: "/canvas/environments/clouds.png", speed: 0.1, y: 0, height: 0.6 },
-  { path: "/canvas/environments/fog.png", speed: 0.3, y: 200, height: 0.4, mirror: true },
-  { path: "/canvas/environments/forest.png", speed: 0.6, y: 210, height: 0.4 },
-  { path: "/canvas/environments/forest_front.png", speed: 0.85, y: 350, height: 0.15 },
+  { key: "environment.sky", speed: 0, y: 0, height: 1 },
+  { key: "environment.mountains", speed: 0.05, y: 220, height: 0.22, mirror: true },
+  { key: "environment.clouds", speed: 0.1, y: 0, height: 0.6 },
+  { key: "environment.fog", speed: 0.3, y: 200, height: 0.4, mirror: true },
+  { key: "environment.forest", speed: 0.6, y: 210, height: 0.4 },
+  { key: "environment.forest_front", speed: 0.85, y: 350, height: 0.15 },
 ];
 
 const DEPTH_BASE = -100;
@@ -78,14 +78,14 @@ export class BackgroundRenderer {
   }
 
   private drawLayer(snapshot: GameSnapshot, viewport: RenderViewport, layer: ParallaxLayer, layerIndex: number): void {
-    const source = assets.get(layer.path);
+    const source = images.getLoaded(getImageAsset(layer.key));
 
     if (!source.complete || source.naturalWidth <= 0 || source.naturalHeight <= 0) {
       return;
     }
 
-    if (!this.scene.textures.exists(layer.path)) {
-      this.scene.textures.addImage(layer.path, source);
+    if (!this.scene.textures.exists(layer.key)) {
+      this.scene.textures.addImage(layer.key, source);
     }
 
     const height = viewport.screenHeight * layer.height;
@@ -101,9 +101,9 @@ export class BackgroundRenderer {
     const offsetX = -(scroll - firstTileIndex * width);
 
     const visibleCount = Math.ceil(viewport.screenWidth / width) + 2;
-    const state = this.getLayerState(layer.path);
+    const state = this.getLayerState(layer.key);
 
-    this.ensureTiles(state, layer.path, visibleCount, DEPTH_BASE + layerIndex);
+    this.ensureTiles(state, layer.key, visibleCount, DEPTH_BASE + layerIndex);
 
     for (let index = 0; index < state.tiles.length; index++) {
       const tile = state.tiles[index];
@@ -124,8 +124,8 @@ export class BackgroundRenderer {
     }
   }
 
-  private getLayerState(path: string): LayerState {
-    const existing = this.states.get(path);
+  private getLayerState(key: string): LayerState {
+    const existing = this.states.get(key);
 
     if (existing !== undefined) {
       return existing;
@@ -135,14 +135,14 @@ export class BackgroundRenderer {
       tiles: [],
     };
 
-    this.states.set(path, created);
+    this.states.set(key, created);
 
     return created;
   }
 
-  private ensureTiles(state: LayerState, path: string, count: number, depth: number): void {
+  private ensureTiles(state: LayerState, textureKey: string, count: number, depth: number): void {
     while (state.tiles.length < count) {
-      const image = this.scene.add.image(0, 0, path);
+      const image = this.scene.add.image(0, 0, textureKey);
 
       image.setOrigin(0, 0);
       image.setDepth(depth);

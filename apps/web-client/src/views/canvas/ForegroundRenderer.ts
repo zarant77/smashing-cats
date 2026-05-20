@@ -1,11 +1,11 @@
 import type { GameSnapshot } from "@smashing-cats/protocol";
-import { assets } from "../../assets/assets.js";
+import { getImageAsset, images } from "../../assets/assets.js";
 import type { RenderViewport } from "../viewport.js";
 
 const SPAWN_PROBABILITY = 0.5;
 
 type ForegroundSprite = {
-  path: string;
+  key: string;
   minScale: number;
   maxScale: number;
   y: number;
@@ -15,7 +15,7 @@ type ForegroundSprite = {
 };
 
 type ForegroundObject = {
-  path: string;
+  key: string;
   x: number;
   y: number;
   scale: number;
@@ -25,16 +25,19 @@ type ForegroundObject = {
 };
 
 const SPRITES: ForegroundSprite[] = [
-  { path: "/canvas/environments/fg_tree1.png", minScale: 0.6, maxScale: 0.8, y: -20, speed: 1.35, weight: 1 },
-  { path: "/canvas/environments/fg_tree2.png", minScale: 0.6, maxScale: 0.8, y: -20, speed: 1.35, weight: 1 },
-  { path: "/canvas/environments/fg_tree3.png", minScale: 0.6, maxScale: 0.8, y: -20, speed: 1.35, weight: 1 },
-  { path: "/canvas/environments/fg_fence1.png", minScale: 0.8, maxScale: 1, y: 92, speed: 1, weight: 3 },
-  { path: "/canvas/environments/fg_stump1.png", minScale: 0.6, maxScale: 0.8, y: 90, speed: 1, weight: 5 },
-  { path: "/canvas/environments/fg_stump2.png", minScale: 0.6, maxScale: 0.8, y: 90, speed: 1, weight: 5 },
-  { path: "/canvas/environments/fg_stump3.png", minScale: 0.8, maxScale: 1, y: 90, speed: 1, weight: 5 },
-  { path: "/canvas/environments/fg_stump4.png", minScale: 0.8, maxScale: 1, y: 90, speed: 1, weight: 5 },
-  { path: "/canvas/environments/fg_pumpkin1.png", minScale: 0.6, maxScale: 1, y: 80, speed: 1, weight: 5 },
-  { path: "/canvas/environments/fg_pumpkin2.png", minScale: 0.6, maxScale: 1, y: 80, speed: 1, weight: 5 },
+  { key: "environment.fg_tree1", minScale: 0.6, maxScale: 0.8, y: -20, speed: 1.35, weight: 1 },
+  { key: "environment.fg_tree2", minScale: 0.6, maxScale: 0.8, y: -20, speed: 1.35, weight: 1 },
+  { key: "environment.fg_tree3", minScale: 0.6, maxScale: 0.8, y: -20, speed: 1.35, weight: 1 },
+
+  { key: "environment.fg_fence1", minScale: 0.8, maxScale: 1, y: 92, speed: 1, weight: 3 },
+
+  { key: "environment.fg_stump1", minScale: 0.6, maxScale: 0.8, y: 90, speed: 1, weight: 5 },
+  { key: "environment.fg_stump2", minScale: 0.6, maxScale: 0.8, y: 90, speed: 1, weight: 5 },
+  { key: "environment.fg_stump3", minScale: 0.8, maxScale: 1, y: 90, speed: 1, weight: 5 },
+  { key: "environment.fg_stump4", minScale: 0.8, maxScale: 1, y: 90, speed: 1, weight: 5 },
+
+  { key: "environment.fg_pumpkin1", minScale: 0.6, maxScale: 1, y: 80, speed: 1, weight: 5 },
+  { key: "environment.fg_pumpkin2", minScale: 0.6, maxScale: 1, y: 80, speed: 1, weight: 5 },
 ];
 
 const MIN_SPAWN_DISTANCE = 500;
@@ -44,6 +47,7 @@ const SPAWN_AHEAD_DISTANCE = 900;
 
 export class ForegroundRenderer {
   private readonly objects: ForegroundObject[] = [];
+
   private lastScrollX: number | undefined;
   private nextSpawnX = 0;
 
@@ -53,6 +57,7 @@ export class ForegroundRenderer {
     const deltaScrollX = this.getDeltaScrollX(snapshot.world.scrollX);
 
     this.moveObjects(deltaScrollX, viewport);
+
     this.spawnObjects(canvas);
     this.removeOldObjects(viewport);
 
@@ -64,10 +69,12 @@ export class ForegroundRenderer {
   private getDeltaScrollX(scrollX: number): number {
     if (this.lastScrollX === undefined) {
       this.lastScrollX = scrollX;
+
       return 0;
     }
 
     const deltaScrollX = scrollX - this.lastScrollX;
+
     this.lastScrollX = scrollX;
 
     return deltaScrollX;
@@ -101,7 +108,7 @@ export class ForegroundRenderer {
     const sprite = this.pickSprite();
 
     return {
-      path: sprite.path,
+      key: sprite.key,
       x,
       y: sprite.y,
       scale: this.randomBetween(sprite.minScale, sprite.maxScale),
@@ -113,6 +120,7 @@ export class ForegroundRenderer {
 
   private pickSprite(): ForegroundSprite {
     const totalWeight = SPRITES.reduce((sum, sprite) => sum + sprite.weight, 0);
+
     let random = Math.random() * totalWeight;
 
     for (const sprite of SPRITES) {
@@ -129,8 +137,10 @@ export class ForegroundRenderer {
   private removeOldObjects(viewport: RenderViewport): void {
     while (this.objects.length > 0) {
       const object = this.objects[0];
-      const image = assets.get(object.path);
-      const width = image.complete ? image.naturalWidth * object.scale * viewport.scale : 0;
+
+      const image = images.getLoaded(getImageAsset(object.key));
+
+      const width = image.naturalWidth * object.scale * viewport.scale;
 
       if (object.x + width >= -DESPAWN_PADDING) {
         return;
@@ -141,16 +151,14 @@ export class ForegroundRenderer {
   }
 
   private drawObject(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, viewport: RenderViewport, object: ForegroundObject): void {
-    const image = assets.get(object.path);
-
-    if (!image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
-      return;
-    }
+    const image = images.getLoaded(getImageAsset(object.key));
 
     const width = Math.round(image.naturalWidth * object.scale * viewport.scale);
+
     const height = Math.round(image.naturalHeight * object.scale * viewport.scale);
 
     const screenX = Math.round(object.x);
+
     const bottomY = canvas.height - Math.round(object.y * viewport.scale);
 
     if (screenX + width < 0 || screenX > canvas.width) {
@@ -158,11 +166,14 @@ export class ForegroundRenderer {
     }
 
     ctx.save();
+
     ctx.globalAlpha = object.alpha;
 
     if (object.mirror) {
       ctx.translate(screenX + width, bottomY);
+
       ctx.scale(-1, 1);
+
       ctx.drawImage(image, 0, -height, width, height);
     } else {
       ctx.drawImage(image, screenX, bottomY - height, width, height);

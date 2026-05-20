@@ -1,151 +1,166 @@
 export type ThreeModelDefinition = {
-  path: string;
   rotationY?: number;
+  offsetZ?: number;
 };
 
 export const ThreeModels = {
-  Civilians: {
+  civilian: {
     baba: {
-      path: "/three/civilians/baba.glb",
       rotationY: Math.PI / -2 + 0.7,
+      offsetZ: 0,
     },
 
     dido: {
-      path: "/three/civilians/dido.glb",
       rotationY: Math.PI / -2 + 0.7,
+      offsetZ: 0,
     },
   },
 
-  Enemies: {
+  enemy: {
     boar: {
-      path: "/three/enemies/boar.glb",
       rotationY: -Math.PI / 2 + 0.2,
+      offsetZ: 0,
     },
 
     crow: {
-      path: "/three/enemies/crow.glb",
       rotationY: -Math.PI / 2 + 0.2,
+      offsetZ: 0,
     },
 
     orc: {
-      path: "/three/enemies/orc.glb",
       rotationY: Math.PI / -2 + 0.7,
+      offsetZ: 0,
     },
 
     rat: {
-      path: "/three/enemies/rat.glb",
       rotationY: -Math.PI / 2 + 0.2,
+      offsetZ: 0,
     },
   },
 
-  Environments: {
+  environment: {
     ground: {
-      path: "/three/environments/ground.glb",
       rotationY: 0,
+      offsetZ: 0,
     },
+
     fence1: {
-      path: "/three/environments/fence1.glb",
       rotationY: 0,
+      offsetZ: 0,
     },
+
     pumpkin1: {
-      path: "/three/environments/pumpkin1.glb",
       rotationY: 0,
+      offsetZ: 0,
     },
+
     pumpkin2: {
-      path: "/three/environments/pumpkin2.glb",
       rotationY: 0,
+      offsetZ: 0,
     },
   },
 
-  Obstactes: {
+  obstacle: {
     bush: {
-      path: "/three/obstacles/bush.glb",
       rotationY: 0,
+      offsetZ: 50,
     },
 
     cactus: {
-      path: "/three/obstacles/cactus.glb",
       rotationY: 0,
+      offsetZ: 50,
     },
 
     rock: {
-      path: "/three/obstacles/rock.glb",
       rotationY: 0,
+      offsetZ: 50,
     },
 
     stump: {
-      path: "/three/obstacles/stump.glb",
       rotationY: 0,
+      offsetZ: 50,
     },
   },
 
-  Players: {
+  player: {
     batcat: {
-      path: "/three/players/batcat.glb",
       rotationY: Math.PI + 0.6,
+      offsetZ: -70,
     },
 
     carrambacat: {
-      path: "/three/players/carrambacat.glb",
       rotationY: Math.PI + 0.5,
+      offsetZ: -70,
     },
 
     commandocat: {
-      path: "/three/players/commandocat.glb",
       rotationY: Math.PI + 0.5,
+      offsetZ: -70,
     },
 
     cybercat: {
-      path: "/three/players/cybercat.glb",
       rotationY: Math.PI + 0.3,
+      offsetZ: -70,
     },
 
     darkcat: {
-      path: "/three/players/darkcat.glb",
       rotationY: Math.PI + 0.5,
+      offsetZ: -70,
     },
 
     ghostcat: {
-      path: "/three/players/ghostcat.glb",
       rotationY: Math.PI + 0.5,
+      offsetZ: -70,
     },
 
     ironcat: {
-      path: "/three/players/ironcat.glb",
       rotationY: Math.PI + 0.6,
+      offsetZ: -70,
     },
 
     punishcat: {
-      path: "/three/players/punishcat.glb",
       rotationY: Math.PI + 0.5,
+      offsetZ: -70,
     },
 
     robocat: {
-      path: "/three/players/robocat.glb",
       rotationY: Math.PI + 0.5,
+      offsetZ: -70,
     },
 
     samurcat: {
-      path: "/three/players/samurcat.glb",
       rotationY: Math.PI + 0.5,
+      offsetZ: -70,
     },
 
     termicator: {
-      path: "/three/players/termicator.glb",
       rotationY: Math.PI + 0.3,
+      offsetZ: -70,
     },
 
     zombocat: {
-      path: "/three/players/zombocat.glb",
       rotationY: Math.PI + 0.7,
+      offsetZ: -70,
     },
   },
 } as const;
 
-export const ThreeModelPreloadList: string[] = [
-  ...Object.values(ThreeModels.Civilians).map((x) => x.path),
-  ...Object.values(ThreeModels.Enemies).map((x) => x.path),
-  ...Object.values(ThreeModels.Environments).map((x) => x.path),
-  ...Object.values(ThreeModels.Obstactes).map((x) => x.path),
-  ...Object.values(ThreeModels.Players).map((x) => x.path),
-];
+export type ThreeModelType = keyof typeof ThreeModels;
+
+export function getModelInfoByKey(key: string): ThreeModelDefinition {
+  const [type, kind] = key.split(".");
+
+  const typeModels = ThreeModels[type as ThreeModelType];
+
+  if (typeModels === undefined) {
+    throw new Error(`Unknown model type: ${type}`);
+  }
+
+  const model = typeModels[kind as keyof typeof typeModels];
+
+  if (model === undefined) {
+    throw new Error(`Unknown model kind: ${key}`);
+  }
+
+  return model;
+}

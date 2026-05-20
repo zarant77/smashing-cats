@@ -1,10 +1,10 @@
-import { assets } from "../../assets/assets.js";
+import { getImageAsset, images } from "../../assets/assets.js";
 import type { RenderViewport } from "../viewport.js";
 
 export type EffectSpace = "screen" | "world";
 
 export type SpriteEffect = {
-  imagePath: string;
+  imageKey: string;
 
   x: number;
   y: number;
@@ -55,7 +55,7 @@ export class EffectRenderer {
   }
 
   private drawEffect(ctx: CanvasRenderingContext2D, viewport: RenderViewport, effect: SpriteEffect, progress: number): void {
-    const image = assets.get(effect.imagePath);
+    const image = images.getLoaded(getImageAsset(effect.imageKey));
 
     if (!isImageReady(image)) {
       return;

@@ -1,15 +1,15 @@
 import type { GameSnapshot } from "@smashing-cats/protocol";
-import { assets } from "../../assets/assets.js";
+import { getImageAsset, images } from "../../assets/assets.js";
 import type { RenderViewport } from "../viewport.js";
 
-const TILE_PATH = "/canvas/environments/ground.png";
+const TILE_KEY = "environment.ground";
 
 const DESIGN_TILE_WIDTH = 800;
 const GROUND_OFFSET_Y = -55;
 
 export class GroundRenderer {
   public draw(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, snapshot: GameSnapshot, viewport: RenderViewport): void {
-    const image = assets.get(TILE_PATH);
+    const image = images.getLoaded(getImageAsset(TILE_KEY));
 
     const tileWidth = viewport.worldToScreenSize(DESIGN_TILE_WIDTH);
     const groundY = viewport.worldToScreenY(snapshot.world.groundY + GROUND_OFFSET_Y);

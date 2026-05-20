@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import type { GameSnapshot, PlayerId, PlayerSnapshot } from "@smashing-cats/protocol";
 import type { Translator } from "@smashing-cats/i18n";
-import { assets } from "../../../assets/assets.js";
+import { getImageAsset, images } from "../../../assets/assets.js";
 import type { RenderViewport } from "../../viewport.js";
 
 type PlayerObject = {
@@ -62,15 +62,15 @@ export class PlayerRenderer {
     const x = screenX + physicsWidth / 2;
     const y = screenY + physicsHeight;
 
-    const imagePath = `/canvas/players/${player.kind}.png`;
-    const image = assets.get(imagePath);
+    const imageKey = `player.${player.kind}`;
+    const image = images.getLoaded(getImageAsset(imageKey));
     const renderSize = this.getRenderSize(image, physicsWidth, physicsHeight);
 
     const shouldBlinkOff = player.invulnerable && Math.floor(snapshot.tick / 2) % 2 === 0;
     const alpha = shouldBlinkOff ? 0.35 : 1;
 
     if (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0) {
-      const sprite = this.getOrCreateImage(object, imagePath, image);
+      const sprite = this.getOrCreateImage(object, imageKey, image);
 
       sprite.setVisible(true);
       sprite.setPosition(Math.round(x), Math.round(y));
@@ -108,20 +108,18 @@ export class PlayerRenderer {
     return created;
   }
 
-  private getOrCreateImage(object: PlayerObject, imagePath: string, source: HTMLImageElement): Phaser.GameObjects.Image {
-    const textureKey = imagePath.replaceAll("/", "_");
-
-    if (!this.scene.textures.exists(textureKey)) {
-      this.scene.textures.addImage(textureKey, source);
+  private getOrCreateImage(object: PlayerObject, imageKey: string, source: HTMLImageElement): Phaser.GameObjects.Image {
+    if (!this.scene.textures.exists(imageKey)) {
+      this.scene.textures.addImage(imageKey, source);
     }
 
-    if (object.image !== undefined && object.image.texture.key === textureKey) {
+    if (object.image !== undefined && object.image.texture.key === imageKey) {
       return object.image;
     }
 
     object.image?.destroy();
 
-    const image = this.scene.add.image(0, 0, textureKey);
+    const image = this.scene.add.image(0, 0, imageKey);
 
     image.setOrigin(0.5, 1);
     image.setDepth(DEPTH);

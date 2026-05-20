@@ -34,22 +34,41 @@ export class AudioEventPlayer {
         const player = snapshot.players.find((item) => item.playerId === localPlayerId);
 
         if (player !== undefined && !player.alive) {
-          playSound("PlayerDie");
+          playSound("sound.player_die");
           return;
         }
 
-        playSound("PlayerHurt");
+        playSound("sound.player_hurt");
         return;
       }
 
       case "enemyKilled":
-        playSound("EnemyDie", event.entityKind);
+        playSound(getEnemyDieSoundKey(event.entityKind));
         return;
 
       case "civilianKilled":
       case "civilianKilledByEnemy":
-        playSound("CivilianDie", event.entityKind);
+        playSound("sound.civilian_die");
         return;
     }
+  }
+}
+
+function getEnemyDieSoundKey(kind: string): `sound.${string}` {
+  switch (kind) {
+    case "boar":
+      return "sound.boar_enemy_die";
+
+    case "crow":
+      return "sound.crow_enemy_die";
+
+    case "orc":
+      return "sound.orc_enemy_die";
+
+    case "rat":
+      return "sound.rat_enemy_die";
+
+    default:
+      return "sound.enemy_die";
   }
 }

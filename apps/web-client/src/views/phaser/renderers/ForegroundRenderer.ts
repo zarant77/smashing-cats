@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import type { GameSnapshot } from "@smashing-cats/protocol";
 import type { Translator } from "@smashing-cats/i18n";
-import { assets } from "../../../assets/assets.js";
+import { getImageAsset, images } from "../../../assets/assets.js";
 import type { RenderViewport } from "../../viewport.js";
 
 const SPAWN_PROBABILITY = 0.5;
@@ -14,7 +14,7 @@ const SPAWN_AHEAD_DISTANCE = 900;
 const DEPTH = 90;
 
 type ForegroundSprite = {
-  path: string;
+  key: string;
   minScale: number;
   maxScale: number;
   y: number;
@@ -24,7 +24,7 @@ type ForegroundSprite = {
 };
 
 type ForegroundObject = {
-  path: string;
+  key: string;
   x: number;
   y: number;
   scale: number;
@@ -35,16 +35,16 @@ type ForegroundObject = {
 };
 
 const SPRITES: ForegroundSprite[] = [
-  { path: "/canvas/environments/fg_tree1.png", minScale: 0.6, maxScale: 0.8, y: -20, speed: 1.35, weight: 1 },
-  { path: "/canvas/environments/fg_tree2.png", minScale: 0.6, maxScale: 0.8, y: -20, speed: 1.35, weight: 1 },
-  { path: "/canvas/environments/fg_tree3.png", minScale: 0.6, maxScale: 0.8, y: -20, speed: 1.35, weight: 1 },
-  { path: "/canvas/environments/fg_fence1.png", minScale: 0.8, maxScale: 1, y: 92, speed: 1, weight: 3 },
-  { path: "/canvas/environments/fg_stump1.png", minScale: 0.6, maxScale: 0.8, y: 90, speed: 1, weight: 5 },
-  { path: "/canvas/environments/fg_stump2.png", minScale: 0.6, maxScale: 0.8, y: 90, speed: 1, weight: 5 },
-  { path: "/canvas/environments/fg_stump3.png", minScale: 0.8, maxScale: 1, y: 90, speed: 1, weight: 5 },
-  { path: "/canvas/environments/fg_stump4.png", minScale: 0.8, maxScale: 1, y: 90, speed: 1, weight: 5 },
-  { path: "/canvas/environments/fg_pumpkin1.png", minScale: 0.6, maxScale: 1, y: 80, speed: 1, weight: 5 },
-  { path: "/canvas/environments/fg_pumpkin2.png", minScale: 0.6, maxScale: 1, y: 80, speed: 1, weight: 5 },
+  { key: "environment.fg_tree1", minScale: 0.6, maxScale: 0.8, y: -20, speed: 1.35, weight: 1 },
+  { key: "environment.fg_tree2", minScale: 0.6, maxScale: 0.8, y: -20, speed: 1.35, weight: 1 },
+  { key: "environment.fg_tree3", minScale: 0.6, maxScale: 0.8, y: -20, speed: 1.35, weight: 1 },
+  { key: "environment.fg_fence1", minScale: 0.8, maxScale: 1, y: 92, speed: 1, weight: 3 },
+  { key: "environment.fg_stump1", minScale: 0.6, maxScale: 0.8, y: 90, speed: 1, weight: 5 },
+  { key: "environment.fg_stump2", minScale: 0.6, maxScale: 0.8, y: 90, speed: 1, weight: 5 },
+  { key: "environment.fg_stump3", minScale: 0.8, maxScale: 1, y: 90, speed: 1, weight: 5 },
+  { key: "environment.fg_stump4", minScale: 0.8, maxScale: 1, y: 90, speed: 1, weight: 5 },
+  { key: "environment.fg_pumpkin1", minScale: 0.6, maxScale: 1, y: 80, speed: 1, weight: 5 },
+  { key: "environment.fg_pumpkin2", minScale: 0.6, maxScale: 1, y: 80, speed: 1, weight: 5 },
 ];
 
 export class ForegroundRenderer {
@@ -119,7 +119,7 @@ export class ForegroundRenderer {
     const sprite = this.pickSprite();
 
     return {
-      path: sprite.path,
+      key: sprite.key,
       x,
       y: sprite.y,
       scale: this.randomBetween(sprite.minScale, sprite.maxScale),
@@ -137,7 +137,7 @@ export class ForegroundRenderer {
         continue;
       }
 
-      const source = assets.get(object.path);
+      const source = images.getLoaded(getImageAsset(object.key));
 
       if (!source.complete || source.naturalWidth <= 0 || source.naturalHeight <= 0) {
         image.setVisible(false);
@@ -163,17 +163,17 @@ export class ForegroundRenderer {
       return object.image;
     }
 
-    const source = assets.get(object.path);
+    const source = images.getLoaded(getImageAsset(object.key));
 
     if (!source.complete || source.naturalWidth <= 0 || source.naturalHeight <= 0) {
       return undefined;
     }
 
-    if (!this.scene.textures.exists(object.path)) {
-      this.scene.textures.addImage(object.path, source);
+    if (!this.scene.textures.exists(object.key)) {
+      this.scene.textures.addImage(object.key, source);
     }
 
-    object.image = this.scene.add.image(0, 0, object.path);
+    object.image = this.scene.add.image(0, 0, object.key);
     object.image.setOrigin(0, 1);
     object.image.setDepth(DEPTH);
     object.image.setVisible(false);
@@ -184,7 +184,7 @@ export class ForegroundRenderer {
   private removeOldObjects(viewport: RenderViewport): void {
     while (this.objects.length > 0) {
       const object = this.objects[0];
-      const source = assets.get(object.path);
+      const source = images.getLoaded(getImageAsset(object.key));
       const width = source.complete ? source.naturalWidth * object.scale * viewport.scale : 0;
 
       if (object.x + width >= -DESPAWN_PADDING) {

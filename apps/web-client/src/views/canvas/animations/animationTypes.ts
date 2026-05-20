@@ -8,7 +8,7 @@ export type AnimationSet = {
 };
 
 export type AnimationEffectSpawn = {
-  imagePath: string;
+  imageKey: string;
   x: number;
   y: number;
   startedAt: number;

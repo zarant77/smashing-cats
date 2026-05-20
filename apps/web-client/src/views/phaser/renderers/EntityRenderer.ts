@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import type { EntitySnapshot, GameSnapshot } from "@smashing-cats/protocol";
 import type { Translator } from "@smashing-cats/i18n";
-import { assets } from "../../../assets/assets.js";
+import { getImageAsset, images } from "../../../assets/assets.js";
 import type { RenderViewport } from "../../viewport.js";
 
 type EntityObject = {
@@ -63,15 +63,15 @@ export class EntityRenderer {
     }
 
     const object = this.getEntityObject(entity.id);
-    const imagePath = getEntityImagePath(entity);
-    const source = assets.get(imagePath);
+    const imageKey = getEntityImageKey(entity);
+    const source = images.getLoaded(getImageAsset(imageKey));
     const renderSize = getRenderSize(source, physicsWidth, physicsHeight);
 
     const x = screenX + physicsWidth / 2;
     const y = screenY + physicsHeight;
 
     if (source.complete && source.naturalWidth > 0 && source.naturalHeight > 0) {
-      const image = this.getOrCreateImage(object, imagePath, source);
+      const image = this.getOrCreateImage(object, imageKey, source);
 
       image.setVisible(true);
       image.setPosition(Math.round(x), Math.round(y));
@@ -107,20 +107,18 @@ export class EntityRenderer {
     return created;
   }
 
-  private getOrCreateImage(object: EntityObject, imagePath: string, source: HTMLImageElement): Phaser.GameObjects.Image {
-    const textureKey = imagePath.replaceAll("/", "_");
-
-    if (!this.scene.textures.exists(textureKey)) {
-      this.scene.textures.addImage(textureKey, source);
+  private getOrCreateImage(object: EntityObject, imageKey: string, source: HTMLImageElement): Phaser.GameObjects.Image {
+    if (!this.scene.textures.exists(imageKey)) {
+      this.scene.textures.addImage(imageKey, source);
     }
 
-    if (object.image !== undefined && object.image.texture.key === textureKey) {
+    if (object.image !== undefined && object.image.texture.key === imageKey) {
       return object.image;
     }
 
     object.image?.destroy();
 
-    const image = this.scene.add.image(0, 0, textureKey);
+    const image = this.scene.add.image(0, 0, imageKey);
 
     image.setOrigin(0.5, 1);
     image.setDepth(DEPTH);
@@ -171,18 +169,10 @@ export class EntityRenderer {
   }
 }
 
-function getEntityImagePath(entity: EntitySnapshot): string {
-  const postfix = entity.alive ? "" : "-dead";
+function getEntityImageKey(entity: EntitySnapshot): string {
+  const postfix = entity.alive ? "" : "_dead";
 
-  if (entity.type === "civilian") {
-    return `/canvas/civilians/${entity.kind}${postfix}.png`;
-  }
-
-  if (entity.type === "obstacle") {
-    return `/canvas/obstacles/${entity.kind}${postfix}.png`;
-  }
-
-  return `/canvas/enemies/${entity.kind}${postfix}.png`;
+  return `${entity.type}.${entity.kind}${postfix}`;
 }
 
 function getEntityFallbackColor(entity: EntitySnapshot): number {

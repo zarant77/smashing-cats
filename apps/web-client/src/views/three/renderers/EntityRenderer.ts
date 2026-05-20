@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import type { EntitySnapshot, GameSnapshot } from "@smashing-cats/protocol";
 import type { RenderViewport } from "../../viewport.js";
-import type { ThreeModelCache } from "../models/ThreeModelCache.js";
-import { ThreeModels, type ThreeModelDefinition } from "../models/threeModels.js";
+import type { ThreeModelFactory } from "../models/ThreeModelFactory.js";
+import { ThreeModelAnimator } from "../models/ThreeModelAnimator.js";
 
 type EntityObject = {
   model: THREE.Group;
@@ -10,17 +10,21 @@ type EntityObject = {
 
 const BASE_SCALE = 75;
 const Y_OFFSET = -200;
-const Z_OFFSET = 0;
 const RENDER_ORDER = 80;
 
 export class EntityRenderer {
   private readonly entities = new Map<string, EntityObject>();
   private readonly entityLoads = new Map<string, Promise<void>>();
+  private readonly animator: ThreeModelAnimator;
+  private destroyed = false;
 
   public constructor(
     private readonly scene: THREE.Scene,
-    private readonly models: ThreeModelCache,
-  ) {}
+    private readonly camera: THREE.PerspectiveCamera,
+    private readonly modelFactory: ThreeModelFactory,
+  ) {
+    this.animator = new ThreeModelAnimator(scene, camera);
+  }
 
   public draw(snapshot: GameSnapshot, viewport: RenderViewport): void {
     const visibleIds = new Set<string>();
@@ -42,22 +46,29 @@ export class EntityRenderer {
 
       const x = viewport.worldToScreenX(entity.x + width / 2);
       const y = viewport.worldToScreenY(entity.y + height + Y_OFFSET);
-      const z = viewport.worldToScreenY(Z_OFFSET);
 
-      object.model.visible = entity.alive;
+      object.model.visible = true;
 
-      object.model.position.set(Math.round(x), Math.round(y), Math.round(z));
+      object.model.position.x = Math.round(x);
+      object.model.position.y = Math.round(y);
 
       const scale = viewport.scale * BASE_SCALE;
 
-      object.model.scale.set(scale, scale, scale);
-      object.model.rotation.x = Math.PI;
+      this.animator.animate({
+        model: object.model,
+        snapshot: entity,
+        tick: snapshot.tick,
+        baseScale: scale,
+        baseRotationX: Math.PI,
+      });
     }
 
     this.cleanup(visibleIds);
   }
 
   public destroy(): void {
+    this.destroyed = true;
+
     for (const object of this.entities.values()) {
       this.dispose(object);
     }
@@ -67,15 +78,19 @@ export class EntityRenderer {
   }
 
   private async createEntity(entity: EntitySnapshot): Promise<void> {
-    const definition = this.getModelDefinition(entity);
+    const key = this.getModelKey(entity);
 
-    if (definition === undefined) {
-      console.warn(`[three] missing entity model: ${entity.type} / ${entity.kind}`);
+    if (key === undefined) {
+      console.warn(`[three] missing entity model key: ${entity.type} / ${entity.kind}`);
       return;
     }
 
     try {
-      const model = await this.models.clone(definition);
+      const model = await this.modelFactory.create(key);
+
+      if (this.destroyed || !this.entityLoads.has(entity.id)) {
+        return;
+      }
 
       model.traverse((child) => {
         child.renderOrder = RENDER_ORDER;
@@ -99,16 +114,16 @@ export class EntityRenderer {
     }
   }
 
-  private getModelDefinition(entity: EntitySnapshot): ThreeModelDefinition | undefined {
+  private getModelKey(entity: EntitySnapshot): string | undefined {
     switch (entity.type) {
       case "enemy":
-        return ThreeModels.Enemies[entity.kind as keyof typeof ThreeModels.Enemies];
+        return `enemy.${entity.kind}`;
 
       case "civilian":
-        return ThreeModels.Civilians[entity.kind as keyof typeof ThreeModels.Civilians];
+        return `civilian.${entity.kind}`;
 
       case "obstacle":
-        return ThreeModels.Obstactes[entity.kind as keyof typeof ThreeModels.Obstactes];
+        return `obstacle.${entity.kind}`;
 
       default:
         return undefined;

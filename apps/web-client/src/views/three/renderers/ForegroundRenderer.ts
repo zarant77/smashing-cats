@@ -1,15 +1,11 @@
 import * as THREE from "three";
 import type { GameSnapshot } from "@smashing-cats/protocol";
 import type { RenderViewport } from "../../viewport.js";
-import { ThreeModelCache } from "../models/ThreeModelCache.js";
 
 export class ForegroundRenderer {
   private readonly mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial>;
 
-  public constructor(
-    private readonly scene: THREE.Scene,
-    private readonly models: ThreeModelCache,
-  ) {
+  public constructor(private readonly scene: THREE.Scene) {
     const geometry = new THREE.PlaneGeometry(1, 1);
 
     const material = new THREE.MeshStandardMaterial({
@@ -34,6 +30,8 @@ export class ForegroundRenderer {
   }
 
   public destroy(): void {
+    this.scene.remove(this.mesh);
+
     this.mesh.geometry.dispose();
     this.mesh.material.dispose();
   }

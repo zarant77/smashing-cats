@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
 import type { RenderViewport } from "../../viewport.js";
-import type { ThreeModelCache } from "../models/ThreeModelCache.js";
-import { ThreeModels } from "../models/threeModels.js";
+import type { ThreeModelFactory } from "../models/ThreeModelFactory.js";
+import { ThreeModelAnimator } from "../models/ThreeModelAnimator.js";
 
 type PlayerObject = {
   model: THREE.Group;
@@ -10,19 +10,23 @@ type PlayerObject = {
 
 const BASE_SCALE = 75;
 const Y_OFFSET = -200;
-const Z_OFFSET = 0;
 const RENDER_ORDER = 100;
 
 export class PlayerRenderer {
   private readonly players = new Map<string, PlayerObject>();
   private readonly playerLoads = new Map<string, Promise<void>>();
+  private readonly animator: ThreeModelAnimator;
+  private destroyed = false;
 
   public constructor(
     private readonly scene: THREE.Scene,
-    private readonly models: ThreeModelCache,
-  ) {}
+    private readonly camera: THREE.PerspectiveCamera,
+    private readonly modelFactory: ThreeModelFactory,
+  ) {
+    this.animator = new ThreeModelAnimator(scene, camera);
+  }
 
-  public draw(snapshot: GameSnapshot, viewport: RenderViewport, localPlayerId: PlayerId | undefined): void {
+  public draw(snapshot: GameSnapshot, viewport: RenderViewport, _localPlayerId: PlayerId | undefined): void {
     const visibleIds = new Set<string>();
 
     for (const player of snapshot.players) {
@@ -42,24 +46,31 @@ export class PlayerRenderer {
 
       const x = viewport.worldToScreenSize(player.x + width / 2);
       const y = viewport.worldToScreenY(player.y + height + Y_OFFSET);
-      const z = viewport.worldToScreenY(Z_OFFSET);
 
       const shouldBlinkOff = player.invulnerable && Math.floor(snapshot.tick / 2) % 2 === 0;
 
       object.model.visible = player.alive && !shouldBlinkOff;
-
-      object.model.position.set(Math.round(x), Math.round(y), Math.round(z));
+      object.model.position.x = Math.round(x);
+      object.model.position.y = Math.round(y);
 
       const scale = viewport.scale * BASE_SCALE;
 
-      object.model.scale.set(scale, scale, -scale);
-      object.model.rotation.x = Math.PI;
+      this.animator.animate({
+        model: object.model,
+        snapshot: player,
+        tick: snapshot.tick,
+        baseScale: scale,
+        baseScaleZ: -scale,
+        baseRotationX: Math.PI,
+      });
     }
 
     this.cleanup(visibleIds);
   }
 
   public destroy(): void {
+    this.destroyed = true;
+
     for (const object of this.players.values()) {
       this.dispose(object);
     }
@@ -69,15 +80,14 @@ export class PlayerRenderer {
   }
 
   private async createPlayer(id: string, kind: string): Promise<void> {
-    const path = ThreeModels.Players[kind as keyof typeof ThreeModels.Players];
-
-    if (path === undefined) {
-      console.warn(`[three] missing player model: ${kind}`);
-      return;
-    }
+    const key = `player.${kind}`;
 
     try {
-      const model = await this.models.clone(path);
+      const model = await this.modelFactory.create(key);
+
+      if (this.destroyed || !this.playerLoads.has(id)) {
+        return;
+      }
 
       model.traverse((child) => {
         child.renderOrder = RENDER_ORDER;
@@ -108,7 +118,6 @@ export class PlayerRenderer {
       }
 
       this.dispose(object);
-
       this.players.delete(id);
       this.playerLoads.delete(id);
     }

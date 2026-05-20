@@ -3,8 +3,8 @@ import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
 import type { Translator } from "@smashing-cats/i18n";
 import { EMPTY_SNAPSHOT } from "../emptySnapshot.js";
 import { createRenderViewport, type RenderViewport } from "../viewport.js";
-import type { ThreeModelCache } from "./models/ThreeModelCache.js";
-import { ThreeCamera, type ThreeCameraMode } from "./ThreeCamera.js";
+import type { ThreeModelFactory } from "./models/ThreeModelFactory.js";
+import { ThreeCamera } from "./ThreeCamera.js";
 import { ThreeLights } from "./ThreeLights.js";
 import { BackgroundRenderer } from "./renderers/BackgroundRenderer.js";
 import { EntityRenderer } from "./renderers/EntityRenderer.js";
@@ -34,7 +34,7 @@ export class SmashingCatsThreeScene {
   private playerId: PlayerId | undefined;
   private viewport: RenderViewport;
 
-  public constructor(width: number, height: number, models: ThreeModelCache) {
+  public constructor(width: number, height: number, models: ThreeModelFactory) {
     this.width = width;
     this.height = height;
 
@@ -50,17 +50,16 @@ export class SmashingCatsThreeScene {
     this.domElement = this.renderer.domElement;
 
     this.camera = new ThreeCamera(width, height);
-    this.camera.setMode("3d");
 
     this.lights = new ThreeLights(this.scene);
 
     this.viewport = createRenderViewport(width, height, this.snapshot);
 
-    this.backgroundRenderer = new BackgroundRenderer(this.scene, models);
+    this.backgroundRenderer = new BackgroundRenderer(this.scene);
     this.groundRenderer = new GroundRenderer(this.scene, models);
-    this.entityRenderer = new EntityRenderer(this.scene, models);
-    this.playerRenderer = new PlayerRenderer(this.scene, models);
-    this.foregroundRenderer = new ForegroundRenderer(this.scene, models);
+    this.entityRenderer = new EntityRenderer(this.scene, this.camera.active, models);
+    this.playerRenderer = new PlayerRenderer(this.scene, this.camera.active, models);
+    this.foregroundRenderer = new ForegroundRenderer(this.scene);
   }
 
   public async init(): Promise<void> {
@@ -73,14 +72,6 @@ export class SmashingCatsThreeScene {
   }
 
   public setTranslator(_t: Translator): void {}
-
-  public setCameraMode(mode: ThreeCameraMode): void {
-    this.camera.setMode(mode);
-  }
-
-  public toggleCameraMode(): ThreeCameraMode {
-    return this.camera.toggleMode();
-  }
 
   public resize(width: number, height: number): void {
     this.width = width;

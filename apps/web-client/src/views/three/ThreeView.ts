@@ -4,11 +4,10 @@ import type { GameView, ViewOptions } from "../types.js";
 import { EMPTY_SNAPSHOT } from "../emptySnapshot.js";
 import { getViewSize } from "../viewport.js";
 import { SmashingCatsThreeScene } from "./SmashingCatsThreeScene.js";
-import { ThreeModelCache } from "./models/ThreeModelCache.js";
-import { ThreeModelPreloadList } from "./models/threeModels.js";
+import { ThreeModelFactory } from "./models/ThreeModelFactory.js";
 
 export class ThreeView implements GameView {
-  private readonly models = new ThreeModelCache();
+  private readonly models = new ThreeModelFactory();
   private readonly scene: SmashingCatsThreeScene;
 
   private ready = false;
@@ -60,7 +59,6 @@ export class ThreeView implements GameView {
   }
 
   private async init(): Promise<void> {
-    await this.models.preload(ThreeModelPreloadList);
     await this.scene.init();
 
     this.ready = true;

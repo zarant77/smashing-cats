@@ -16,7 +16,6 @@ const FLYING_DEATH_FLY_ROTATION = -0.65;
 const FLYING_DEATH_FALL_ROTATION = 2.4;
 
 const SCREEN_CRACK_EFFECT_KEY = "screen-crack";
-const SCREEN_CRACK_IMAGE_PATH = "/canvas/effects/screen-crack.png";
 const SCREEN_CRACK_DURATION_MS = 1400;
 const SCREEN_CRACK_SCALE = 1.15;
 
@@ -112,7 +111,7 @@ function getSpawnEffects(now: number, elapsed: number, state: AnimationState): r
 
   return [
     {
-      imagePath: SCREEN_CRACK_IMAGE_PATH,
+      imageKey: "effect.screen_crack",
 
       x: state.deathTargetX,
       y: state.deathTargetY,

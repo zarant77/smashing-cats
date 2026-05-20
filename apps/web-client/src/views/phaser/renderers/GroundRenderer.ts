@@ -2,10 +2,9 @@ import Phaser from "phaser";
 import type { GameSnapshot } from "@smashing-cats/protocol";
 import type { Translator } from "@smashing-cats/i18n";
 import type { RenderViewport } from "../../viewport.js";
-import { assets } from "../../../assets/assets.js";
+import { getImageAsset, images } from "../../../assets/assets.js";
 
-const TILE_PATH = "/canvas/environments/ground.png";
-const TEXTURE_KEY = "ground";
+const TILE_KEY = "environment.ground";
 const DESIGN_TILE_WIDTH = 800;
 const GROUND_OFFSET_Y = -55;
 
@@ -22,17 +21,16 @@ export class GroundRenderer {
   }
 
   public draw(snapshot: GameSnapshot, viewport: RenderViewport): void {
-    const image = assets.get(TILE_PATH);
+    const image = images.getLoaded(getImageAsset(TILE_KEY));
 
     if (!image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
       return;
     }
 
-    if (!this.scene.textures.exists(TEXTURE_KEY)) {
-      this.scene.textures.addImage(TEXTURE_KEY, image);
+    if (!this.scene.textures.exists(TILE_KEY)) {
+      this.scene.textures.addImage(TILE_KEY, image);
     }
 
-    const scale = this.getScale(snapshot);
     const tileWidth = viewport.worldToScreenSize(DESIGN_TILE_WIDTH);
     const tileHeight = image.naturalHeight * (tileWidth / image.naturalWidth);
     const groundY = viewport.worldToScreenY(snapshot.world.groundY + GROUND_OFFSET_Y);
@@ -67,13 +65,9 @@ export class GroundRenderer {
 
   private ensureTiles(count: number): void {
     while (this.tiles.length < count) {
-      const tile = this.scene.add.image(0, 0, TEXTURE_KEY);
+      const tile = this.scene.add.image(0, 0, TILE_KEY);
       tile.setDepth(10);
       this.tiles.push(tile);
     }
-  }
-
-  private getScale(snapshot: GameSnapshot): number {
-    return Math.min(this.scene.scale.width / snapshot.world.width, this.scene.scale.height / snapshot.world.height);
   }
 }

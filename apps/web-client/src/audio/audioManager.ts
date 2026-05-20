@@ -30,14 +30,6 @@ export class AudioManager {
     this.music.loop = true;
   }
 
-  public preload(paths: readonly string[]): void {
-    for (const path of paths) {
-      const audio = new Audio(path);
-
-      audio.preload = "auto";
-    }
-  }
-
   public async playMusic(pathOrPaths: AudioPath, volume = 1): Promise<void> {
     if (!this.musicEnabled) {
       return;

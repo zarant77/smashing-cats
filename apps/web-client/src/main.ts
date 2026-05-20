@@ -98,7 +98,7 @@ async function bootstrap(): Promise<void> {
 
   gameOverPopup = new GameOverPopup(uiRoot, t, {
     onRestart: () => {
-      playSound("UiClick");
+      playSound("sound.ui_click");
       runtime?.restart();
     },
   });
@@ -112,7 +112,7 @@ async function bootstrap(): Promise<void> {
         return;
       }
 
-      playSound("UiClick");
+      playSound("sound.ui_click");
       selectedCharacterKind = characterKind;
       localStorage.setItem(CHARACTER_KEY, characterKind);
       characterSelect?.setPreferredCharacter(characterKind);
@@ -153,7 +153,7 @@ async function bootstrap(): Promise<void> {
       audio.setSoundsEnabled(soundsEnabled);
 
       if (soundsEnabled) {
-        playSound("UiClick");
+        playSound("sound.ui_click");
       }
 
       updateAudioButtons(soundToggle, musicToggle, soundsEnabled, musicEnabled, t);
@@ -165,7 +165,7 @@ async function bootstrap(): Promise<void> {
       localStorage.setItem(MUSIC_ENABLED_KEY, String(musicEnabled));
       audio.setMusicEnabled(musicEnabled);
 
-      playSound("UiClick");
+      playSound("sound.ui_click");
       musicEvents.gameplay();
       updateAudioButtons(soundToggle, musicToggle, soundsEnabled, musicEnabled, t);
     });
@@ -174,7 +174,7 @@ async function bootstrap(): Promise<void> {
   function bindLocaleControls(): void {
     for (const button of localeButtons) {
       button.addEventListener("click", () => {
-        playSound("UiClick");
+        playSound("sound.ui_click");
 
         locale = button.dataset.locale ?? "en";
         t = createTranslator(locale);
@@ -235,7 +235,7 @@ function bindEngineSelect(
   });
 
   async function switchView(): Promise<void> {
-    playSound("UiClick");
+    playSound("sound.ui_click");
 
     const nextViewKind = parseViewKind(select.value);
 

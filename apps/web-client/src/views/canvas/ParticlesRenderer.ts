@@ -1,4 +1,4 @@
-import { assets } from "../../assets/assets.js";
+import { getImageAsset, images } from "../../assets/assets.js";
 import type { RenderViewport } from "../viewport.js";
 
 type Particle = {
@@ -24,12 +24,12 @@ type Particle = {
 };
 
 const PARTICLE_SPRITES = [
-  "/canvas/environments/leaf1.png",
-  "/canvas/environments/leaf2.png",
-  "/canvas/environments/leaf3.png",
-  "/canvas/environments/leaf4.png",
-  "/canvas/environments/leaf5.png",
-  "/canvas/environments/leaf6.png",
+  "environment.leaf1",
+  "environment.leaf2",
+  "environment.leaf3",
+  "environment.leaf4",
+  "environment.leaf5",
+  "environment.leaf6",
 ] as const;
 
 const WORLD_WIDTH = 1600;
@@ -108,8 +108,9 @@ export class ParticlesRenderer {
   }
 
   private getRandomSprite(): HTMLImageElement {
-    const path = PARTICLE_SPRITES[Math.floor(Math.random() * PARTICLE_SPRITES.length)];
+    const key = PARTICLE_SPRITES[Math.floor(Math.random() * PARTICLE_SPRITES.length)];
+    const path = getImageAsset(key);
 
-    return assets.get(path);
+    return images.getLoaded(path);
   }
 }
