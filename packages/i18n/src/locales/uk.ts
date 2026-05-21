@@ -42,7 +42,6 @@ export const uk = {
   nextCharacter: "Наступний кіт",
   changeCharacter: "Змінити кота",
   selectCharacter: "Обрати цього кота",
-  underConstruction: "Гра в розробці",
 
   batcat: "КажанКіт",
   ironcat: "Залізнокіт",

@@ -42,7 +42,6 @@ export const en = {
   nextCharacter: "Next cat",
   changeCharacter: "Change cat",
   selectCharacter: "Choose your cat",
-  underConstruction: "Game Under Construction",
 
   batcat: "Batcat",
   ironcat: "Ironcat",

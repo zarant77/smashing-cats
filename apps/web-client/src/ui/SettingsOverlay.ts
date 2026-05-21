@@ -160,6 +160,14 @@ export class SettingsOverlay {
     this.syncActiveButtons();
   }
 
+  public setPauseDisabled(disabled: boolean): void {
+    const button = this.element.querySelector<HTMLButtonElement>(".pause-button");
+
+    if (button !== null) {
+      button.disabled = disabled;
+    }
+  }
+
   public show(): void {
     this.clearCloseTimeout();
 
@@ -194,6 +202,7 @@ export class SettingsOverlay {
       this.card.hidden = true;
       this.element.classList.remove("settings-overlay-closing");
       this.closeTimeoutId = undefined;
+      this.setPauseDisabled(false);
       this.syncActiveButtons();
       this.onClose?.();
     }, MENU_ANIMATION_MS);

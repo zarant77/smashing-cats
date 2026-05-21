@@ -113,11 +113,13 @@ async function bootstrap(): Promise<void> {
     onOpen: () => {
       if (runtime === undefined || !runtime.isGameRunning() || runtime.isPaused()) {
         settingsPausedGame = false;
+        settingsOverlay?.setPauseDisabled(false);
         return;
       }
 
       runtime.setPaused(true);
       settingsPausedGame = true;
+      settingsOverlay?.setPauseDisabled(true);
     },
 
     onClose: () => {
@@ -137,11 +139,6 @@ async function bootstrap(): Promise<void> {
 
     onPause: () => {
       playSound("sound.ui_click");
-
-      if (settingsPausedGame) {
-        settingsOverlay?.hide();
-        return;
-      }
 
       if (runtime?.isGameRunning() === true) {
         runtime.togglePause();

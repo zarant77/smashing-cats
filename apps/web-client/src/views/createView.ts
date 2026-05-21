@@ -15,19 +15,16 @@ export async function createView(kind: ViewKind, root: HTMLElement): Promise<Gam
 async function createLoadedView(kind: ViewKind, root: HTMLElement): Promise<GameView> {
   switch (kind) {
     case "canvas": {
-      showUderConstruction(false);
       const { CanvasView } = await import("./canvas/CanvasView.js");
       return new CanvasView(root);
     }
 
     case "phaser": {
-      showUderConstruction(true);
       const { PhaserView } = await import("./phaser/PhaserView.js");
       return new PhaserView(root);
     }
 
     case "three": {
-      showUderConstruction(true);
       const { ThreeView } = await import("./three/ThreeView.js");
       return new ThreeView(root);
     }
@@ -50,13 +47,5 @@ function showSplash(isShow: boolean): void {
 
   if (splash !== null) {
     splash.style.display = isShow ? "flex" : "none";
-  }
-}
-
-function showUderConstruction(isShow: boolean) {
-  const underConstruction = document.getElementById("under-construction");
-
-  if (underConstruction) {
-    underConstruction.style.display = isShow ? "block" : "none";
   }
 }
