@@ -1,9 +1,16 @@
 import Phaser from "phaser";
+
 import type { GameSnapshot, PlayerId, PlayerSnapshot } from "@smashing-cats/protocol";
 import type { Translator } from "@smashing-cats/i18n";
+
 import { getImageAsset, images } from "../../../assets/assets.js";
 import type { RenderViewport } from "../../viewport.js";
+
 import { DebugRenderer } from "./DebugRenderer.js";
+import { SmashEffectRenderer } from "./SmashEffectRenderer.js";
+import { FloatingTextRenderer } from "./FloatingTextRenderer.js";
+import { SpriteAnimationState } from "../animations/SpriteAnimationState.js";
+import { getSpriteTransform } from "../animations/SpriteTransformAnimator.js";
 
 type PlayerObject = {
   image?: Phaser.GameObjects.Image;
@@ -19,13 +26,17 @@ const DEPTH = 50;
 
 export class PlayerRenderer {
   private readonly objects = new Map<string, PlayerObject>();
-
+  private readonly smashEffectRenderer: SmashEffectRenderer;
+  private readonly floatingTextRenderer: FloatingTextRenderer;
   private readonly debugRenderer: DebugRenderer;
+  private readonly animationState = new SpriteAnimationState();
 
   public constructor(
     private readonly scene: Phaser.Scene,
     private t: Translator,
   ) {
+    this.smashEffectRenderer = new SmashEffectRenderer(scene);
+    this.floatingTextRenderer = new FloatingTextRenderer(scene);
     this.debugRenderer = new DebugRenderer(scene);
   }
 
@@ -43,6 +54,8 @@ export class PlayerRenderer {
       this.drawPlayer(snapshot, player, player.playerId === localPlayerId, viewport);
     }
 
+    this.smashEffectRenderer.draw(snapshot, viewport);
+    this.floatingTextRenderer.draw(snapshot, viewport);
     this.removeMissingPlayers(visibleIds);
   }
 
@@ -52,7 +65,11 @@ export class PlayerRenderer {
       object.fallback?.destroy();
     }
 
+    this.smashEffectRenderer.destroy();
+    this.floatingTextRenderer.destroy();
     this.debugRenderer.destroy();
+    this.animationState.clear();
+
     this.objects.clear();
   }
 
@@ -77,28 +94,19 @@ export class PlayerRenderer {
     const shouldBlinkOff = player.invulnerable && Math.floor(snapshot.tick / 2) % 2 === 0;
     const alpha = shouldBlinkOff ? 0.35 : 1;
 
-    if (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0) {
-      const sprite = this.getOrCreateImage(object, imageKey, image);
+    const now = this.scene.time.now;
+    const animation = this.animationState.resolvePlayer(player, now);
+    const transform = getSpriteTransform(animation.kind, (now - animation.startedAt) / 1000);
 
-      sprite.setVisible(true);
-      sprite.setPosition(Math.round(x), Math.round(y));
-      sprite.setDisplaySize(Math.round(renderSize.width), Math.round(renderSize.height));
-      sprite.setAlpha(player.alive ? alpha : 0.45);
-      sprite.setFlipX(true);
-      sprite.setTint(player.alive ? 0xffffff : 0x777777);
+    const sprite = this.getOrCreateImage(object, imageKey, image);
 
-      object.fallback?.setVisible(false);
-    } else {
-      const fallback = this.getOrCreateFallback(object, isLocal);
+    sprite.setVisible(true);
+    sprite.setPosition(Math.round(x + transform.offsetX), Math.round(y + transform.offsetY));
+    sprite.setDisplaySize(Math.round(renderSize.width * transform.scaleX), Math.round(renderSize.height * transform.scaleY));
+    sprite.setRotation(transform.rotation);
+    sprite.setFlipX(true);
 
-      fallback.setVisible(true);
-      fallback.setPosition(Math.round(screenX), Math.round(screenY));
-      fallback.setSize(Math.round(physicsWidth), Math.round(physicsHeight));
-      fallback.setAlpha(player.alive ? alpha : 0.45);
-      fallback.setFillStyle(isLocal ? 0xffcc33 : 0xf58ad4);
-
-      object.image?.setVisible(false);
-    }
+    object.fallback?.setVisible(false);
 
     this.debugRenderer.drawBounds({
       object: player,
@@ -143,22 +151,6 @@ export class PlayerRenderer {
     return image;
   }
 
-  private getOrCreateFallback(object: PlayerObject, isLocal: boolean): Phaser.GameObjects.Rectangle {
-    if (object.fallback !== undefined) {
-      return object.fallback;
-    }
-
-    const fallback = this.scene.add.rectangle(0, 0, 1, 1, isLocal ? 0xffcc33 : 0xf58ad4);
-
-    fallback.setOrigin(0, 0);
-    fallback.setDepth(DEPTH);
-    fallback.setVisible(false);
-
-    object.fallback = fallback;
-
-    return fallback;
-  }
-
   private removeMissingPlayers(visibleIds: Set<string>): void {
     for (const [id, object] of this.objects.entries()) {
       if (visibleIds.has(id)) {
@@ -168,6 +160,7 @@ export class PlayerRenderer {
       object.image?.destroy();
       object.fallback?.destroy();
 
+      this.animationState.remove(id);
       this.objects.delete(id);
     }
   }

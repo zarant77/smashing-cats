@@ -38,13 +38,13 @@ const SPRITES: ForegroundSprite[] = [
   { key: "environment.fg_tree1", minScale: 0.6, maxScale: 0.8, y: -20, speed: 1.35, weight: 1 },
   { key: "environment.fg_tree2", minScale: 0.6, maxScale: 0.8, y: -20, speed: 1.35, weight: 1 },
   { key: "environment.fg_tree3", minScale: 0.6, maxScale: 0.8, y: -20, speed: 1.35, weight: 1 },
-  { key: "environment.fg_fence1", minScale: 0.8, maxScale: 1, y: 92, speed: 1, weight: 3 },
-  { key: "environment.fg_stump1", minScale: 0.6, maxScale: 0.8, y: 90, speed: 1, weight: 5 },
-  { key: "environment.fg_stump2", minScale: 0.6, maxScale: 0.8, y: 90, speed: 1, weight: 5 },
-  { key: "environment.fg_stump3", minScale: 0.8, maxScale: 1, y: 90, speed: 1, weight: 5 },
-  { key: "environment.fg_stump4", minScale: 0.8, maxScale: 1, y: 90, speed: 1, weight: 5 },
-  { key: "environment.fg_pumpkin1", minScale: 0.6, maxScale: 1, y: 80, speed: 1, weight: 5 },
-  { key: "environment.fg_pumpkin2", minScale: 0.6, maxScale: 1, y: 80, speed: 1, weight: 5 },
+  { key: "environment.fg_fence1", minScale: 0.8, maxScale: 1, y: 92, speed: 1, weight: 1 },
+  { key: "environment.fg_stump1", minScale: 0.6, maxScale: 0.8, y: 90, speed: 1, weight: 1 },
+  { key: "environment.fg_stump2", minScale: 0.6, maxScale: 0.8, y: 90, speed: 1, weight: 1 },
+  { key: "environment.fg_stump3", minScale: 0.8, maxScale: 1, y: 90, speed: 1, weight: 1 },
+  { key: "environment.fg_stump4", minScale: 0.8, maxScale: 1, y: 90, speed: 1, weight: 1 },
+  { key: "environment.fg_pumpkin1", minScale: 0.6, maxScale: 1, y: 80, speed: 1, weight: 1 },
+  { key: "environment.fg_pumpkin2", minScale: 0.6, maxScale: 1, y: 80, speed: 1, weight: 1 },
 ];
 
 export class ForegroundRenderer {
