@@ -188,6 +188,8 @@ async function bootstrap(): Promise<void> {
         characterSelect?.setLocale(locale, t);
         renderCharacterSelect();
         view.setLocale?.(locale, t);
+
+        document.title = t("title");
       });
     }
   }
