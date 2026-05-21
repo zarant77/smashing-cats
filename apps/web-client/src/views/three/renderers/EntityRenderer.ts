@@ -1,21 +1,26 @@
 import * as THREE from "three";
+
 import type { EntitySnapshot, GameSnapshot } from "@smashing-cats/protocol";
+
 import type { RenderViewport } from "../../viewport.js";
 import type { ThreeModelFactory } from "../models/ThreeModelFactory.js";
 import { ThreeModelAnimator } from "../models/ThreeModelAnimator.js";
+import { DebugRenderer } from "./DebugRenderer.js";
 
 type EntityObject = {
   model: THREE.Group;
+  baseSize: THREE.Vector3;
 };
 
-const BASE_SCALE = 75;
 const Y_OFFSET = -200;
-const RENDER_ORDER = 80;
+const RENDER_ORDER = 10;
 
 export class EntityRenderer {
   private readonly entities = new Map<string, EntityObject>();
   private readonly entityLoads = new Map<string, Promise<void>>();
   private readonly animator: ThreeModelAnimator;
+  private readonly debugRenderer: DebugRenderer;
+
   private destroyed = false;
 
   public constructor(
@@ -24,10 +29,13 @@ export class EntityRenderer {
     private readonly modelFactory: ThreeModelFactory,
   ) {
     this.animator = new ThreeModelAnimator(scene, camera);
+    this.debugRenderer = new DebugRenderer(scene);
   }
 
   public draw(snapshot: GameSnapshot, viewport: RenderViewport): void {
     const visibleIds = new Set<string>();
+
+    this.debugRenderer.beginFrame();
 
     for (const entity of snapshot.entities) {
       visibleIds.add(entity.id);
@@ -44,15 +52,23 @@ export class EntityRenderer {
 
       const [width, height] = entity.size;
 
+      const physicsWidth = viewport.worldToScreenSize(width);
+      const physicsHeight = viewport.worldToScreenSize(height);
+
       const x = viewport.worldToScreenX(entity.x + width / 2);
       const y = viewport.worldToScreenY(entity.y + height + Y_OFFSET);
+
+      const screenX = x - physicsWidth / 2;
+      const screenY = y - physicsHeight;
 
       object.model.visible = true;
 
       object.model.position.x = Math.round(x);
       object.model.position.y = Math.round(y);
 
-      const scale = viewport.scale * BASE_SCALE;
+      const fitScaleX = object.baseSize.x > 0 ? physicsWidth / object.baseSize.x : 1;
+      const fitScaleY = object.baseSize.y > 0 ? physicsHeight / object.baseSize.y : 1;
+      const scale = Math.min(fitScaleX, fitScaleY);
 
       this.animator.animate({
         model: object.model,
@@ -60,6 +76,16 @@ export class EntityRenderer {
         tick: snapshot.tick,
         baseScale: scale,
         baseRotationX: Math.PI,
+      });
+
+      this.debugRenderer.drawBounds({
+        shape: {
+          size: entity.size,
+          hurt: entity.hurt,
+        },
+        screenX,
+        screenY,
+        viewport,
       });
     }
 
@@ -73,6 +99,8 @@ export class EntityRenderer {
       this.dispose(object);
     }
 
+    this.debugRenderer.destroy();
+
     this.entities.clear();
     this.entityLoads.clear();
   }
@@ -82,6 +110,7 @@ export class EntityRenderer {
 
     if (key === undefined) {
       console.warn(`[three] missing entity model key: ${entity.type} / ${entity.kind}`);
+
       return;
     }
 
@@ -106,8 +135,13 @@ export class EntityRenderer {
 
       model.visible = false;
 
+      const bounds = new THREE.Box3().setFromObject(model);
+      const baseSize = new THREE.Vector3();
+
+      bounds.getSize(baseSize);
+
       this.scene.add(model);
-      this.entities.set(entity.id, { model });
+      this.entities.set(entity.id, { model, baseSize });
     } catch (error) {
       console.warn(`[three] failed to create entity model: ${entity.type} / ${entity.kind}`);
       console.error(error);

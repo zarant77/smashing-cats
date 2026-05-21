@@ -1,8 +1,8 @@
 .touch-controls {
-  --button-size: 8vw;
-  --joy-width: 28vw;
-  --joy-padding-side: 3vw;
-  --joy-padding-bottom: 2vw;
+  --button-size: 110px;
+  --joy-width: 380px;
+  --joy-padding-side: 50px;
+  --joy-padding-bottom: 50px;
 
   position: absolute;
   inset: 0;

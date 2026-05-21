@@ -12,7 +12,7 @@ import type {
   ServerToClientMessage,
 } from "@smashing-cats/protocol";
 
-import { consumePauseToggle, isPaused, readInput } from "../input.js";
+import { consumePauseToggle, isPaused, togglePause, readInput } from "../input.js";
 import { createSocket, parseServerMessage, sendClientMessage } from "../network/clientConnection.js";
 import type { TouchControls } from "../ui/TouchControls.js";
 import { createLocalGame } from "./localGame.js";
@@ -134,6 +134,13 @@ export class GameRuntime {
 
   public start(): void {
     this.frame();
+  }
+
+  public togglePause(): void {
+    if (this.localGame && this.playerId) {
+      togglePause();
+      this.localGame.setPaused(this.playerId, isPaused());
+    }
   }
 
   private bindSocketEvents(): void {

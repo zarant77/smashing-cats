@@ -3,6 +3,7 @@ import type { GameSnapshot, PlayerId, PlayerSnapshot } from "@smashing-cats/prot
 import type { Translator } from "@smashing-cats/i18n";
 import { getImageAsset, images } from "../../../assets/assets.js";
 import type { RenderViewport } from "../../viewport.js";
+import { DebugRenderer } from "./DebugRenderer.js";
 
 type PlayerObject = {
   image?: Phaser.GameObjects.Image;
@@ -19,10 +20,14 @@ const DEPTH = 50;
 export class PlayerRenderer {
   private readonly objects = new Map<string, PlayerObject>();
 
+  private readonly debugRenderer: DebugRenderer;
+
   public constructor(
     private readonly scene: Phaser.Scene,
     private t: Translator,
-  ) {}
+  ) {
+    this.debugRenderer = new DebugRenderer(scene);
+  }
 
   public setTranslator(t: Translator): void {
     this.t = t;
@@ -30,6 +35,8 @@ export class PlayerRenderer {
 
   public draw(snapshot: GameSnapshot, localPlayerId: PlayerId | undefined, viewport: RenderViewport): void {
     const visibleIds = new Set<string>();
+
+    this.debugRenderer.beginFrame();
 
     for (const player of snapshot.players) {
       visibleIds.add(player.id);
@@ -45,6 +52,7 @@ export class PlayerRenderer {
       object.fallback?.destroy();
     }
 
+    this.debugRenderer.destroy();
     this.objects.clear();
   }
 
@@ -80,19 +88,24 @@ export class PlayerRenderer {
       sprite.setTint(player.alive ? 0xffffff : 0x777777);
 
       object.fallback?.setVisible(false);
+    } else {
+      const fallback = this.getOrCreateFallback(object, isLocal);
 
-      return;
+      fallback.setVisible(true);
+      fallback.setPosition(Math.round(screenX), Math.round(screenY));
+      fallback.setSize(Math.round(physicsWidth), Math.round(physicsHeight));
+      fallback.setAlpha(player.alive ? alpha : 0.45);
+      fallback.setFillStyle(isLocal ? 0xffcc33 : 0xf58ad4);
+
+      object.image?.setVisible(false);
     }
 
-    const fallback = this.getOrCreateFallback(object, isLocal);
-
-    fallback.setVisible(true);
-    fallback.setPosition(Math.round(screenX), Math.round(screenY));
-    fallback.setSize(Math.round(physicsWidth), Math.round(physicsHeight));
-    fallback.setAlpha(player.alive ? alpha : 0.45);
-    fallback.setFillStyle(isLocal ? 0xffcc33 : 0xf58ad4);
-
-    object.image?.setVisible(false);
+    this.debugRenderer.drawBounds({
+      object: player,
+      screenX,
+      screenY,
+      viewport,
+    });
   }
 
   private getPlayerObject(id: string): PlayerObject {

@@ -6,15 +6,8 @@ import "./ui/debug.js";
 import { audio, initAudio, musicEvents, playSound } from "./audio/audio.js";
 import { GameRuntime } from "./game/GameRuntime.js";
 import { getMatchCode } from "./game/routing.js";
-import {
-  applyStaticTranslations,
-  getRequiredElement,
-  requestFullscreenFromUserGesture,
-  toggleFullscreen,
-  updateAudioButtons,
-  updateFullscreenButton,
-  updateLocaleButtons,
-} from "./ui/domControls.js";
+import { applyStaticTranslations, getRequiredElement, requestFullscreenFromUserGesture, toggleFullscreen } from "./ui/domControls.js";
+import { SettingsOverlay } from "./ui/SettingsOverlay.js";
 import { PauseOverlay } from "./ui/PauseOverlay.js";
 import { CharacterSelect } from "./ui/CharacterSelect.js";
 import { TouchControls } from "./ui/TouchControls.js";
@@ -38,11 +31,6 @@ async function bootstrap(): Promise<void> {
 
   const root = getRequiredElement<HTMLElement>("#game-root", "Game root");
   const uiRoot = getRequiredElement<HTMLElement>("#ui-root", "UI root");
-  const engineSelect = document.querySelector<HTMLSelectElement>("#engine-select");
-  const localeButtons = document.querySelectorAll<HTMLButtonElement>("[data-locale]");
-  const soundToggle = document.querySelector<HTMLButtonElement>("#sound-toggle");
-  const musicToggle = document.querySelector<HTMLButtonElement>("#music-toggle");
-  const fullscreenToggle = document.querySelector<HTMLButtonElement>("#fullscreen-toggle");
 
   const params = new URLSearchParams(window.location.search);
   const matchCode = getMatchCode(params);
@@ -50,14 +38,19 @@ async function bootstrap(): Promise<void> {
 
   let locale = params.get("locale") ?? localStorage.getItem(LOCALE_KEY) ?? "en";
   let t = createTranslator(locale);
+
   let soundsEnabled = localStorage.getItem(SOUNDS_ENABLED_KEY) !== "false";
   let musicEnabled = localStorage.getItem(MUSIC_ENABLED_KEY) !== "false";
+
   let viewKind = parseViewKind(params.get("view") ?? localStorage.getItem(VIEW_KEY));
   let selectedCharacterKind = localStorage.getItem(CHARACTER_KEY) as EntityKind | null;
+
   let view: GameView = await createView(viewKind, root);
   let characterSelect: CharacterSelect | undefined;
   let gameOverPopup: GameOverPopup | undefined;
+  let settingsOverlay: SettingsOverlay | undefined;
   let runtime: GameRuntime | undefined;
+
   let lastSnapshot: GameSnapshot | undefined;
   let lastPlayerId: PlayerId | undefined;
 
@@ -68,12 +61,23 @@ async function bootstrap(): Promise<void> {
   const hud = new Hud(uiRoot, t);
   const pauseOverlay = new PauseOverlay(uiRoot, t);
   const touchControls = TouchControls.isTouchDevice() ? new TouchControls() : undefined;
+
   const renderCharacterSelect = (): void => {
     if (characterSelect === undefined || runtime === undefined) {
       return;
     }
 
     characterSelect.render(runtime.characters, runtime.hasSelectedCharacter);
+  };
+
+  const syncSettingsOverlay = (): void => {
+    settingsOverlay?.setState({
+      currentEngine: viewKind,
+      currentLanguage: locale === "uk" ? "uk" : "en",
+      soundEnabled: soundsEnabled,
+      musicEnabled,
+      fullscreenEnabled: document.fullscreenElement !== null,
+    });
   };
 
   runtime = new GameRuntime({
@@ -84,12 +88,70 @@ async function bootstrap(): Promise<void> {
     render: (snapshot, playerId) => {
       lastSnapshot = snapshot;
       lastPlayerId = playerId;
+
       view.render(snapshot, playerId);
       hud.render(snapshot, playerId);
       pauseOverlay.render(snapshot, playerId);
+      settingsOverlay?.render(snapshot, playerId);
       gameOverPopup?.render(snapshot, playerId);
       touchControls?.update(snapshot, playerId);
     },
+  });
+
+  settingsOverlay = new SettingsOverlay(uiRoot, t, {
+    onPause: () => {
+      playSound("sound.ui_click");
+      runtime?.togglePause();
+    },
+
+    onToggleSound: () => {
+      soundsEnabled = !soundsEnabled;
+
+      localStorage.setItem(SOUNDS_ENABLED_KEY, String(soundsEnabled));
+      audio.setSoundsEnabled(soundsEnabled);
+
+      if (soundsEnabled) {
+        playSound("sound.ui_click");
+      }
+
+      syncSettingsOverlay();
+    },
+
+    onToggleMusic: () => {
+      musicEnabled = !musicEnabled;
+
+      localStorage.setItem(MUSIC_ENABLED_KEY, String(musicEnabled));
+      audio.setMusicEnabled(musicEnabled);
+
+      playSound("sound.ui_click");
+      musicEvents.gameplay();
+
+      syncSettingsOverlay();
+    },
+
+    onToggleFullscreen: () => {
+      playSound("sound.ui_click");
+
+      void (async () => {
+        await toggleFullscreen();
+        syncSettingsOverlay();
+      })();
+    },
+
+    onSelectView: (view: ViewKind) => switchView(view),
+
+    onSelectLanguage: (nextLocale: string) => setLocale(nextLocale),
+
+    onExit: () => {
+      playSound("sound.ui_click");
+      runtime?.restart();
+    },
+  });
+
+  syncSettingsOverlay();
+
+  document.addEventListener("fullscreenchange", () => {
+    syncSettingsOverlay();
   });
 
   gameOverPopup = new GameOverPopup(uiRoot, t, {
@@ -109,142 +171,53 @@ async function bootstrap(): Promise<void> {
       }
 
       playSound("sound.ui_click");
+
       selectedCharacterKind = characterKind;
       localStorage.setItem(CHARACTER_KEY, characterKind);
+
       characterSelect?.setPreferredCharacter(characterKind);
     },
   });
 
   renderCharacterSelect();
   applyStaticTranslations(locale, t);
-  updateLocaleButtons(localeButtons, locale);
-  updateAudioButtons(soundToggle, musicToggle, soundsEnabled, musicEnabled, t);
-  updateFullscreenButton(fullscreenToggle);
-  bindFullscreenControls(fullscreenToggle);
-  bindEngineSelect(
-    engineSelect,
-    viewKind,
-    root,
-    () => view,
-    () => locale,
-    () => t,
-    () => lastSnapshot,
-    () => lastPlayerId,
-    (nextViewKind, nextView) => {
-      viewKind = nextViewKind;
-      view = nextView;
-    },
-  );
-  bindAudioControls();
-  bindLocaleControls();
+  bindFullscreenGesture();
 
-  runtime?.start();
+  runtime.start();
 
-  function bindAudioControls(): void {
-    soundToggle?.addEventListener("click", () => {
-      soundsEnabled = !soundsEnabled;
-
-      localStorage.setItem(SOUNDS_ENABLED_KEY, String(soundsEnabled));
-      audio.setSoundsEnabled(soundsEnabled);
-
-      if (soundsEnabled) {
-        playSound("sound.ui_click");
-      }
-
-      updateAudioButtons(soundToggle, musicToggle, soundsEnabled, musicEnabled, t);
-    });
-
-    musicToggle?.addEventListener("click", () => {
-      musicEnabled = !musicEnabled;
-
-      localStorage.setItem(MUSIC_ENABLED_KEY, String(musicEnabled));
-      audio.setMusicEnabled(musicEnabled);
-
-      playSound("sound.ui_click");
-      musicEvents.gameplay();
-      updateAudioButtons(soundToggle, musicToggle, soundsEnabled, musicEnabled, t);
-    });
-  }
-
-  function bindLocaleControls(): void {
-    for (const button of localeButtons) {
-      button.addEventListener("click", () => {
-        playSound("sound.ui_click");
-
-        locale = button.dataset.locale ?? "en";
-        t = createTranslator(locale);
-        localStorage.setItem(LOCALE_KEY, locale);
-
-        applyStaticTranslations(locale, t);
-        updateLocaleButtons(localeButtons, locale);
-        updateAudioButtons(soundToggle, musicToggle, soundsEnabled, musicEnabled, t);
-
-        hud.setTranslator(t);
-        characterSelect?.setLocale(locale, t);
-        renderCharacterSelect();
-        view.setLocale?.(locale, t);
-
-        document.title = t("title");
-      });
-    }
-  }
-}
-
-function bindFullscreenControls(fullscreenToggle: HTMLButtonElement | null): void {
-  document.addEventListener("fullscreenchange", () => updateFullscreenButton(fullscreenToggle));
-
-  if (TouchControls.isTouchDevice()) {
-    window.addEventListener("pointerup", requestFullscreenFromUserGesture, {
-      once: true,
-      capture: true,
-    });
-  }
-
-  fullscreenToggle?.addEventListener("click", () => {
-    void toggleFullscreen();
-  });
-}
-
-function bindEngineSelect(
-  engineSelect: HTMLSelectElement | null,
-  initialViewKind: ViewKind,
-  root: HTMLElement,
-  getCurrentView: () => GameView,
-  getLocale: () => string,
-  getTranslator: () => ReturnType<typeof createTranslator>,
-  getLastSnapshot: () => GameSnapshot | undefined,
-  getLastPlayerId: () => PlayerId | undefined,
-  onViewChange: (viewKind: ViewKind, view: GameView) => void,
-): void {
-  if (engineSelect === null) {
-    return;
-  }
-
-  const select = engineSelect;
-
-  select.value = initialViewKind;
-
-  let currentViewKind = initialViewKind;
-
-  select.addEventListener("change", () => {
-    void switchView();
-  });
-
-  async function switchView(): Promise<void> {
+  function setLocale(nextLocale: string): void {
     playSound("sound.ui_click");
 
-    const nextViewKind = parseViewKind(select.value);
+    locale = nextLocale;
+    t = createTranslator(locale);
 
-    if (nextViewKind === currentViewKind) {
+    localStorage.setItem(LOCALE_KEY, locale);
+
+    applyStaticTranslations(locale, t);
+
+    hud.setTranslator(t);
+    characterSelect?.setLocale(locale, t);
+    renderCharacterSelect();
+
+    view.setLocale?.(locale, t);
+
+    document.title = t("title");
+
+    syncSettingsOverlay();
+  }
+
+  async function switchView(nextViewKind: ViewKind): Promise<void> {
+    playSound("sound.ui_click");
+
+    if (nextViewKind === viewKind) {
+      syncSettingsOverlay();
       return;
     }
 
-    select.disabled = true;
-
     try {
-      const previousView = getCurrentView();
-      const snapshot = getLastSnapshot();
-      const playerId = getLastPlayerId();
+      const previousView = view;
+      const snapshot = lastSnapshot;
+      const playerId = lastPlayerId;
 
       previousView.destroy();
 
@@ -252,16 +225,27 @@ function bindEngineSelect(
 
       localStorage.setItem(VIEW_KEY, nextViewKind);
 
-      nextView.setLocale?.(getLocale(), getTranslator());
+      nextView.setLocale?.(locale, t);
       nextView.render(snapshot, playerId);
 
-      currentViewKind = nextViewKind;
-      onViewChange(nextViewKind, nextView);
+      viewKind = nextViewKind;
+      view = nextView;
+
+      syncSettingsOverlay();
     } catch (error) {
       console.error(error);
-      select.value = currentViewKind;
-    } finally {
-      select.disabled = false;
+      syncSettingsOverlay();
     }
   }
+}
+
+function bindFullscreenGesture(): void {
+  if (!TouchControls.isTouchDevice()) {
+    return;
+  }
+
+  window.addEventListener("pointerup", requestFullscreenFromUserGesture, {
+    once: true,
+    capture: true,
+  });
 }

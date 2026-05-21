@@ -17,6 +17,9 @@ export type GameConfig = {
   groundY: number;
   gravity: number;
   scrollSpeed: number;
+  spawnInvulnerabilitySeconds: number;
+  hurtInvulnerabilitySeconds: number;
+  unpauseInvulnerabilitySeconds: number;
   spawnDistanceMin: number;
   spawnDistanceMax: number;
 };
@@ -28,7 +31,6 @@ export type CharacterConfig = {
   hurt: HurtCircle;
   smash: SmashBox;
   hp: number;
-  spawnInvulnerabilitySeconds: number;
   moveSpeed: number;
   jumpForce: number;
   smashSpeed: number;
@@ -39,7 +41,13 @@ export type CharacterConfig = {
 
 type CharacterCommonConfig = Pick<
   CharacterConfig,
-  "size" | "hurt" | "smash" | "spawnInvulnerabilitySeconds" | "smashSpeed" | "bounceSpeed" | "smashMinJumpProgress" | "animations"
+  | "size"
+  | "hurt"
+  | "smash"
+  | "smashSpeed"
+  | "bounceSpeed"
+  | "smashMinJumpProgress"
+  | "animations"
 >;
 
 type CharacterSpecificConfig = Pick<CharacterConfig, "kind" | "name" | "hp" | "moveSpeed" | "jumpForce">;

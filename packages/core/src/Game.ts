@@ -15,8 +15,6 @@ import { createPlayer } from "./player/playerFactory.js";
 import { createGameSnapshot } from "./snapshot/snapshotFactory.js";
 import { createDeltaSnapshot } from "./snapshot/deltaSnapshotFactory.js";
 
-const UNPAUSE_INVULNERABILITY_SECONDS = 2;
-
 export class Game {
   private readonly seed: number;
   private readonly rng: Random;
@@ -53,6 +51,7 @@ export class Game {
     const player = createPlayer({
       playerId,
       characterConfig,
+      gameConfig: GAME_CONFIG,
       index: this.players.size,
       tick: this.tick,
       groundY: GAME_CONFIG.groundY,
@@ -110,7 +109,7 @@ export class Game {
       return;
     }
 
-    player.invulnerableUntilTick = this.tick + Math.ceil(UNPAUSE_INVULNERABILITY_SECONDS * TICK_RATE);
+    player.invulnerableUntilTick = this.tick + Math.ceil(GAME_CONFIG.unpauseInvulnerabilitySeconds * TICK_RATE);
   }
 
   public update(dt: number): void {

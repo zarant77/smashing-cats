@@ -164,7 +164,7 @@ export class ThreeModelAnimator {
 
     sprite.position.copy(position);
     sprite.scale.set(SCREEN_CRACK_SCALE, SCREEN_CRACK_SCALE, 1);
-    sprite.renderOrder = 999999;
+    sprite.renderOrder = 80;
 
     this.scene.add(sprite);
 

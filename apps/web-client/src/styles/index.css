@@ -1,6 +1,7 @@
 @import "./base.css";
+@import "./icons.css";
 @import "./layout.css";
-@import "./settings.css";
+@import "./settings-overlay.css";
 @import "./hud.css";
 @import "./character-select.css";
 @import "./touch-controls.css";

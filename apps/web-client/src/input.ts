@@ -46,6 +46,10 @@ export function isPaused(): boolean {
   return paused;
 }
 
+export function togglePause() {
+  paused = !paused;
+}
+
 export function readInput(): PlayerInput {
   if (paused) {
     return {

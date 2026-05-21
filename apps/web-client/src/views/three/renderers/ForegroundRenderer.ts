@@ -2,6 +2,8 @@ import * as THREE from "three";
 import type { GameSnapshot } from "@smashing-cats/protocol";
 import type { RenderViewport } from "../../viewport.js";
 
+const RENDER_ORDER = 20;
+
 export class ForegroundRenderer {
   private readonly mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial>;
 
@@ -18,7 +20,7 @@ export class ForegroundRenderer {
 
     this.mesh = new THREE.Mesh(geometry, material);
 
-    this.mesh.renderOrder = 999;
+    this.mesh.renderOrder = RENDER_ORDER;
 
     scene.add(this.mesh);
   }

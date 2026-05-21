@@ -6,7 +6,6 @@
     "smashSpeed": 2000,
     "bounceSpeed": -360,
     "smashMinJumpProgress": 0.5,
-    "spawnInvulnerabilitySeconds": 2,
     "animations": {
       "idle": "bounce",
       "jump": "jump",

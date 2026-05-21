@@ -1,0 +1,205 @@
+.settings-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+}
+
+.settings-overlay-open,
+.settings-overlay-closing {
+  pointer-events: auto;
+}
+
+.settings-overlay .toolbar {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  pointer-events: auto;
+}
+
+.settings-overlay button {
+  display: grid;
+  place-items: center;
+
+  padding: 0;
+  border: none;
+  outline: none;
+
+  background: rgba(10, 16, 24, 0.72);
+  border-radius: 20px;
+
+  backdrop-filter: blur(10px);
+
+  cursor: pointer;
+
+  transition:
+    transform 120ms ease,
+    background 120ms ease,
+    filter 120ms ease;
+}
+
+.settings-overlay button:hover,
+.settings-overlay button:focus-visible {
+  transform: translateY(-2px) scale(1.05);
+  background: rgba(18, 28, 40, 0.92);
+  filter: brightness(1.08);
+}
+
+.settings-overlay button:active {
+  transform: translateY(2px) scale(0.94);
+}
+
+.settings-overlay .toolbar button {
+  width: 72px;
+  height: 72px;
+}
+
+.settings-overlay .toolbar .icon {
+  transform: scale(0.45);
+  transform-origin: top left;
+  margin: 12px;
+  pointer-events: none;
+}
+
+.settings-overlay .card {
+  position: absolute;
+  top: 112px;
+  right: 0;
+
+  width: 280px;
+  padding: 20px 18px 22px 18px;
+
+  display: grid;
+  gap: 18px;
+
+  border-top: 4px solid rgba(255, 225, 118, 0.9);
+  border-bottom: 4px solid rgba(255, 225, 118, 0.9);
+  border-left: 4px solid rgba(255, 225, 118, 0.9);
+  border-right: none;
+
+  border-radius: 28px 0 0 28px;
+
+  background: linear-gradient(180deg, rgba(39, 59, 82, 0.97), rgba(13, 22, 34, 0.97));
+
+  box-shadow:
+    -18px 18px 36px rgba(0, 0, 0, 0.42),
+    inset 0 2px 0 rgba(255, 255, 255, 0.16);
+
+  pointer-events: auto;
+
+  transform: translateX(100%);
+  transform-origin: center right;
+
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 160ms ease,
+    filter 160ms ease;
+
+  opacity: 0;
+  filter: blur(2px);
+}
+
+.settings-overlay-open .card {
+  transform: translateX(0);
+  opacity: 1;
+  filter: blur(0);
+}
+
+.settings-overlay-closing .card {
+  transform: translateX(100%);
+  opacity: 0;
+  filter: blur(2px);
+}
+
+.settings-overlay .card[hidden] {
+  display: none;
+}
+
+.settings-overlay .card h2 {
+  margin: 0;
+
+  color: #ffffff;
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 950;
+  text-align: center;
+  text-transform: uppercase;
+
+  text-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.5),
+    0 8px 12px rgba(0, 0, 0, 0.24);
+}
+
+.settings-overlay .settings-section {
+  display: grid;
+  gap: 10px;
+}
+
+.settings-overlay .settings-section h3 {
+  margin: 0;
+
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-align: left;
+  text-transform: uppercase;
+
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.45);
+}
+
+.settings-overlay .settings-row {
+  display: grid;
+  gap: 10px;
+}
+
+.settings-overlay .settings-row-2 {
+  grid-template-columns: repeat(2, 72px);
+}
+
+.settings-overlay .settings-row-3 {
+  grid-template-columns: repeat(3, 72px);
+}
+
+.settings-overlay .settings-row button,
+.settings-overlay .exit-button {
+  width: 72px;
+  height: 72px;
+}
+
+.settings-overlay .exit-button {
+  justify-self: center;
+  background: rgba(80, 18, 18, 0.78);
+}
+
+.settings-overlay .exit-button:hover,
+.settings-overlay .exit-button:focus-visible {
+  background: rgba(120, 28, 28, 0.92);
+}
+
+.settings-overlay .card .icon {
+  transform: scale(0.45);
+  transform-origin: top left;
+  margin: 12px;
+  pointer-events: none;
+}
+
+.settings-overlay button.settings-button-active,
+.settings-overlay button.settings-button-active:hover,
+.settings-overlay button.settings-button-active:focus-visible,
+.settings-overlay button.settings-button-active:active {
+  border: 3px solid #ffe16f;
+
+  box-shadow:
+    0 0 0 2px rgba(255, 225, 111, 0.22),
+    0 0 22px rgba(255, 225, 111, 0.42),
+    inset 0 2px 0 rgba(255, 255, 255, 0.18);
+
+  background: rgba(54, 74, 98, 0.96);
+}

@@ -31,3 +31,33 @@ label {
   color: #ffffff;
   font-size: 13px;
 }
+
+.button {
+  grid-area: select;
+  justify-self: center;
+  padding: 18px;
+  border: 5px solid #422600;
+  border-radius: 32px;
+  background: linear-gradient(180deg, #fff16b 0%, #ffca2b 48%, #f18d00 100%);
+  color: #3b2300;
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 950;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-shadow: 0 3px 0 rgba(255, 255, 255, 0.34);
+  transition:
+    transform 120ms ease,
+    filter 120ms ease;
+}
+
+.button:hover,
+.button:focus-visible {
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+  outline: none;
+}
+
+.button:active {
+  transform: translateY(4px);
+}

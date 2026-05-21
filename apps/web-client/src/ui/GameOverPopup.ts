@@ -67,26 +67,30 @@ export class GameOverPopup {
     this.element.hidden = false;
 
     this.element.innerHTML = `
-      <div class="game-over-card">
+      <div class="card">
         <h2>${this.t("gameOverTitle")}</h2>
-
-        <img
-          class="game-over-cat"
-          src="/canvas/players/${kind}.png"
-          alt="${kind}"
-        />
-
-        <div class="game-over-score">
+        <div class="character-preview">
+          <img
+            class="platform"
+            src="/ui/character_platform.png"
+            alt="${kind}"
+          />
+          <img
+            class="portrait"
+            src="/portraits/${kind}.png"
+            alt="${kind}"
+          />
+        </div>
+        <div class="score">
           ${this.t("score")}: <strong>${score}</strong>
         </div>
-
-        <button class="game-over-restart" type="button">
+        <button class="button" type="button">
           ${this.t("restart")}
         </button>
       </div>
     `;
 
-    const restartButton = this.element.querySelector<HTMLButtonElement>(".game-over-restart");
+    const restartButton = this.element.querySelector<HTMLButtonElement>(".game-over-popup .restart");
 
     restartButton?.addEventListener("click", () => {
       this.onRestart();

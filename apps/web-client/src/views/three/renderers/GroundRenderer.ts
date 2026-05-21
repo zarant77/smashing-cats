@@ -7,7 +7,7 @@ const GROUND_OFFSET_Y = -55;
 const GROUND_BASE_SCALE = 500;
 const GROUND_TILE_OVERLAP = 18;
 const EXTRA_VISIBLE_TILES = 4;
-const RENDER_ORDER = 10;
+const RENDER_ORDER = 5;
 
 export class GroundRenderer {
   private readonly tiles: THREE.Group[] = [];

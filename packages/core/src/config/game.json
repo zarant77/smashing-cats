@@ -4,6 +4,9 @@
   "groundY": 440,
   "gravity": 1700,
   "scrollSpeed": 220,
+  "spawnInvulnerabilitySeconds": 2,
+  "hurtInvulnerabilitySeconds": 1,
+  "unpauseInvulnerabilitySeconds": 2,
   "spawnDistanceMin": 280,
   "spawnDistanceMax": 520
 }

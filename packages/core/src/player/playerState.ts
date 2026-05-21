@@ -1,17 +1,26 @@
-import { GAME_CONFIG } from "../config.js";
+import { GAME_CONFIG, TICK_RATE } from "../config.js";
 import type { Player, Entity } from "../types.js";
+import { applyPlayerDamage } from "./playerFactory.js";
 
 export function damagePlayer(player: Player, entity: Entity, scrollX: number, tick: number): number {
   if (isPlayerInvulnerable(player, tick) || player.damagedByEntityIds.has(entity.id)) {
     return 0;
   }
 
-  player.damagedByEntityIds.add(entity.id);
-
   const damage = entity.damage;
+  const damaged = applyPlayerDamage({
+    player,
+    gameConfig: GAME_CONFIG,
+    damage,
+    tick,
+    tickRate: TICK_RATE,
+  });
 
-  player.hp = Math.max(0, player.hp - damage);
-  player.alive = player.hp > 0;
+  if (!damaged) {
+    return 0;
+  }
+
+  player.damagedByEntityIds.add(entity.id);
 
   if (!player.alive) {
     player.lockedWorldX = player.x + scrollX;

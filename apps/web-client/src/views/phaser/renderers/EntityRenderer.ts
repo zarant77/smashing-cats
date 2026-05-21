@@ -3,6 +3,7 @@ import type { EntitySnapshot, GameSnapshot } from "@smashing-cats/protocol";
 import type { Translator } from "@smashing-cats/i18n";
 import { getImageAsset, images } from "../../../assets/assets.js";
 import type { RenderViewport } from "../../viewport.js";
+import { DebugRenderer } from "./DebugRenderer.js";
 
 type EntityObject = {
   image?: Phaser.GameObjects.Image;
@@ -19,10 +20,14 @@ const DEPTH = 40;
 export class EntityRenderer {
   private readonly objects = new Map<string, EntityObject>();
 
+  private readonly debugRenderer: DebugRenderer;
+
   public constructor(
     private readonly scene: Phaser.Scene,
     private t: Translator,
-  ) {}
+  ) {
+    this.debugRenderer = new DebugRenderer(scene);
+  }
 
   public setTranslator(t: Translator): void {
     this.t = t;
@@ -30,6 +35,8 @@ export class EntityRenderer {
 
   public draw(snapshot: GameSnapshot, viewport: RenderViewport): void {
     const visibleIds = new Set<string>();
+
+    this.debugRenderer.beginFrame();
 
     for (const entity of snapshot.entities) {
       visibleIds.add(entity.id);
@@ -45,6 +52,7 @@ export class EntityRenderer {
       object.fallback?.destroy();
     }
 
+    this.debugRenderer.destroy();
     this.objects.clear();
   }
 
@@ -81,17 +89,23 @@ export class EntityRenderer {
       image.setTint(0xffffff);
 
       object.fallback?.setVisible(false);
-      return;
+    } else {
+      const fallback = this.getOrCreateFallback(object, entity);
+
+      fallback.setVisible(true);
+      fallback.setPosition(Math.round(x), Math.round(y));
+      fallback.setSize(Math.round(physicsWidth), Math.round(physicsHeight));
+      fallback.setFillStyle(getEntityFallbackColor(entity));
+
+      object.image?.setVisible(false);
     }
 
-    const fallback = this.getOrCreateFallback(object, entity);
-
-    fallback.setVisible(true);
-    fallback.setPosition(Math.round(x), Math.round(y));
-    fallback.setSize(Math.round(physicsWidth), Math.round(physicsHeight));
-    fallback.setFillStyle(getEntityFallbackColor(entity));
-
-    object.image?.setVisible(false);
+    this.debugRenderer.drawBounds({
+      object: entity,
+      screenX,
+      screenY,
+      viewport,
+    });
   }
 
   private getEntityObject(id: string): EntityObject {
@@ -164,6 +178,7 @@ export class EntityRenderer {
 
       object.image?.destroy();
       object.fallback?.destroy();
+
       this.objects.delete(id);
     }
   }
