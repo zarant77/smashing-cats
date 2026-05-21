@@ -142,6 +142,11 @@ export const ThreeModels = {
       rotationY: Math.PI + 0.7,
       offsetZ: -70,
     },
+
+    kotan: {
+      rotationY: Math.PI + 0.7,
+      offsetZ: -70,
+    },
   },
 } as const;
 

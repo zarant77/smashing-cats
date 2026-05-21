@@ -94,6 +94,7 @@ export const MODELS = {
   "player.samurcat": "/three/players/samurcat.glb",
   "player.termicator": "/three/players/termicator.glb",
   "player.zombocat": "/three/players/zombocat.glb",
+  "player.kotan": "/three/players/kotan.glb",
 } as const;
 
 export const AUDIO = {
