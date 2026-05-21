@@ -24,6 +24,7 @@ export class Game {
   private nextEntityIndex = 1;
   private nextEventIndex = 1;
   private nextSpawnX = GAME_CONFIG.worldWidth + 240;
+  private gamePaused = false;
 
   private readonly players = new Map<PlayerId, Player>();
   private readonly entityHistory: EntityHistoryFrame[] = [];
@@ -112,7 +113,19 @@ export class Game {
     player.invulnerableUntilTick = this.tick + Math.ceil(GAME_CONFIG.unpauseInvulnerabilitySeconds * TICK_RATE);
   }
 
+  public setGamePaused(paused: boolean): void {
+    this.gamePaused = paused;
+  }
+
+  public isGamePaused(): boolean {
+    return this.gamePaused;
+  }
+
   public update(dt: number): void {
+    if (this.gamePaused) {
+      return;
+    }
+
     this.tick += 1;
 
     this.events = [];
@@ -177,6 +190,7 @@ export class Game {
     return createGameSnapshot({
       tick: this.tick,
       seed: this.seed,
+      gamePaused: this.gamePaused,
       simulation: {
         rngState: this.rng.getState(),
         nextEntityIndex: this.nextEntityIndex,
@@ -198,6 +212,7 @@ export class Game {
     const previousPlayers = new Map(this.players);
 
     this.tick = snapshot.tick;
+    this.gamePaused = snapshot.gamePaused;
     this.scrollX = snapshot.world.scrollX;
     this.nextEntityIndex = snapshot.simulation.nextEntityIndex;
     this.nextEventIndex = snapshot.simulation.nextEventIndex;

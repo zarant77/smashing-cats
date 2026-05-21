@@ -16,6 +16,13 @@ export function applyStaticTranslations(locale: string, t: Translator): void {
   for (const element of document.querySelectorAll<HTMLElement>("[data-i18n]")) {
     element.innerHTML = t(element.dataset.i18n ?? "");
   }
+
+  for (const element of document.querySelectorAll<HTMLElement>("[data-i18n-title]")) {
+    const label = t(element.dataset.i18nTitle ?? "");
+
+    element.title = label;
+    element.setAttribute("aria-label", label);
+  }
 }
 
 export function updateLocaleButtons(buttons: NodeListOf<HTMLButtonElement>, locale: string): void {

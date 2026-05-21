@@ -12,7 +12,7 @@ import type {
   ServerToClientMessage,
 } from "@smashing-cats/protocol";
 
-import { consumePauseToggle, isPaused, togglePause, readInput } from "../input.js";
+import { consumePauseToggle, isPaused, setPaused as setInputPaused, togglePause, readInput } from "../input.js";
 import { createSocket, parseServerMessage, sendClientMessage } from "../network/clientConnection.js";
 import type { TouchControls } from "../ui/TouchControls.js";
 import { createLocalGame } from "./localGame.js";
@@ -74,6 +74,8 @@ export class GameRuntime {
   }
 
   public restart(): void {
+    setInputPaused(false);
+
     this.hasSelectedCharacterValue = false;
     this.playerId = this.multiplayer ? undefined : LOCAL_PLAYER_ID;
     this.inputSeq = 1;
@@ -106,6 +108,7 @@ export class GameRuntime {
     }
 
     this.hasSelectedCharacterValue = true;
+    setInputPaused(false);
     this.onCharacterStateChange();
 
     if (this.multiplayer) {
@@ -136,11 +139,56 @@ export class GameRuntime {
     this.frame();
   }
 
-  public togglePause(): void {
-    if (this.localGame && this.playerId) {
-      togglePause();
-      this.localGame.setPaused(this.playerId, isPaused());
+  public setPaused(paused: boolean): void {
+    if (!this.isGameRunning()) {
+      return;
     }
+
+    setInputPaused(paused);
+
+    if (this.multiplayer) {
+      sendClientMessage(this.socket, {
+        type: "pause",
+        paused,
+      });
+      this.lastSentInput = undefined;
+      return;
+    }
+
+    if (this.localGame === undefined) {
+      return;
+    }
+
+    this.localGame.setGamePaused(paused);
+    this.localSnapshot = this.localGame.createSnapshot();
+    this.previousLocalSnapshot = this.localSnapshot;
+    this.localUpdateAccumulator = 0;
+    this.lastLocalUpdateAt = performance.now();
+  }
+
+  public togglePause(): void {
+    if (this.isGameRunning()) {
+      togglePause();
+      this.setPaused(isPaused());
+    }
+  }
+
+  public isGameRunning(): boolean {
+    if (!this.hasSelectedCharacterValue || this.playerId === undefined) {
+      return false;
+    }
+
+    const snapshot = this.multiplayer ? this.interpolator.getLatest() : this.localSnapshot;
+    const player = snapshot?.players.find((item) => item.playerId === this.playerId);
+
+    return player?.alive !== false;
+  }
+
+  public isPaused(): boolean {
+    const snapshot = this.multiplayer ? this.interpolator.getLatest() : this.localSnapshot;
+    const player = snapshot?.players.find((item) => item.playerId === this.playerId);
+
+    return snapshot?.gamePaused === true || player?.paused === true || isPaused();
   }
 
   private bindSocketEvents(): void {
@@ -189,15 +237,11 @@ export class GameRuntime {
     const canPlay = currentPlayerId !== undefined && this.hasSelectedCharacterValue;
     const canSend = this.multiplayer && this.socket?.readyState === WebSocket.OPEN && canPlay;
 
-    if (consumePauseToggle() && canPlay) {
-      if (this.multiplayer) {
-        sendClientMessage(this.socket, {
-          type: "pause",
-          paused: isPaused(),
-        });
-        this.lastSentInput = undefined;
+    if (consumePauseToggle()) {
+      if (this.isGameRunning()) {
+        this.setPaused(isPaused());
       } else {
-        this.localGame?.setPaused(currentPlayerId, isPaused());
+        setInputPaused(false);
       }
     }
 
@@ -296,6 +340,10 @@ export class GameRuntime {
     const interpolatedSnapshot = this.interpolator.get(this.playerId);
     const latestSnapshot = this.interpolator.getLatest();
     const localPlayer = latestSnapshot?.players.find((player) => player.playerId === this.playerId);
+
+    if (latestSnapshot?.gamePaused === true) {
+      return interpolatedSnapshot;
+    }
 
     if (localPlayer?.paused === true) {
       return interpolatedSnapshot;

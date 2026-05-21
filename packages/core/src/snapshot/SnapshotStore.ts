@@ -18,6 +18,10 @@ export class SnapshotStore {
     snapshot.tick = delta.tick;
     snapshot.events = delta.events ?? [];
 
+    if (delta.gamePaused !== undefined) {
+      snapshot.gamePaused = delta.gamePaused;
+    }
+
     if (delta.simulation !== undefined) {
       snapshot.simulation = { ...delta.simulation };
     }
@@ -77,6 +81,7 @@ function cloneSnapshot(snapshot: GameSnapshot): GameSnapshot {
   return {
     tick: snapshot.tick,
     seed: snapshot.seed,
+    gamePaused: snapshot.gamePaused,
     simulation: { ...snapshot.simulation },
     world: { ...snapshot.world },
     players: snapshot.players.map(clonePlayerSnapshot),

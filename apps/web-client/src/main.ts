@@ -12,6 +12,7 @@ import { PauseOverlay } from "./ui/PauseOverlay.js";
 import { CharacterSelect } from "./ui/CharacterSelect.js";
 import { TouchControls } from "./ui/TouchControls.js";
 import { GameOverPopup } from "./ui/GameOverPopup.js";
+import { HelpPopup } from "./ui/HelpPopup.js";
 import { Hud } from "./ui/Hud.js";
 import { createView, parseViewKind } from "./views/createView.js";
 import type { GameView, ViewKind } from "./views/types.js";
@@ -53,6 +54,7 @@ async function bootstrap(): Promise<void> {
 
   let lastSnapshot: GameSnapshot | undefined;
   let lastPlayerId: PlayerId | undefined;
+  let settingsPausedGame = false;
 
   audio.setSoundsEnabled(soundsEnabled);
   audio.setMusicEnabled(musicEnabled);
@@ -61,6 +63,15 @@ async function bootstrap(): Promise<void> {
   const hud = new Hud(uiRoot, t);
   const pauseOverlay = new PauseOverlay(uiRoot, t);
   const touchControls = TouchControls.isTouchDevice() ? new TouchControls() : undefined;
+
+  const helpPopup = new HelpPopup(uiRoot, t, {
+    onClose: () => {
+      playSound("sound.ui_click");
+      if (!settingsPausedGame && runtime?.isGameRunning() === true) {
+        runtime.setPaused(false);
+      }
+    },
+  });
 
   const renderCharacterSelect = (): void => {
     if (characterSelect === undefined || runtime === undefined) {
@@ -99,9 +110,42 @@ async function bootstrap(): Promise<void> {
   });
 
   settingsOverlay = new SettingsOverlay(uiRoot, t, {
+    onOpen: () => {
+      if (runtime === undefined || !runtime.isGameRunning() || runtime.isPaused()) {
+        settingsPausedGame = false;
+        return;
+      }
+
+      runtime.setPaused(true);
+      settingsPausedGame = true;
+    },
+
+    onClose: () => {
+      if (settingsPausedGame) {
+        runtime?.setPaused(false);
+        settingsPausedGame = false;
+      }
+    },
+
+    onHelp: () => {
+      playSound("sound.ui_click");
+      if (runtime?.isGameRunning() === true) {
+        runtime.setPaused(true);
+      }
+      helpPopup.show();
+    },
+
     onPause: () => {
       playSound("sound.ui_click");
-      runtime?.togglePause();
+
+      if (settingsPausedGame) {
+        settingsOverlay?.hide();
+        return;
+      }
+
+      if (runtime?.isGameRunning() === true) {
+        runtime.togglePause();
+      }
     },
 
     onToggleSound: () => {

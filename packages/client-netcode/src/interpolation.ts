@@ -27,7 +27,16 @@ export class SnapshotInterpolator {
   public add(snapshot: GameSnapshot, receivedAt = performance.now()): void {
     const last = this.snapshots.at(-1);
 
-    if (last !== undefined && snapshot.tick <= last.snapshot.tick) {
+    if (last !== undefined && snapshot.tick < last.snapshot.tick) {
+      return;
+    }
+
+    if (last !== undefined && snapshot.tick === last.snapshot.tick) {
+      if (snapshot.gamePaused !== last.snapshot.gamePaused) {
+        last.snapshot = snapshot;
+        last.receivedAt = receivedAt;
+      }
+
       return;
     }
 
@@ -140,6 +149,10 @@ export class SnapshotInterpolator {
     }
 
     const dt = Math.min(MAX_EXTRAPOLATION_MS, Math.max(0, now - buffered.receivedAt)) / 1000;
+
+    if (buffered.snapshot.gamePaused) {
+      return buffered.snapshot;
+    }
 
     return {
       ...buffered.snapshot,

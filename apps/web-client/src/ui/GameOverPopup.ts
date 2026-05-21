@@ -84,7 +84,7 @@ export class GameOverPopup {
         <div class="score">
           ${this.t("score")}: <strong>${score}</strong>
         </div>
-        <button class="button" type="button">
+        <button class="button restart" type="button">
           ${this.t("restart")}
         </button>
       </div>

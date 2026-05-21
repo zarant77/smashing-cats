@@ -6,7 +6,9 @@ type EngineKind = "canvas" | "phaser" | "three";
 type LanguageKind = "en" | "uk";
 
 type SettingsOverlayOptions = {
+  onOpen?: () => void;
   onClose?: () => void;
+  onHelp?: () => void;
   onPause?: () => void;
   onToggleFullscreen?: () => void;
   onToggleMusic?: () => void;
@@ -29,7 +31,9 @@ const MENU_ANIMATION_MS = 220;
 export class SettingsOverlay {
   private readonly element: HTMLDivElement;
 
+  private readonly onOpen?: () => void;
   private readonly onClose?: () => void;
+  private readonly onHelp?: () => void;
   private readonly onPause?: () => void;
   private readonly onToggleFullscreen?: () => void;
   private readonly onToggleMusic?: () => void;
@@ -49,7 +53,9 @@ export class SettingsOverlay {
   private closeTimeoutId: number | undefined;
 
   public constructor(root: HTMLElement, t: Translator, options: SettingsOverlayOptions = {}) {
+    this.onOpen = options.onOpen;
     this.onClose = options.onClose;
+    this.onHelp = options.onHelp;
     this.onPause = options.onPause;
     this.onToggleFullscreen = options.onToggleFullscreen;
     this.onToggleMusic = options.onToggleMusic;
@@ -63,69 +69,73 @@ export class SettingsOverlay {
 
     this.element.innerHTML = `
       <div class="toolbar">
-        <button class="pause-button" type="button" title="${t("pause")}">
+        <button class="help-button" type="button" data-i18n-title="help" title="${t("help")}" aria-label="${t("help")}">
+          <span class="icon icon-help"></span>
+        </button>
+        
+        <button class="pause-button" type="button" data-i18n-title="pause" title="${t("pause")}" aria-label="${t("pause")}">
           <span class="icon icon-pause"></span>
         </button>
 
-        <button class="settings-button" type="button" title="${t("settings")}">
+        <button class="settings-button" type="button" data-i18n-title="settings" title="${t("settings")}" aria-label="${t("settings")}">
           <span class="icon icon-settings"></span>
         </button>
       </div>
 
       <div class="card" hidden>
-        <h2>${t("settings")}</h2>
+        <h2 data-i18n="settings">${t("settings")}</h2>
 
         <section class="settings-section">
-          <h3>Engine</h3>
+          <h3 data-i18n="engine">${t("engine")}</h3>
 
           <div class="settings-row settings-row-3">
-            <button class="engine-canvas-button" type="button">
+            <button class="engine-canvas-button" type="button" data-i18n-title="engineCanvas" title="${t("engineCanvas")}" aria-label="${t("engineCanvas")}">
               <span class="icon icon-canvas"></span>
             </button>
 
-            <button class="engine-phaser-button" type="button">
+            <button class="engine-phaser-button" type="button" data-i18n-title="enginePhaser" title="${t("enginePhaser")}" aria-label="${t("enginePhaser")}">
               <span class="icon icon-phaser"></span>
             </button>
 
-            <button class="engine-three-button" type="button">
+            <button class="engine-three-button" type="button" data-i18n-title="engineThree" title="${t("engineThree")}" aria-label="${t("engineThree")}">
               <span class="icon icon-three"></span>
             </button>
           </div>
         </section>
 
         <section class="settings-section">
-          <h3>Language</h3>
+          <h3 data-i18n="language">${t("language")}</h3>
 
           <div class="settings-row settings-row-2">
-            <button class="language-en-button" type="button">
+            <button class="language-en-button" type="button" data-i18n-title="languageEnglish" title="${t("languageEnglish")}" aria-label="${t("languageEnglish")}">
               <span class="icon icon-en"></span>
             </button>
 
-            <button class="language-ua-button" type="button">
+            <button class="language-ua-button" type="button" data-i18n-title="languageUkrainian" title="${t("languageUkrainian")}" aria-label="${t("languageUkrainian")}">
               <span class="icon icon-ua"></span>
             </button>
           </div>
         </section>
 
         <section class="settings-section">
-          <h3>Audio</h3>
+          <h3 data-i18n="audio">${t("audio")}</h3>
 
           <div class="settings-row settings-row-3">
-            <button class="sound-button" type="button">
+            <button class="sound-button" type="button" data-i18n-title="sound" title="${t("sound")}" aria-label="${t("sound")}">
               <span class="icon icon-sound"></span>
             </button>
 
-            <button class="music-button" type="button">
+            <button class="music-button" type="button" data-i18n-title="music" title="${t("music")}" aria-label="${t("music")}">
               <span class="icon icon-music"></span>
             </button>
 
-            <button class="fullscreen-button" type="button">
+            <button class="fullscreen-button" type="button" data-i18n-title="fullscreen" title="${t("fullscreen")}" aria-label="${t("fullscreen")}">
               <span class="icon icon-fullscreen"></span>
             </button>
           </div>
         </section>
 
-        <button class="exit-button" type="button">
+        <button class="exit-button" type="button" data-i18n-title="exit" title="${t("exit")}" aria-label="${t("exit")}">
           <span class="icon icon-exit"></span>
         </button>
       </div>
@@ -142,7 +152,7 @@ export class SettingsOverlay {
         ? undefined
         : snapshot.players.find((player) => player.playerId === localPlayerId);
 
-    this.setPaused(localPlayer?.paused === true);
+    this.setPaused(snapshot?.gamePaused === true || localPlayer?.paused === true);
   }
 
   public setState(state: SettingsOverlayState): void {
@@ -157,8 +167,14 @@ export class SettingsOverlay {
     this.element.classList.remove("settings-overlay-closing");
 
     window.requestAnimationFrame(() => {
+      if (!this.isVisible()) {
+        return;
+      }
+
       this.element.classList.add("settings-overlay-open");
+      this.element.classList.add("popup-open");
       this.syncActiveButtons();
+      this.onOpen?.();
     });
   }
 
@@ -170,6 +186,7 @@ export class SettingsOverlay {
     this.clearCloseTimeout();
 
     this.element.classList.remove("settings-overlay-open");
+    this.element.classList.remove("popup-open");
     this.element.classList.add("settings-overlay-closing");
     this.syncActiveButtons();
 
@@ -211,6 +228,7 @@ export class SettingsOverlay {
       this.toggle();
     });
 
+    this.element.querySelector<HTMLButtonElement>(".help-button")?.addEventListener("click", () => this.onHelp?.());
     this.element.querySelector<HTMLButtonElement>(".pause-button")?.addEventListener("click", () => this.onPause?.());
     this.element.querySelector<HTMLButtonElement>(".fullscreen-button")?.addEventListener("click", () => this.onToggleFullscreen?.());
     this.element.querySelector<HTMLButtonElement>(".music-button")?.addEventListener("click", () => this.onToggleMusic?.());

@@ -56,6 +56,7 @@ export type GameEvent = {
 export type GameSnapshot = {
   tick: number;
   seed: number;
+  gamePaused: boolean;
   simulation: GameSimulationState;
   world: {
     scrollX: number;
@@ -101,6 +102,7 @@ export type PlayerPatch = EntityPatch & {
 
 export type DeltaSnapshot = {
   tick: number;
+  gamePaused?: boolean;
   simulation?: GameSimulationState;
   scrollX?: number;
 

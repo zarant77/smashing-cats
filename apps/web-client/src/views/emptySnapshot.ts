@@ -3,6 +3,7 @@ import { GameSnapshot } from "@smashing-cats/protocol";
 export const EMPTY_SNAPSHOT: GameSnapshot = {
   tick: 0,
   seed: 0,
+  gamePaused: false,
   simulation: {
     rngState: 0,
     nextEntityIndex: 0,

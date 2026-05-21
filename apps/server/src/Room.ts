@@ -141,6 +141,10 @@ export class Room {
       return;
     }
 
+    if (match.game.isGamePaused()) {
+      return;
+    }
+
     match.game.update(FIXED_DT);
     match.ticksSinceFullSnapshot += 1;
 
@@ -244,6 +248,10 @@ export class Room {
 
     match.game.addPlayer(playerId, characterKind);
 
+    if (match.playerIds.size > 1) {
+      match.game.setGamePaused(false);
+    }
+
     const snapshot = match.game.createSnapshot();
 
     match.lastFullSnapshot = snapshot;
@@ -272,6 +280,12 @@ export class Room {
     const match = this.getPlayerMatch(playerId);
 
     if (match === undefined) {
+      return;
+    }
+
+    if (this.isSingleplayerMatch(match)) {
+      match.game.setGamePaused(paused);
+      this.broadcastFullSnapshot(match);
       return;
     }
 
@@ -355,6 +369,24 @@ export class Room {
 
   private shouldSendFullSnapshot(match: Match): boolean {
     return match.lastFullSnapshot === undefined || match.ticksSinceFullSnapshot >= FULL_SNAPSHOT_INTERVAL_TICKS;
+  }
+
+  private isSingleplayerMatch(match: Match): boolean {
+    return match.playerIds.size === 1;
+  }
+
+  private broadcastFullSnapshot(match: Match): void {
+    const snapshot = withEvents(match.game.createSnapshot(), match.pendingEvents);
+
+    match.lastFullSnapshot = snapshot;
+    match.lastNetworkSnapshot = snapshot;
+    match.pendingEvents = [];
+    match.ticksSinceFullSnapshot = 0;
+
+    this.broadcastToMatch(match, {
+      type: "snapshot",
+      snapshot,
+    });
   }
 
   private broadcastToMatch(match: Match, message: ServerToClientMessage): void {

@@ -17,8 +17,9 @@ export class PauseOverlay {
 
   public render(snapshot: GameSnapshot | undefined, localPlayerId: PlayerId | undefined): void {
     const player = snapshot?.players.find((item) => item.playerId === localPlayerId);
+    const paused = snapshot?.gamePaused === true || (player !== undefined && player.alive && player.paused);
 
-    if (player === undefined || !player.alive || !player.paused) {
+    if (!paused) {
       this.element.hidden = true;
       this.element.replaceChildren();
       return;

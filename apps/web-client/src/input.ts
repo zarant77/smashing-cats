@@ -46,7 +46,11 @@ export function isPaused(): boolean {
   return paused;
 }
 
-export function togglePause() {
+export function setPaused(nextPaused: boolean): void {
+  paused = nextPaused;
+}
+
+export function togglePause(): void {
   paused = !paused;
 }
 

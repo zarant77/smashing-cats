@@ -3,7 +3,7 @@
   height: 112px;
   background-image: url("/ui/icons.png");
   background-repeat: no-repeat;
-  background-size: 1792px 112px;
+  background-size: 1904px 112px;
   image-rendering: auto;
 }
 
@@ -85,4 +85,9 @@
 /* 15 */
 .icon-three {
   background-position: -1680px 0;
+}
+
+/* 16 */
+.icon-help {
+  background-position: -1792px 0;
 }

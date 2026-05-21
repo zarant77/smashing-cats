@@ -15,6 +15,7 @@ const FIELD_MAP = {
   right: "r",
   jump: "j",
   paused: "pa",
+  gamePaused: "gp",
   playerId: "p",
   characters: "c",
   snapshot: "ss",

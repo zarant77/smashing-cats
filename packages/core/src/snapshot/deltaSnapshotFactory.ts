@@ -14,6 +14,7 @@ export function createDeltaSnapshot(previous: GameSnapshot, next: GameSnapshot):
     tick: next.tick,
   };
 
+  assignOptional(delta, "gamePaused", changed(previous.gamePaused, next.gamePaused));
   assignOptional(delta, "simulation", getSimulationDelta(previous, next));
   assignOptional(delta, "scrollX", changed(previous.world.scrollX, next.world.scrollX));
   assignOptional(delta, "addedPlayers", getAddedPlayers(previous.players, next.players));
@@ -181,6 +182,7 @@ function hasPlayerPatchChanges(patch: PlayerPatch): boolean {
 function compactDelta(delta: DeltaSnapshot): DeltaSnapshot {
   return {
     tick: delta.tick,
+    ...(delta.gamePaused !== undefined ? { gamePaused: delta.gamePaused } : {}),
     ...(delta.simulation !== undefined ? { simulation: delta.simulation } : {}),
     ...(delta.scrollX !== undefined ? { scrollX: delta.scrollX } : {}),
 
