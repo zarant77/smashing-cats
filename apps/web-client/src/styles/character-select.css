@@ -36,10 +36,6 @@
     filter 120ms ease;
 }
 
-.character-select-transitioning .character-select-arrow {
-  pointer-events: none;
-}
-
 .character-select-arrow-left {
   left: 0;
 }

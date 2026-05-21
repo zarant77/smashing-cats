@@ -45,6 +45,8 @@ export class CharacterSelect {
   private exitTimeoutId: number | undefined;
   private enterTimeoutId: number | undefined;
   private nextEnterClass: string | undefined;
+  private queuedDirection: CharacterChangeDirection | undefined;
+  private transitioning = false;
 
   public constructor(root: HTMLElement, options: CharacterSelectOptions) {
     this.locale = options.locale;
@@ -150,6 +152,17 @@ export class CharacterSelect {
       return;
     }
 
+    if (this.transitioning) {
+      this.queuedDirection = direction;
+      return;
+    }
+
+    this.runCharacterTransition(direction);
+  }
+
+  private runCharacterTransition(direction: CharacterChangeDirection): void {
+    this.transitioning = true;
+
     playSound("sound.ui_click");
 
     const nextIndex =
@@ -159,40 +172,38 @@ export class CharacterSelect {
 
     const image = this.element.querySelector<HTMLImageElement>(".character-card-image");
 
-    this.clearTransition();
-
     if (image === null) {
       this.currentIndex = nextIndex;
-      this.nextEnterClass = getEnterClass(direction);
       this.render(this.lastCharacters, false);
-      this.nextEnterClass = undefined;
+
+      this.transitioning = false;
+
       return;
     }
 
-    const token = this.transitionToken + 1;
-
-    this.transitionToken = token;
-    this.element.classList.add("character-select-transitioning");
-
     removeCharacterAnimationClasses(image);
+
     image.classList.add(getExitClass(direction));
 
-    this.exitTimeoutId = window.setTimeout(() => {
-      if (this.transitionToken !== token) {
-        return;
-      }
-
+    window.setTimeout(() => {
       this.currentIndex = nextIndex;
+
       this.nextEnterClass = getEnterClass(direction);
+
       this.render(this.lastCharacters, false);
+
       this.nextEnterClass = undefined;
 
-      this.enterTimeoutId = window.setTimeout(() => {
-        if (this.transitionToken !== token) {
-          return;
-        }
+      window.setTimeout(() => {
+        this.transitioning = false;
 
-        this.element.classList.remove("character-select-transitioning");
+        if (this.queuedDirection !== undefined) {
+          const queued = this.queuedDirection;
+
+          this.queuedDirection = undefined;
+
+          this.runCharacterTransition(queued);
+        }
       }, CHARACTER_ENTER_MS);
     }, CHARACTER_EXIT_MS);
   }
