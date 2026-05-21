@@ -29,7 +29,7 @@ export const en = {
   sound: "Sound",
   music: "Music",
   fullscreen: "Fullscreen",
-  gameOverTitle: "Game Over",
+  gameOverTitle: "Game Over?",
   soundsOn: "Sounds on",
   soundsOff: "Sounds off",
   musicOn: "Music on",

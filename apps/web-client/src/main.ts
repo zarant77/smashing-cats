@@ -25,6 +25,15 @@ const LOCALE_KEY = "smashing-cats-locale";
 const VIEW_KEY = "smashing-cats-view";
 const CHARACTER_KEY = "smashing-cats-character";
 
+const VIEW_SHORTCUTS: Record<string, ViewKind> = {
+  Digit1: "canvas",
+  Digit2: "phaser",
+  Digit3: "three",
+  Numpad1: "canvas",
+  Numpad2: "phaser",
+  Numpad3: "three",
+};
+
 void bootstrap();
 
 async function bootstrap(): Promise<void> {
@@ -109,6 +118,35 @@ async function bootstrap(): Promise<void> {
     },
   });
 
+  document.addEventListener("fullscreenchange", () => {
+    syncSettingsOverlay();
+  });
+
+  gameOverPopup = new GameOverPopup(uiRoot, t, {
+    onRestart: () => {
+      playSound("sound.ui_click");
+      runtime?.restart();
+    },
+  });
+
+  characterSelect = new CharacterSelect(uiRoot, {
+    locale,
+    t,
+    initialCharacterKind: selectedCharacterKind ?? undefined,
+    onSelect: (characterKind: EntityKind) => {
+      if (runtime === undefined || !runtime.selectCharacter(characterKind)) {
+        return;
+      }
+
+      playSound("sound.ui_click");
+
+      selectedCharacterKind = characterKind;
+      localStorage.setItem(CHARACTER_KEY, characterKind);
+
+      characterSelect?.setPreferredCharacter(characterKind);
+    },
+  });
+
   settingsOverlay = new SettingsOverlay(uiRoot, t, {
     onOpen: () => {
       if (runtime === undefined || !runtime.isGameRunning() || runtime.isPaused()) {
@@ -190,39 +228,10 @@ async function bootstrap(): Promise<void> {
   });
 
   syncSettingsOverlay();
-
-  document.addEventListener("fullscreenchange", () => {
-    syncSettingsOverlay();
-  });
-
-  gameOverPopup = new GameOverPopup(uiRoot, t, {
-    onRestart: () => {
-      playSound("sound.ui_click");
-      runtime?.restart();
-    },
-  });
-
-  characterSelect = new CharacterSelect(uiRoot, {
-    locale,
-    t,
-    initialCharacterKind: selectedCharacterKind ?? undefined,
-    onSelect: (characterKind: EntityKind) => {
-      if (runtime === undefined || !runtime.selectCharacter(characterKind)) {
-        return;
-      }
-
-      playSound("sound.ui_click");
-
-      selectedCharacterKind = characterKind;
-      localStorage.setItem(CHARACTER_KEY, characterKind);
-
-      characterSelect?.setPreferredCharacter(characterKind);
-    },
-  });
-
   renderCharacterSelect();
   applyStaticTranslations(locale, t);
   bindFullscreenGesture();
+  bindViewShortcuts();
 
   runtime.start();
 
@@ -278,6 +287,23 @@ async function bootstrap(): Promise<void> {
       syncSettingsOverlay();
     }
   }
+
+  function bindViewShortcuts(): void {
+    window.addEventListener("keydown", (event) => {
+      if (event.repeat || isEditableTarget(event.target)) {
+        return;
+      }
+
+      const nextViewKind = VIEW_SHORTCUTS[event.code];
+
+      if (nextViewKind === undefined) {
+        return;
+      }
+
+      event.preventDefault();
+      void switchView(nextViewKind);
+    });
+  }
 }
 
 function bindFullscreenGesture(): void {
@@ -289,4 +315,12 @@ function bindFullscreenGesture(): void {
     once: true,
     capture: true,
   });
+}
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  return target.isContentEditable || target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement;
 }

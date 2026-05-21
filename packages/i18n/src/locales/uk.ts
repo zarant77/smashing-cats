@@ -29,7 +29,7 @@ export const uk = {
   sound: "Звук",
   music: "Музика",
   fullscreen: "Повний екран",
-  gameOverTitle: "Гра закінчена",
+  gameOverTitle: "Гра закінчена?",
   soundsOn: "Звуки увімкнено",
   soundsOff: "Звуки вимкнено",
   musicOn: "Музику увімкнено",
