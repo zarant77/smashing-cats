@@ -232,8 +232,12 @@
       const scaleX = window.innerWidth / DESIGN_WIDTH;
       const scaleY = window.innerHeight / DESIGN_HEIGHT;
       const scale = Math.min(scaleX, scaleY);
+      const width = window.innerWidth / scale;
+      const height = window.innerHeight / scale;
 
       document.documentElement.style.setProperty("--design-scale", String(scale));
+      document.documentElement.style.setProperty("--design-width", `${width}px`);
+      document.documentElement.style.setProperty("--design-height", `${height}px`);
     }
 
     function updateDesignScale() {

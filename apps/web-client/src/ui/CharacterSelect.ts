@@ -313,9 +313,47 @@ function createArrowButton(direction: "left" | "right", ariaLabel: string, onCli
   image.alt = "";
 
   button.append(image);
-  button.addEventListener("click", onClick);
+  bindRepeatButton(button, onClick);
 
   return button;
+}
+
+function bindRepeatButton(button: HTMLButtonElement, onPress: () => void): void {
+  let intervalId: number | undefined;
+  let timeoutId: number | undefined;
+
+  const stop = (): void => {
+    if (timeoutId !== undefined) {
+      window.clearTimeout(timeoutId);
+      timeoutId = undefined;
+    }
+
+    if (intervalId !== undefined) {
+      window.clearInterval(intervalId);
+      intervalId = undefined;
+    }
+
+    window.removeEventListener("pointerup", stop);
+    window.removeEventListener("pointercancel", stop);
+  };
+
+  button.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+
+    stop();
+    button.setPointerCapture(event.pointerId);
+
+    onPress();
+
+    timeoutId = window.setTimeout(() => {
+      intervalId = window.setInterval(onPress, 180);
+    }, 280);
+
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
+  });
+
+  button.addEventListener("lostpointercapture", stop);
 }
 
 function stat(label: string, value: number, range: StatRange, className: StatClassName): HTMLElement {

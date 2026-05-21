@@ -58,6 +58,6 @@ export function readInput(): PlayerInput {
   return {
     left: keys.has("ArrowLeft") || keys.has("KeyA"),
     right: keys.has("ArrowRight") || keys.has("KeyD"),
-    jump: keys.has("Space") || keys.has("ArrowUp") || keys.has("KeyW"),
+    jump: keys.has("Space") || keys.has("ArrowUp") || keys.has("ArrowDown") || keys.has("KeyW") || keys.has("KeyS"),
   };
 }
