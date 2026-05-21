@@ -1,6 +1,6 @@
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
 import type { Translator } from "@smashing-cats/i18n";
-import type { GameView, ViewOptions } from "../types.js";
+import type { GameView } from "../types.js";
 import { AudioEventPlayer } from "./AudioEventPlayer.js";
 import { BackgroundRenderer } from "./BackgroundRenderer.js";
 import { ForegroundRenderer } from "./ForegroundRenderer.js";
@@ -35,12 +35,9 @@ export class CanvasView implements GameView {
 
   private lastFrameTime = performance.now();
 
-  public constructor(
-    private readonly root: HTMLElement,
-    private readonly options: ViewOptions,
-  ) {
-    this.entities = new EntityRenderer(options.debug);
-    this.players = new PlayerRenderer(options.debug);
+  public constructor(private readonly root: HTMLElement) {
+    this.entities = new EntityRenderer();
+    this.players = new PlayerRenderer();
 
     this.canvas = document.createElement("canvas");
 

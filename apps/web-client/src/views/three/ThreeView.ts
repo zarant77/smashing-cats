@@ -1,6 +1,6 @@
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
 import type { Translator } from "@smashing-cats/i18n";
-import type { GameView, ViewOptions } from "../types.js";
+import type { GameView } from "../types.js";
 import { EMPTY_SNAPSHOT } from "../emptySnapshot.js";
 import { getViewSize } from "../viewport.js";
 import { AudioEventPlayer } from "./AudioEventPlayer.js";
@@ -16,10 +16,7 @@ export class ThreeView implements GameView {
   private pendingSnapshot: GameSnapshot | undefined = EMPTY_SNAPSHOT;
   private pendingPlayerId: PlayerId | undefined;
 
-  public constructor(
-    private readonly root: HTMLElement,
-    private readonly options: ViewOptions,
-  ) {
+  public constructor(private readonly root: HTMLElement) {
     this.root.replaceChildren();
 
     const size = getViewSize(this.root);

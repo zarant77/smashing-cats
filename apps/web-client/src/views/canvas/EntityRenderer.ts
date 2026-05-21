@@ -14,8 +14,6 @@ type RenderSize = {
 export class EntityRenderer {
   private readonly animation = new SpriteAnimation();
 
-  public constructor(private readonly debug: boolean) {}
-
   public draw(
     ctx: CanvasRenderingContext2D,
     canvasWidth: number,
@@ -78,7 +76,7 @@ export class EntityRenderer {
 
     ctx.restore();
 
-    if (this.debug) {
+    if (window.debug.boundings) {
       drawDebugShape(ctx, screenX, screenY, entity.size, entity.hurt, undefined, viewport);
     }
   }

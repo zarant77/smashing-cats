@@ -8,8 +8,3 @@ export type GameView = {
   setLocale?(locale: string, t: Translator): void;
   destroy: () => void;
 };
-
-export type ViewOptions = {
-  debug: boolean;
-  onReady?: () => void;
-};

@@ -1,35 +1,35 @@
 import { preloadAssets } from "../assets/assets.js";
-import type { GameView, ViewKind, ViewOptions } from "./types.js";
+import type { GameView, ViewKind } from "./types.js";
 
-export async function createView(kind: ViewKind, root: HTMLElement, options: ViewOptions): Promise<GameView> {
+export async function createView(kind: ViewKind, root: HTMLElement): Promise<GameView> {
   showSplash(true);
 
   try {
     await preloadAssets(kind);
-    return await createLoadedView(kind, root, options);
+    return await createLoadedView(kind, root);
   } finally {
     showSplash(false);
   }
 }
 
-async function createLoadedView(kind: ViewKind, root: HTMLElement, options: ViewOptions): Promise<GameView> {
+async function createLoadedView(kind: ViewKind, root: HTMLElement): Promise<GameView> {
   switch (kind) {
     case "canvas": {
       showUderConstruction(false);
       const { CanvasView } = await import("./canvas/CanvasView.js");
-      return new CanvasView(root, options);
+      return new CanvasView(root);
     }
 
     case "phaser": {
       showUderConstruction(true);
       const { PhaserView } = await import("./phaser/PhaserView.js");
-      return new PhaserView(root, options);
+      return new PhaserView(root);
     }
 
     case "three": {
       showUderConstruction(true);
       const { ThreeView } = await import("./three/ThreeView.js");
-      return new ThreeView(root, options);
+      return new ThreeView(root);
     }
   }
 }

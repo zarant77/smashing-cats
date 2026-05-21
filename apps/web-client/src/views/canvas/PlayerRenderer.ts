@@ -41,8 +41,6 @@ export class PlayerRenderer {
   private readonly deathStates = new Map<string, DeathState>();
   private readonly smashLandingStates = new Map<string, SmashLandingState>();
 
-  public constructor(private readonly debug: boolean) {}
-
   public draw(
     ctx: CanvasRenderingContext2D,
     canvasWidth: number,
@@ -110,7 +108,7 @@ export class PlayerRenderer {
 
     ctx.restore();
 
-    if (this.debug) {
+    if (window.debug.boundings) {
       drawDebugShape(ctx, screenX, screenY, player.size, player.hurt, player.smash, viewport);
     }
   }

@@ -1,6 +1,8 @@
 import { GameSnapshot, PlayerId, type EntityKind } from "@smashing-cats/protocol";
 import { createTranslator } from "@smashing-cats/i18n";
 
+import "./ui/debug.js";
+
 import { audio, initAudio, musicEvents, playSound } from "./audio/audio.js";
 import { GameRuntime } from "./game/GameRuntime.js";
 import { getMatchCode } from "./game/routing.js";
@@ -22,7 +24,6 @@ import { createView, parseViewKind } from "./views/createView.js";
 import type { GameView, ViewKind } from "./views/types.js";
 
 import "./styles/index.css";
-import { showFPS } from "./ui/debug.js";
 
 const SOUNDS_ENABLED_KEY = "smashing-cats-sounds-enabled";
 const MUSIC_ENABLED_KEY = "smashing-cats-music-enabled";
@@ -46,7 +47,6 @@ async function bootstrap(): Promise<void> {
   const params = new URLSearchParams(window.location.search);
   const matchCode = getMatchCode(params);
   const multiplayer = matchCode !== undefined;
-  const debug = params.has("debug") && params.get("debug") !== "0" && params.get("debug") !== "false";
 
   let locale = params.get("locale") ?? localStorage.getItem(LOCALE_KEY) ?? "en";
   let t = createTranslator(locale);
@@ -54,7 +54,7 @@ async function bootstrap(): Promise<void> {
   let musicEnabled = localStorage.getItem(MUSIC_ENABLED_KEY) !== "false";
   let viewKind = parseViewKind(params.get("view") ?? localStorage.getItem(VIEW_KEY));
   let selectedCharacterKind = localStorage.getItem(CHARACTER_KEY) as EntityKind | null;
-  let view: GameView = await createView(viewKind, root, { debug });
+  let view: GameView = await createView(viewKind, root);
   let characterSelect: CharacterSelect | undefined;
   let gameOverPopup: GameOverPopup | undefined;
   let runtime: GameRuntime | undefined;
@@ -64,10 +64,6 @@ async function bootstrap(): Promise<void> {
   audio.setSoundsEnabled(soundsEnabled);
   audio.setMusicEnabled(musicEnabled);
   view.setLocale?.(locale, t);
-
-  if (debug) {
-    showFPS();
-  }
 
   const hud = new Hud(uiRoot, t);
   const pauseOverlay = new PauseOverlay(uiRoot, t);
@@ -129,7 +125,6 @@ async function bootstrap(): Promise<void> {
     engineSelect,
     viewKind,
     root,
-    debug,
     () => view,
     () => locale,
     () => t,
@@ -214,7 +209,6 @@ function bindEngineSelect(
   engineSelect: HTMLSelectElement | null,
   initialViewKind: ViewKind,
   root: HTMLElement,
-  debug: boolean,
   getCurrentView: () => GameView,
   getLocale: () => string,
   getTranslator: () => ReturnType<typeof createTranslator>,
@@ -254,7 +248,7 @@ function bindEngineSelect(
 
       previousView.destroy();
 
-      const nextView = await createView(nextViewKind, root, { debug });
+      const nextView = await createView(nextViewKind, root);
 
       localStorage.setItem(VIEW_KEY, nextViewKind);
 
