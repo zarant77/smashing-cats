@@ -1,4 +1,6 @@
 export const IMAGES = {
+  default: "/default.png",
+
   // UI
   "ui.joy_arrow": "/ui/joy_arrow.png",
   "ui.joy_center": "/ui/joy_center.png",
@@ -40,6 +42,21 @@ export const IMAGES = {
   // Effects
   "effect.screen_crack": "/canvas/effects/screen-crack.png",
   "effect.smash": "/canvas/effects/smash.png",
+
+  // Player's portraits
+  "playerPortrait.batcat": "/portraits/batcat.png",
+  "playerPortrait.carrambacat": "/portraits/carrambacat.png",
+  "playerPortrait.commandocat": "/portraits/commandocat.png",
+  "playerPortrait.cybercat": "/portraits/cybercat.png",
+  "playerPortrait.darkcat": "/portraits/darkcat.png",
+  "playerPortrait.ghostcat": "/portraits/ghostcat.png",
+  "playerPortrait.ironcat": "/portraits/ironcat.png",
+  "playerPortrait.punishcat": "/portraits/punishcat.png",
+  "playerPortrait.robocat": "/portraits/robocat.png",
+  "playerPortrait.samurcat": "/portraits/samurcat.png",
+  "playerPortrait.termicator": "/portraits/termicator.png",
+  "playerPortrait.zombocat": "/portraits/zombocat.png",
+  "playerPortrait.kotan": "/portraits/kotan.png",
 } as const;
 
 export const MODELS = {

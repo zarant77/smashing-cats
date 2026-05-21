@@ -42,7 +42,10 @@ export const images = new ImageCache();
 export const audio = new AudioCache();
 export const models = new ModelCache();
 
+const DEFAULT_IMAGE_KEY = "default";
+
 let currentManifest: AssetManifest | undefined;
+const missingAssetWarnings = new Set<string>();
 
 export async function preloadAssets(engine: ViewKind): Promise<void> {
   const manifest = manifestList[engine];
@@ -67,18 +70,44 @@ export async function preloadAssets(engine: ViewKind): Promise<void> {
 }
 
 export function getImageAsset(key: string): string {
-  return getAsset("images", key);
+  const asset = getAsset("images", key);
+
+  if (asset !== undefined) {
+    return asset;
+  }
+
+  warnMissingAsset("images", key, DEFAULT_IMAGE_KEY);
+
+  const fallback = getAsset("images", DEFAULT_IMAGE_KEY);
+
+  if (fallback === undefined) {
+    throw new Error(`Default image asset is not found: images.${DEFAULT_IMAGE_KEY}`);
+  }
+
+  return fallback;
 }
 
 export function getAudioAsset(key: string): string {
-  return getAsset("audio", key);
+  const asset = getAsset("audio", key);
+
+  if (asset === undefined) {
+    throw new Error(`Asset is not found: audio.${key}`);
+  }
+
+  return asset;
 }
 
 export function getModelAsset(key: string): string {
-  return getAsset("models", key);
+  const asset = getAsset("models", key);
+
+  if (asset === undefined) {
+    throw new Error(`Asset is not found: models.${key}`);
+  }
+
+  return asset;
 }
 
-function getAsset(group: keyof AssetManifest, key: string): string {
+function getAsset(group: keyof AssetManifest, key: string): string | undefined {
   const manifest = currentManifest;
 
   if (manifest === undefined) {
@@ -88,7 +117,7 @@ function getAsset(group: keyof AssetManifest, key: string): string {
   const assets = manifest[group] as Readonly<AssetMap> | undefined;
 
   if (assets === undefined) {
-    return getAssetFromAnyManifest(group, key);
+    return findAssetInAnyManifest(group, key);
   }
 
   const asset = assets[key];
@@ -97,10 +126,10 @@ function getAsset(group: keyof AssetManifest, key: string): string {
     return asset;
   }
 
-  return getAssetFromAnyManifest(group, key);
+  return findAssetInAnyManifest(group, key);
 }
 
-function getAssetFromAnyManifest(group: keyof AssetManifest, key: string): string {
+function findAssetInAnyManifest(group: keyof AssetManifest, key: string): string | undefined {
   for (const manifest of Object.values(manifestList)) {
     const assets = manifest[group] as Readonly<AssetMap> | undefined;
     const asset = assets?.[key];
@@ -110,5 +139,16 @@ function getAssetFromAnyManifest(group: keyof AssetManifest, key: string): strin
     }
   }
 
-  throw new Error(`Asset is not found: ${group}.${key}`);
+  return undefined;
+}
+
+function warnMissingAsset(group: keyof AssetManifest, key: string, fallbackKey: string): void {
+  const warningKey = `${group}.${key}`;
+
+  if (missingAssetWarnings.has(warningKey)) {
+    return;
+  }
+
+  missingAssetWarnings.add(warningKey);
+  console.warn(`Asset is not found: ${warningKey}. Using ${group}.${fallbackKey}.`);
 }

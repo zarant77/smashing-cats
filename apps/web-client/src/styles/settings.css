@@ -202,52 +202,18 @@
 
 #under-construction {
   position: absolute;
-  top: -30px;
-  left: 0;
-  width: 200%;
-  transform: translateX(-25%);
-
+  top: 25px;
+  width: 100%;
   text-align: center;
-  font-size: 20px;
+  font-size: 32px;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 4px;
-
-  color: #ffffff;
-
+  color: #ffcc33;
   text-shadow:
-    0 0 8px #000000,
-    0 0 16px #000000;
-
-  animation: blink 1s infinite;
-}
-
-#under-construction s {
-  position: relative;
-  text-decoration: none;
-}
-
-#under-construction s::after {
-  content: "";
-
-  position: absolute;
-
-  left: -6%;
-  top: 50%;
-
-  width: 112%;
-  height: 5px;
-
-  background: #ff0000;
-  opacity: 0.75;
-
-  transform: rotate(-4deg) translateY(-2px);
-
-  border-radius: 999px;
-
-  box-shadow:
     0 0 8px #ff0000,
-    0 0 16px #ff5500;
+    0 0 16px #ff0000;
+  animation: blink 1s infinite;
 }
 
 @keyframes blink {

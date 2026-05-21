@@ -14,12 +14,24 @@ export async function initAudio(): Promise<void> {
 }
 
 export function playSound(key: SoundAudioKey): void {
-  audio.playSound(getAudioPath(key));
+  const path = getAudioPath(key);
+
+  if (path === undefined) {
+    return;
+  }
+
+  audio.playSound(path);
 }
 
 export const musicEvents = {
   gameplay(): void {
-    void audio.playMusic(getAudioPaths(GAMEPLAY_MUSIC_KEYS), 0.8);
+    const paths = getAudioPaths(GAMEPLAY_MUSIC_KEYS);
+
+    if (paths.length === 0) {
+      return;
+    }
+
+    void audio.playMusic(paths, 0.8);
   },
 
   stop(): void {
@@ -31,12 +43,21 @@ export const musicEvents = {
   },
 } as const;
 
-function getAudioPath(key: AudioKey): string {
-  return getAudioAsset(key);
+function getAudioPath(key: AudioKey): string | undefined {
+  try {
+    return getAudioAsset(key);
+  } catch (error) {
+    console.warn(`Audio asset is not found: ${key}.`, error);
+    return undefined;
+  }
 }
 
 function getAudioPaths(keys: readonly AudioKey[]): string[] {
-  return keys.map((key) => getAudioPath(key));
+  return keys.flatMap((key) => {
+    const path = getAudioPath(key);
+
+    return path === undefined ? [] : [path];
+  });
 }
 
 let audioUnlocked = false;

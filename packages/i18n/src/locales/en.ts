@@ -31,7 +31,7 @@ export const en = {
   nextCharacter: "Next cat",
   changeCharacter: "Change cat",
   selectCharacter: "Choose your cat",
-  underConstruction: "Under <s>Destruction</s> Construction",
+  underConstruction: "Game Under Construction",
 
   batcat: "Batcat",
   ironcat: "Ironcat",
@@ -45,4 +45,5 @@ export const en = {
   samurcat: "Samurcat",
   zombocat: "Zombocat",
   ghostcat: "Ghostcat",
+  kotan: "Kotan the Destroyer",
 } as const;

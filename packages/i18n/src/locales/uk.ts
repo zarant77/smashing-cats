@@ -31,10 +31,10 @@ export const uk = {
   nextCharacter: "Наступний кіт",
   changeCharacter: "Змінити кота",
   selectCharacter: "Обрати цього кота",
-  underConstruction: "Ще <s>Розбивається</s> Розробляється",
+  underConstruction: "Гра в розробці",
 
   batcat: "КажанКіт",
-  ironcat: "Залізна Котина",
+  ironcat: "Залізнокіт",
   darkcat: "Кіт Пітьми",
   robocat: "Робокіт",
   termicator: "Термікатор",
@@ -45,4 +45,5 @@ export const uk = {
   samurcat: "Самуркіт",
   zombocat: "Зомбокіт",
   ghostcat: "Прикіт",
+  kotan: "Котан Руйнівник",
 } as const;

@@ -26,6 +26,7 @@
     { "kind": "cybercat", "hp": 3, "moveSpeed": 320, "jumpForce": 1000 },
     { "kind": "samurcat", "hp": 3, "moveSpeed": 340, "jumpForce": 1000 },
     { "kind": "zombocat", "hp": 6, "moveSpeed": 170, "jumpForce": 800 },
-    { "kind": "ghostcat", "hp": 1, "moveSpeed": 380, "jumpForce": 1000 }
+    { "kind": "ghostcat", "hp": 1, "moveSpeed": 380, "jumpForce": 1000 },
+    { "kind": "kotan", "hp": 5, "moveSpeed": 300, "jumpForce": 900 }
   ]
 }

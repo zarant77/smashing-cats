@@ -1,6 +1,8 @@
 import type { AssetManifest } from "../types.js";
 
 export const IMAGES = {
+  default: "/default.png",
+
   // UI
   "ui.joy_arrow": "/ui/joy_arrow.png",
   "ui.joy_center": "/ui/joy_center.png",
@@ -53,6 +55,22 @@ export const IMAGES = {
   "player.samurcat": "/canvas/players/samurcat.png",
   "player.termicator": "/canvas/players/termicator.png",
   "player.zombocat": "/canvas/players/zombocat.png",
+  "player.kotan": "/canvas/players/kotan.png",
+
+  // Player's portraits
+  "playerPortrait.batcat": "/portraits/batcat.png",
+  "playerPortrait.carrambacat": "/portraits/carrambacat.png",
+  "playerPortrait.commandocat": "/portraits/commandocat.png",
+  "playerPortrait.cybercat": "/portraits/cybercat.png",
+  "playerPortrait.darkcat": "/portraits/darkcat.png",
+  "playerPortrait.ghostcat": "/portraits/ghostcat.png",
+  "playerPortrait.ironcat": "/portraits/ironcat.png",
+  "playerPortrait.punishcat": "/portraits/punishcat.png",
+  "playerPortrait.robocat": "/portraits/robocat.png",
+  "playerPortrait.samurcat": "/portraits/samurcat.png",
+  "playerPortrait.termicator": "/portraits/termicator.png",
+  "playerPortrait.zombocat": "/portraits/zombocat.png",
+  "playerPortrait.kotan": "/portraits/kotan.png",
 
   // Enemies
   "enemy.crow": "/canvas/enemies/crow.png",
