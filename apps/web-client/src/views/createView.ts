@@ -1,4 +1,5 @@
 import { preloadAssets } from "../assetManager/assetManager.js";
+import { Uncrasher } from "../uncrasher.js";
 import type { GameView, ViewKind } from "./types.js";
 
 export async function createView(kind: ViewKind, root: HTMLElement): Promise<GameView> {
@@ -10,6 +11,9 @@ export async function createView(kind: ViewKind, root: HTMLElement): Promise<Gam
     });
 
     return await createLoadedView(kind, root);
+  } catch (error) {
+    Uncrasher.show(error);
+    throw error;
   } finally {
     updateSplash(false);
   }

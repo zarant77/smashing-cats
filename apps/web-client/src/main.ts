@@ -1,6 +1,7 @@
 import { GameSnapshot, PlayerId, type EntityKind } from "@smashing-cats/protocol";
 import { i18n } from "@smashing-cats/i18n";
 
+import "./uncrasher.js";
 import "./ui/debug.js";
 
 import { audio, musicEvents, playSound, setupAudioUnlock } from "./audio/audio.js";
