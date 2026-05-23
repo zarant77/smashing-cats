@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
-import type { Translator } from "@smashing-cats/i18n";
 import type { GameView } from "../types.js";
 import { AudioEventPlayer } from "./AudioEventPlayer.js";
 import { SmashingCatsScene } from "./SmashingCatsScene.js";
@@ -42,10 +41,6 @@ export class PhaserView implements GameView {
   public render(snapshot: GameSnapshot | undefined, playerId: PlayerId | undefined): void {
     this.audioEventPlayer.play(snapshot, playerId);
     this.scene.setState(snapshot, playerId);
-  }
-
-  public setLocale(_locale: string, t: Translator): void {
-    this.scene.setTranslator(t);
   }
 
   public destroy(): void {

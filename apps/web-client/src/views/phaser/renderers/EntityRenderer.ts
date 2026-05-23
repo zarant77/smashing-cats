@@ -1,7 +1,6 @@
 import Phaser from "phaser";
 
 import type { EntitySnapshot, GameSnapshot } from "@smashing-cats/protocol";
-import type { Translator } from "@smashing-cats/i18n";
 
 import { getImageAsset, images } from "../../../assetManager/assetManager.js";
 import type { RenderViewport } from "../../viewport.js";
@@ -59,15 +58,8 @@ export class EntityRenderer {
   private readonly debugRenderer: DebugRenderer;
   private readonly animationState = new SpriteAnimationState();
 
-  public constructor(
-    private readonly scene: Phaser.Scene,
-    private t: Translator,
-  ) {
+  public constructor(private readonly scene: Phaser.Scene) {
     this.debugRenderer = new DebugRenderer(scene);
-  }
-
-  public setTranslator(t: Translator): void {
-    this.t = t;
   }
 
   public draw(snapshot: GameSnapshot, viewport: RenderViewport): void {

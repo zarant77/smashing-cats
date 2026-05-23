@@ -1,7 +1,6 @@
 import Phaser from "phaser";
 
 import type { GameSnapshot, PlayerId, PlayerSnapshot } from "@smashing-cats/protocol";
-import type { Translator } from "@smashing-cats/i18n";
 
 import { getImageAsset, images } from "../../../assetManager/assetManager.js";
 import type { RenderViewport } from "../../viewport.js";
@@ -31,17 +30,10 @@ export class PlayerRenderer {
   private readonly debugRenderer: DebugRenderer;
   private readonly animationState = new SpriteAnimationState();
 
-  public constructor(
-    private readonly scene: Phaser.Scene,
-    private t: Translator,
-  ) {
+  public constructor(private readonly scene: Phaser.Scene) {
     this.smashEffectRenderer = new SmashEffectRenderer(scene);
     this.floatingTextRenderer = new FloatingTextRenderer(scene);
     this.debugRenderer = new DebugRenderer(scene);
-  }
-
-  public setTranslator(t: Translator): void {
-    this.t = t;
   }
 
   public draw(snapshot: GameSnapshot, localPlayerId: PlayerId | undefined, viewport: RenderViewport): void {

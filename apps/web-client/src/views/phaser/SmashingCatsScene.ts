@@ -1,7 +1,6 @@
 import Phaser from "phaser";
 
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
-import type { Translator } from "@smashing-cats/i18n";
 
 import { BackgroundRenderer } from "./renderers/BackgroundRenderer.js";
 import { EntityRenderer } from "./renderers/EntityRenderer.js";
@@ -18,8 +17,6 @@ import { registerLoadedImages } from "./helpers.js";
 export class SmashingCatsScene extends Phaser.Scene {
   private snapshot: GameSnapshot = EMPTY_SNAPSHOT;
   private playerId: PlayerId | undefined;
-
-  private t: Translator = (key) => key;
 
   private background?: BackgroundRenderer;
   private ground?: GroundRenderer;
@@ -41,12 +38,12 @@ export class SmashingCatsScene extends Phaser.Scene {
 
     this.viewport = createRenderViewport(this.scale.width, this.scale.height, this.snapshot);
 
-    this.background = new BackgroundRenderer(this, this.t);
-    this.ground = new GroundRenderer(this, this.t);
-    this.entities = new EntityRenderer(this, this.t);
-    this.players = new PlayerRenderer(this, this.t);
+    this.background = new BackgroundRenderer(this);
+    this.ground = new GroundRenderer(this);
+    this.entities = new EntityRenderer(this);
+    this.players = new PlayerRenderer(this);
     this.particles = new ParticlesRenderer(this, 10);
-    this.foreground = new ForegroundRenderer(this, this.t);
+    this.foreground = new ForegroundRenderer(this);
   }
 
   public update(_time: number, delta: number): void {
@@ -68,16 +65,6 @@ export class SmashingCatsScene extends Phaser.Scene {
   public setState(snapshot: GameSnapshot | undefined, playerId: PlayerId | undefined): void {
     this.snapshot = snapshot ?? EMPTY_SNAPSHOT;
     this.playerId = playerId;
-  }
-
-  public setTranslator(t: Translator): void {
-    this.t = t;
-
-    this.background?.setTranslator(t);
-    this.ground?.setTranslator(t);
-    this.entities?.setTranslator(t);
-    this.players?.setTranslator(t);
-    this.foreground?.setTranslator(t);
   }
 
   public resize(): void {

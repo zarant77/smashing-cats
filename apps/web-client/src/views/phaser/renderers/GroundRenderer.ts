@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 import type { GameSnapshot } from "@smashing-cats/protocol";
-import type { Translator } from "@smashing-cats/i18n";
 import type { RenderViewport } from "../../viewport.js";
 import { getImageAsset, images } from "../../../assetManager/assetManager.js";
 
@@ -11,14 +10,7 @@ const GROUND_OFFSET_Y = -55;
 export class GroundRenderer {
   private readonly tiles: Phaser.GameObjects.Image[] = [];
 
-  public constructor(
-    private readonly scene: Phaser.Scene,
-    private t: Translator,
-  ) {}
-
-  public setTranslator(t: Translator): void {
-    this.t = t;
-  }
+  public constructor(private readonly scene: Phaser.Scene) {}
 
   public draw(snapshot: GameSnapshot, viewport: RenderViewport): void {
     const image = images.getLoaded(getImageAsset(TILE_KEY));

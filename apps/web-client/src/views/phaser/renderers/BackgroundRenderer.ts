@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 import type { GameSnapshot } from "@smashing-cats/protocol";
-import type { Translator } from "@smashing-cats/i18n";
 import { getImageAsset, images } from "../../../assetManager/assetManager.js";
 import { deviceController } from "../../../device/DeviceController.js";
 import type { RenderViewport } from "../../viewport.js";
@@ -52,18 +51,11 @@ export class BackgroundRenderer {
   private smoothTiltX = 0;
   private smoothTiltY = 0;
 
-  public constructor(
-    private readonly scene: Phaser.Scene,
-    private t: Translator,
-  ) {
+  public constructor(private readonly scene: Phaser.Scene) {
     deviceController.on("tilt", (tilt) => {
       this.tiltX = tilt.x;
       this.tiltY = tilt.y;
     });
-  }
-
-  public setTranslator(t: Translator): void {
-    this.t = t;
   }
 
   public draw(snapshot: GameSnapshot, viewport: RenderViewport): void {

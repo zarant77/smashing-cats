@@ -1,6 +1,5 @@
 import * as THREE from "three";
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
-import type { Translator } from "@smashing-cats/i18n";
 import { EMPTY_SNAPSHOT } from "../emptySnapshot.js";
 import { createRenderViewport, type RenderViewport } from "../viewport.js";
 import type { ThreeModelFactory } from "./models/ThreeModelFactory.js";
@@ -70,8 +69,6 @@ export class SmashingCatsThreeScene {
     this.snapshot = snapshot ?? EMPTY_SNAPSHOT;
     this.playerId = playerId;
   }
-
-  public setTranslator(_t: Translator): void {}
 
   public resize(width: number, height: number): void {
     this.width = width;

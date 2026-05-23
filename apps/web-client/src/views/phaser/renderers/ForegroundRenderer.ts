@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 import type { GameSnapshot } from "@smashing-cats/protocol";
-import type { Translator } from "@smashing-cats/i18n";
 import { getImageAsset, images } from "../../../assetManager/assetManager.js";
 import type { RenderViewport } from "../../viewport.js";
 
@@ -53,14 +52,7 @@ export class ForegroundRenderer {
   private lastScrollX: number | undefined;
   private nextSpawnX = 0;
 
-  public constructor(
-    private readonly scene: Phaser.Scene,
-    private t: Translator,
-  ) {}
-
-  public setTranslator(t: Translator): void {
-    this.t = t;
-  }
+  public constructor(private readonly scene: Phaser.Scene) {}
 
   public draw(snapshot: GameSnapshot, viewport: RenderViewport): void {
     const deltaScrollX = this.getDeltaScrollX(snapshot.world.scrollX);

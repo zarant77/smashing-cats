@@ -1,5 +1,4 @@
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
-import type { Translator } from "@smashing-cats/i18n";
 import type { GameView } from "../types.js";
 import { EMPTY_SNAPSHOT } from "../emptySnapshot.js";
 import { getViewSize } from "../viewport.js";
@@ -45,10 +44,6 @@ export class ThreeView implements GameView {
 
     this.scene.setState(snapshot, playerId);
     this.scene.render();
-  }
-
-  public setLocale(_locale: string, t: Translator): void {
-    this.scene.setTranslator(t);
   }
 
   public destroy(): void {

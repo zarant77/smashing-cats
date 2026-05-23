@@ -1,5 +1,4 @@
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
-import type { Translator } from "@smashing-cats/i18n";
 import type { GameView } from "../types.js";
 import { AudioEventPlayer } from "./AudioEventPlayer.js";
 import { BackgroundRenderer } from "./BackgroundRenderer.js";
@@ -30,8 +29,6 @@ export class CanvasView implements GameView {
 
   private readonly screenShake = new ScreenShake();
   private readonly floatingTexts = new FloatingTextRenderer();
-
-  private t: Translator = (key) => key;
 
   private lastFrameTime = performance.now();
 
@@ -102,10 +99,6 @@ export class CanvasView implements GameView {
     this.foreground.draw(ctx, this.canvas, snapshot, viewport);
 
     ctx.restore();
-  }
-
-  public setLocale(_locale: string, t: Translator): void {
-    this.t = t;
   }
 
   public destroy(): void {
