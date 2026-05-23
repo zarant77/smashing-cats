@@ -178,7 +178,7 @@
   height: 72px;
 }
 
-.settings-overlay .exit-button .icon {
+.settings-overlay .card .exit-button .icon {
   margin-left: 50%;
   transform: scale(0.6) translate(-16px, -12px);
 }
