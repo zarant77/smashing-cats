@@ -178,8 +178,25 @@
   height: 72px;
 }
 
+.settings-overlay .exit-button .icon {
+  margin-left: 50%;
+  transform: scale(0.6) translate(-16px, -12px);
+}
+
+.settings-overlay .settings-exit-separator {
+  height: 2px;
+  margin: 2px 6px -2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(255, 225, 118, 0.55), transparent);
+}
+
+.settings-overlay .settings-exit-row {
+  display: flex;
+  justify-content: center;
+}
+
 .settings-overlay .exit-button {
-  justify-self: center;
+  width: 176px;
   background: rgba(80, 18, 18, 0.78);
 }
 

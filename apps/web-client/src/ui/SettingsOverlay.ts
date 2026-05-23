@@ -152,9 +152,13 @@ export class SettingsOverlay {
           </div>
         </section>
 
-        <button class="exit-button" type="button" data-i18n-title="exit" title="${t("exit")}" aria-label="${t("exit")}">
-          <span class="icon icon-exit"></span>
-        </button>
+        <div class="settings-exit-separator" aria-hidden="true"></div>
+
+        <div class="settings-exit-row">
+          <button class="exit-button" type="button" data-i18n-title="exit" title="${t("exit")}" aria-label="${t("exit")}">
+            <span class="icon icon-exit"></span>
+          </button>
+        </div>
       </div>
     `;
 

@@ -1,5 +1,5 @@
 import type { EntityKind, GameSnapshot, PlayerId } from "@smashing-cats/protocol";
-import { getDeathPhrase, t } from "@smashing-cats/i18n";
+import { getDeathPhrase, i18n, t } from "@smashing-cats/i18n";
 
 type GameOverPopupOptions = {
   onRestart: () => void;
@@ -17,6 +17,9 @@ export class GameOverPopup {
 
   private deadAt: number | undefined;
   private shownForPlayerId: PlayerId | undefined;
+
+  private kind: EntityKind | undefined;
+  private score = 0;
   private speechPhrase = "";
 
   public constructor(root: HTMLElement, options: GameOverPopupOptions) {
@@ -27,6 +30,13 @@ export class GameOverPopup {
     this.element.hidden = true;
 
     root.append(this.element);
+
+    i18n.onLocaleChanged(() => {
+      if (this.visible && this.kind !== undefined) {
+        this.speechPhrase = getDeathPhrase(this.kind);
+        this.renderContent(this.kind, this.score);
+      }
+    });
   }
 
   public render(snapshot: GameSnapshot | undefined, localPlayerId: PlayerId | undefined): void {
@@ -35,16 +45,19 @@ export class GameOverPopup {
     if (player === undefined || player.alive) {
       this.deadAt = undefined;
       this.shownForPlayerId = undefined;
+      this.kind = undefined;
+      this.score = 0;
       this.speechPhrase = "";
 
       this.hide();
-
       return;
     }
 
     if (this.shownForPlayerId !== player.playerId) {
       this.shownForPlayerId = player.playerId;
       this.deadAt = performance.now();
+      this.kind = player.kind;
+      this.score = player.score;
       this.speechPhrase = getDeathPhrase(player.kind);
     }
 
@@ -66,6 +79,9 @@ export class GameOverPopup {
   }
 
   private show(kind: EntityKind, score: number): void {
+    this.kind = kind;
+    this.score = score;
+
     if (this.visible) {
       return;
     }
@@ -74,12 +90,18 @@ export class GameOverPopup {
     this.speechVisible = false;
     this.element.hidden = false;
 
+    this.renderContent(kind, score);
+  }
+
+  private renderContent(kind: EntityKind, score: number): void {
+    const speechHidden = this.speechVisible ? "" : "hidden";
+
     this.element.innerHTML = `
       <div class="card">
         <h2>${t("gameOverTitle")}</h2>
 
         <div class="character-preview">
-          <div class="game-over-speech" hidden>
+          <div class="game-over-speech" ${speechHidden}>
             ${this.speechPhrase}
           </div>
 
@@ -105,9 +127,7 @@ export class GameOverPopup {
       </div>
     `;
 
-    const restartButton = this.element.querySelector<HTMLButtonElement>(".game-over-popup .restart");
-
-    restartButton?.addEventListener("click", () => {
+    this.element.querySelector<HTMLButtonElement>(".restart")?.addEventListener("click", () => {
       this.onRestart();
     });
   }
