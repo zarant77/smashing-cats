@@ -71,7 +71,7 @@
   grid-template-areas: "name name" "preview stats" "select select";
   align-items: center;
   width: 600px;
-  height: 440px;
+  height: 520px;
   gap: 12px 24px;
   margin: auto;
   background: transparent;

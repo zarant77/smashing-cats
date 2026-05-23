@@ -4,7 +4,7 @@ export const uk = {
   enginePhaser: "Рушій: Phaser",
   engineThree: "Рушій: Three.js",
   locale: "Мова",
-  pause: "ПАУЗА",
+  pause: "<b>П</b><b>А</b><b>У</b><b>З</b><b>А</b>",
   matchCode: "Код сесії",
   startGame: "Почати гру",
   stats: "Параметри",

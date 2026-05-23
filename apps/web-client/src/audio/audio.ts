@@ -9,10 +9,6 @@ type SoundAudioKey = `sound.${string}`;
 type MusicAudioKey = `music.${string}`;
 type AudioKey = SoundAudioKey | MusicAudioKey;
 
-export async function initAudio(): Promise<void> {
-  setupAudioUnlock();
-}
-
 export function playSound(key: SoundAudioKey): void {
   const path = getAudioPath(key);
 
@@ -62,14 +58,14 @@ function getAudioPaths(keys: readonly AudioKey[]): string[] {
 
 let audioUnlocked = false;
 
-function setupAudioUnlock(): void {
+export function setupAudioUnlock(): void {
   const unlock = (): void => {
     if (audioUnlocked) {
       return;
     }
 
     try {
-      musicEvents.gameplay();
+      setTimeout(() => musicEvents.gameplay(), 100);
     } catch (error) {
       console.warn("Audio assets are not ready yet.", error);
       return;

@@ -5,8 +5,7 @@
   pointer-events: none;
 }
 
-.settings-overlay-open,
-.settings-overlay-closing {
+.settings-overlay-open {
   pointer-events: auto;
 }
 
@@ -75,6 +74,10 @@
   transform-origin: top left;
   margin: 12px;
   pointer-events: none;
+}
+
+.settings-overlay button.active .icon {
+  margin: 10px;
 }
 
 .settings-overlay .card {
@@ -201,10 +204,10 @@
   pointer-events: none;
 }
 
-.settings-overlay button.settings-button-active,
-.settings-overlay button.settings-button-active:hover,
-.settings-overlay button.settings-button-active:focus-visible,
-.settings-overlay button.settings-button-active:active {
+.settings-overlay button.active,
+.settings-overlay button.active:hover,
+.settings-overlay button.active:focus-visible,
+.settings-overlay button.active:active {
   border: 3px solid #ffe16f;
 
   box-shadow:

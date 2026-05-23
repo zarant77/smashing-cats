@@ -1,5 +1,8 @@
 import type { GameSnapshot } from "@smashing-cats/protocol";
+
 import { getImageAsset, images } from "../../assets/assets.js";
+import { deviceController } from "../../device/DeviceController.js";
+
 import type { RenderViewport } from "../viewport.js";
 
 type ParallaxLayer = {
@@ -20,15 +23,37 @@ const LAYERS: ParallaxLayer[] = [
   { key: "environment.forest_front", speed: 0.85, y: 350, height: 0.15 },
 ];
 
+const TILE_START_PADDING = 2;
+
+const MAX_TILT_OFFSET_X = 160;
+const TILT_SMOOTHING = 0.06;
+const MIN_TILT_PARALLAX = 0.35;
+const MAX_TILT_DEGREES_X = 16;
+const TILT_DEAD_ZONE = 0.05;
+
 export class BackgroundRenderer {
+  private tiltX = 0;
+
+  private smoothTiltX = 0;
+
+  public constructor() {
+    deviceController.on("tilt", (tilt) => {
+      this.tiltX = tilt.x;
+    });
+  }
+
   public draw(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, snapshot: GameSnapshot, viewport: RenderViewport): void {
+    const gameRunning = snapshot.simulation.rngState !== 0;
+
+    this.updateSmoothTilt(gameRunning);
+
     ctx.imageSmoothingEnabled = false;
 
     ctx.fillStyle = "#87ceeb";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     for (const layer of LAYERS) {
-      this.drawLayer(ctx, canvas, snapshot, viewport, layer);
+      this.drawLayer(ctx, canvas, snapshot, viewport, layer, gameRunning);
     }
   }
 
@@ -38,6 +63,7 @@ export class BackgroundRenderer {
     snapshot: GameSnapshot,
     viewport: RenderViewport,
     layer: ParallaxLayer,
+    gameRunning: boolean,
   ): void {
     const image = images.getLoaded(getImageAsset(layer.key));
 
@@ -51,17 +77,23 @@ export class BackgroundRenderer {
 
     const drawWidth = Math.ceil(width) + 1;
     const drawHeight = Math.ceil(height);
+
+    const parallaxStrength = this.getTiltParallaxStrength(layer.speed);
+
+    const tiltOffsetX = gameRunning ? 0 : -this.smoothTiltX * MAX_TILT_OFFSET_X * parallaxStrength;
+
     const drawY = Math.round(viewport.worldToScreenSize(layer.y));
 
     const scroll = snapshot.world.scrollX * layer.speed * viewport.scale;
 
-    const firstTileIndex = Math.floor(scroll / width);
-    const offsetX = -(scroll - firstTileIndex * width);
+    const firstTileIndex = Math.floor(scroll / width) - TILE_START_PADDING - 1;
+    const offsetX = -(scroll - firstTileIndex * width) + tiltOffsetX;
+    const maxDrawX = canvas.width + width + MAX_TILT_OFFSET_X;
 
     ctx.save();
     ctx.globalAlpha = layer.alpha ?? 1;
 
-    for (let tileIndex = firstTileIndex; offsetX + (tileIndex - firstTileIndex) * width < canvas.width + width; tileIndex++) {
+    for (let tileIndex = firstTileIndex; offsetX + (tileIndex - firstTileIndex) * width < maxDrawX; tileIndex++) {
       const x = offsetX + (tileIndex - firstTileIndex) * width;
       const drawX = Math.round(x);
 
@@ -81,5 +113,31 @@ export class BackgroundRenderer {
     }
 
     ctx.restore();
+  }
+
+  private updateSmoothTilt(gameRunning: boolean): void {
+    const target = gameRunning ? 0 : this.normalizeTiltX(this.tiltX);
+
+    this.smoothTiltX = this.lerp(this.smoothTiltX, target, TILT_SMOOTHING);
+  }
+
+  private normalizeTiltX(tiltX: number): number {
+    return this.applyDeadZone(this.clamp(tiltX / MAX_TILT_DEGREES_X, -1, 1));
+  }
+
+  private applyDeadZone(value: number): number {
+    return Math.abs(value) < TILT_DEAD_ZONE ? 0 : value;
+  }
+
+  private clamp(value: number, min: number, max: number): number {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  private getTiltParallaxStrength(speed: number): number {
+    return Math.max(speed, MIN_TILT_PARALLAX);
+  }
+
+  private lerp(from: number, to: number, factor: number): number {
+    return from + (to - from) * factor;
   }
 }

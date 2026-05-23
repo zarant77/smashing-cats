@@ -1,4 +1,5 @@
-import type { Translator } from "@smashing-cats/i18n";
+import { t } from "@smashing-cats/i18n";
+import { playSound } from "../audio/audio.js";
 
 type HelpPopupOptions = {
   onClose?: () => void;
@@ -9,15 +10,13 @@ export class HelpPopup {
 
   private readonly onClose?: () => void;
 
-  public constructor(root: HTMLElement, t: Translator, options: HelpPopupOptions = {}) {
+  public constructor(root: HTMLElement, options: HelpPopupOptions = {}) {
     this.onClose = options.onClose;
 
     this.element = document.createElement("div");
     this.element.className = "help-popup popup-open";
 
     this.element.innerHTML = `
-      <div class="help-popup-backdrop11"></div>
-
       <div class="help-popup-card">
         <h2 data-i18n="help">${t("help")}</h2>
 
@@ -55,14 +54,14 @@ export class HelpPopup {
 
   private bindEvents(): void {
     this.element.querySelector<HTMLButtonElement>(".help-popup-close-button")?.addEventListener("click", () => {
+      playSound("sound.ui_click");
       this.hide();
-
       this.onClose?.();
     });
 
     this.element.querySelector<HTMLDivElement>(".help-popup-backdrop")?.addEventListener("click", () => {
+      playSound("sound.ui_click");
       this.hide();
-
       this.onClose?.();
     });
   }

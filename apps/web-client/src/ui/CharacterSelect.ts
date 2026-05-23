@@ -1,5 +1,5 @@
 import type { CharacterDefinition, EntityKind } from "@smashing-cats/protocol";
-import type { Translator } from "@smashing-cats/i18n";
+import { t } from "@smashing-cats/i18n";
 
 import { playSound } from "../audio/audio.js";
 import {
@@ -18,16 +18,12 @@ import {
 } from "./helpers.js";
 
 type CharacterSelectOptions = {
-  locale: string;
-  t: Translator;
   initialCharacterKind: EntityKind | undefined;
   onSelect: (characterKind: EntityKind) => void;
 };
 
 export class CharacterSelect {
   private readonly element: HTMLDivElement;
-  private locale: string;
-  private t: Translator;
   private readonly onSelect: (characterKind: EntityKind) => void;
 
   private currentIndex = 0;
@@ -41,8 +37,6 @@ export class CharacterSelect {
   private transitioning = false;
 
   public constructor(root: HTMLElement, options: CharacterSelectOptions) {
-    this.locale = options.locale;
-    this.t = options.t;
     this.preferredCharacterKind = options.initialCharacterKind;
     this.onSelect = options.onSelect;
 
@@ -52,11 +46,6 @@ export class CharacterSelect {
     root.append(this.element);
 
     window.addEventListener("keydown", this.handleKeyDown);
-  }
-
-  public setLocale(locale: string, t: Translator): void {
-    this.locale = locale;
-    this.t = t;
   }
 
   public setPreferredCharacter(characterKind: EntityKind): void {
@@ -92,20 +81,20 @@ export class CharacterSelect {
     const ranges = getStatRanges(characters);
 
     this.element.innerHTML = `
-      ${buildCharacterSelectArrowHtml("left", this.t("previousCharacter"))}
+      ${buildCharacterSelectArrowHtml("left", t("previousCharacter"))}
 
       ${buildCharacterCardHtml({
         character,
         ranges,
-        name: this.t(character.kind),
-        hpLabel: this.t("hp"),
-        speedLabel: this.t("speed"),
-        jumpLabel: this.t("jump"),
-        selectLabel: this.t("selectCharacter"),
+        name: t(character.kind),
+        hpLabel: t("hp"),
+        speedLabel: t("speed"),
+        jumpLabel: t("jump"),
+        selectLabel: t("selectCharacter"),
         enterClass: this.nextEnterClass,
       })}
 
-      ${buildCharacterSelectArrowHtml("right", this.t("nextCharacter"))}
+      ${buildCharacterSelectArrowHtml("right", t("nextCharacter"))}
     `;
 
     this.bindRenderedElements();

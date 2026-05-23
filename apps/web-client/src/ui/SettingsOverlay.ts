@@ -1,18 +1,21 @@
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
-import type { Translator } from "@smashing-cats/i18n";
+import { t } from "@smashing-cats/i18n";
 import { ViewKind } from "../views/types.js";
+import { playSound } from "../audio/audio.js";
 
 type EngineKind = "canvas" | "phaser" | "three";
 type LanguageKind = "en" | "uk";
 
 type SettingsOverlayOptions = {
-  onOpen?: () => void;
+  isGameRunning?: () => boolean;
   onClose?: () => void;
   onHelp?: () => void;
+  onToggleMenu?: () => void;
   onPause?: () => void;
   onToggleFullscreen?: () => void;
   onToggleMusic?: () => void;
   onToggleSound?: () => void;
+  onToggleVibration?: () => void;
   onSelectView?: (view: ViewKind) => void;
   onSelectLanguage?: (lang: string) => void;
   onExit?: () => void;
@@ -23,6 +26,7 @@ type SettingsOverlayState = {
   currentLanguage: LanguageKind;
   soundEnabled: boolean;
   musicEnabled: boolean;
+  vibrationEnabled: boolean;
   fullscreenEnabled: boolean;
 };
 
@@ -31,13 +35,15 @@ const MENU_ANIMATION_MS = 220;
 export class SettingsOverlay {
   private readonly element: HTMLDivElement;
 
-  private readonly onOpen?: () => void;
+  private readonly isGameRunning: () => boolean;
   private readonly onClose?: () => void;
   private readonly onHelp?: () => void;
+  private readonly onToggleMenu?: () => void;
   private readonly onPause?: () => void;
   private readonly onToggleFullscreen?: () => void;
   private readonly onToggleMusic?: () => void;
   private readonly onToggleSound?: () => void;
+  private readonly onToggleVibration?: () => void;
   private readonly onSelectView?: (view: ViewKind) => void;
   private readonly onSelectLanguage?: (lang: string) => void;
   private readonly onExit?: () => void;
@@ -47,19 +53,24 @@ export class SettingsOverlay {
     currentLanguage: "en",
     soundEnabled: true,
     musicEnabled: true,
+    vibrationEnabled: true,
     fullscreenEnabled: false,
   };
 
   private closeTimeoutId: number | undefined;
 
-  public constructor(root: HTMLElement, t: Translator, options: SettingsOverlayOptions = {}) {
-    this.onOpen = options.onOpen;
+  private isPaused = false;
+
+  public constructor(root: HTMLElement, options: SettingsOverlayOptions = {}) {
+    this.isGameRunning = options.isGameRunning ?? (() => false);
     this.onClose = options.onClose;
     this.onHelp = options.onHelp;
+    this.onToggleMenu = options.onToggleMenu;
     this.onPause = options.onPause;
     this.onToggleFullscreen = options.onToggleFullscreen;
     this.onToggleMusic = options.onToggleMusic;
     this.onToggleSound = options.onToggleSound;
+    this.onToggleVibration = options.onToggleVibration;
     this.onSelectView = options.onSelectView;
     this.onSelectLanguage = options.onSelectLanguage;
     this.onExit = options.onExit;
@@ -68,17 +79,19 @@ export class SettingsOverlay {
     this.element.className = "settings-overlay";
 
     this.element.innerHTML = `
+      <div class="pause-title" data-i18n="pause"><b>P</b><b>A</b><b>U</b><b>S</b><b>E</b></div>
+
       <div class="toolbar">
         <button class="help-button" type="button" data-i18n-title="help" title="${t("help")}" aria-label="${t("help")}">
           <span class="icon icon-help"></span>
         </button>
-        
-        <button class="pause-button" type="button" data-i18n-title="pause" title="${t("pause")}" aria-label="${t("pause")}">
-          <span class="icon icon-pause"></span>
+
+        <button class="fullscreen-button toolbar-fullscreen-button" type="button" data-i18n-title="fullscreen" title="${t("fullscreen")}" aria-label="${t("fullscreen")}">
+          <span class="icon icon-fullscreen"></span>
         </button>
 
-        <button class="settings-button" type="button" data-i18n-title="settings" title="${t("settings")}" aria-label="${t("settings")}">
-          <span class="icon icon-settings"></span>
+        <button class="menu-button" type="button" data-i18n-title="pause" title="${t("pause")}" aria-label="${t("pause")}">
+          <span class="icon icon-menu"></span>
         </button>
       </div>
 
@@ -129,8 +142,8 @@ export class SettingsOverlay {
               <span class="icon icon-music"></span>
             </button>
 
-            <button class="fullscreen-button" type="button" data-i18n-title="fullscreen" title="${t("fullscreen")}" aria-label="${t("fullscreen")}">
-              <span class="icon icon-fullscreen"></span>
+            <button class="vibration-button" type="button" data-i18n-title="vibration" title="${t("vibration")}" aria-label="${t("vibration")}">
+              <span class="icon icon-vibro"></span>
             </button>
           </div>
         </section>
@@ -152,20 +165,12 @@ export class SettingsOverlay {
         ? undefined
         : snapshot.players.find((player) => player.playerId === localPlayerId);
 
-    this.setPaused(snapshot?.gamePaused === true || localPlayer?.paused === true);
+    this.setPaused(snapshot?.gamePaused === true || localPlayer?.paused === true, this.isGameRunning());
   }
 
   public setState(state: SettingsOverlayState): void {
     this.state = state;
     this.syncActiveButtons();
-  }
-
-  public setPauseDisabled(disabled: boolean): void {
-    const button = this.element.querySelector<HTMLButtonElement>(".pause-button");
-
-    if (button !== null) {
-      button.disabled = disabled;
-    }
   }
 
   public show(): void {
@@ -182,7 +187,6 @@ export class SettingsOverlay {
       this.element.classList.add("settings-overlay-open");
       this.element.classList.add("popup-open");
       this.syncActiveButtons();
-      this.onOpen?.();
     });
   }
 
@@ -202,13 +206,19 @@ export class SettingsOverlay {
       this.card.hidden = true;
       this.element.classList.remove("settings-overlay-closing");
       this.closeTimeoutId = undefined;
-      this.setPauseDisabled(false);
       this.syncActiveButtons();
       this.onClose?.();
     }, MENU_ANIMATION_MS);
   }
 
   public toggle(): void {
+    if (this.isGameRunning()) {
+      this.onPause?.();
+      return;
+    }
+
+    this.onToggleMenu?.();
+
     if (this.isVisible()) {
       this.hide();
       return;
@@ -232,16 +242,26 @@ export class SettingsOverlay {
   }
 
   private bindEvents(): void {
-    this.element.querySelector<HTMLButtonElement>(".settings-button")?.addEventListener("click", (event) => {
+    this.element.addEventListener("click", (event) => {
+      const target = event.target;
+
+      if (!(target instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      playSound("sound.ui_click");
+    });
+
+    this.element.querySelector<HTMLButtonElement>(".menu-button")?.addEventListener("click", (event) => {
       event.stopPropagation();
       this.toggle();
     });
 
     this.element.querySelector<HTMLButtonElement>(".help-button")?.addEventListener("click", () => this.onHelp?.());
-    this.element.querySelector<HTMLButtonElement>(".pause-button")?.addEventListener("click", () => this.onPause?.());
     this.element.querySelector<HTMLButtonElement>(".fullscreen-button")?.addEventListener("click", () => this.onToggleFullscreen?.());
     this.element.querySelector<HTMLButtonElement>(".music-button")?.addEventListener("click", () => this.onToggleMusic?.());
     this.element.querySelector<HTMLButtonElement>(".sound-button")?.addEventListener("click", () => this.onToggleSound?.());
+    this.element.querySelector<HTMLButtonElement>(".vibration-button")?.addEventListener("click", () => this.onToggleVibration?.());
     this.element.querySelector<HTMLButtonElement>(".engine-canvas-button")?.addEventListener("click", () => this.onSelectView?.("canvas"));
     this.element.querySelector<HTMLButtonElement>(".engine-phaser-button")?.addEventListener("click", () => this.onSelectView?.("phaser"));
     this.element.querySelector<HTMLButtonElement>(".engine-three-button")?.addEventListener("click", () => this.onSelectView?.("three"));
@@ -250,7 +270,7 @@ export class SettingsOverlay {
     this.element.querySelector<HTMLButtonElement>(".exit-button")?.addEventListener("click", () => this.onExit?.());
 
     this.element.addEventListener("pointerdown", (event) => {
-      if (!this.isVisible()) {
+      if (!this.element.classList.contains("settings-overlay-open")) {
         return;
       }
 
@@ -270,12 +290,17 @@ export class SettingsOverlay {
         return;
       }
 
+      if (this.isGameRunning()) {
+        this.onPause?.();
+        return;
+      }
+
       this.hide();
     });
   }
 
   private syncActiveButtons(): void {
-    this.setButtonActive(".settings-button", this.isVisible());
+    this.setButtonActive(".menu-button", this.isVisible());
     this.setButtonActive(".engine-canvas-button", this.state.currentEngine === "canvas");
     this.setButtonActive(".engine-phaser-button", this.state.currentEngine === "phaser");
     this.setButtonActive(".engine-three-button", this.state.currentEngine === "three");
@@ -283,20 +308,37 @@ export class SettingsOverlay {
     this.setButtonActive(".language-ua-button", this.state.currentLanguage === "uk");
     this.setButtonActive(".sound-button", this.state.soundEnabled);
     this.setButtonActive(".music-button", this.state.musicEnabled);
+    this.setButtonActive(".vibration-button", this.state.vibrationEnabled);
     this.setButtonActive(".fullscreen-button", this.state.fullscreenEnabled);
+
+    const pauseTitle = this.element.querySelector(".pause-title") as HTMLDivElement | null;
+
+    if (pauseTitle) {
+      pauseTitle.style.display = this.isGameRunning() && this.isPaused ? "block" : "none";
+    }
   }
 
-  private setPaused(paused: boolean): void {
-    const pauseIcon = this.element.querySelector<HTMLElement>(".pause-button .icon");
+  private setPaused(paused: boolean, syncVisibility: boolean): void {
+    this.isPaused = paused;
 
-    this.setButtonActive(".pause-button", paused);
+    if (!syncVisibility) {
+      this.syncActiveButtons();
+      return;
+    }
 
-    pauseIcon?.classList.toggle("icon-pause", !paused);
-    pauseIcon?.classList.toggle("icon-play", paused);
+    if (paused && !this.isVisible()) {
+      this.show();
+    }
+
+    if (!paused && this.isVisible()) {
+      this.hide();
+    }
   }
 
   private setButtonActive(selector: string, active: boolean): void {
-    this.element.querySelector<HTMLButtonElement>(selector)?.classList.toggle("settings-button-active", active);
+    this.element.querySelectorAll<HTMLButtonElement>(selector).forEach((button) => {
+      button.classList.toggle("active", active);
+    });
   }
 
   private clearCloseTimeout(): void {

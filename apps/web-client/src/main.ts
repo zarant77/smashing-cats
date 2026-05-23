@@ -1,14 +1,15 @@
 import { GameSnapshot, PlayerId, type EntityKind } from "@smashing-cats/protocol";
-import { createTranslator } from "@smashing-cats/i18n";
+import { i18n } from "@smashing-cats/i18n";
 
 import "./ui/debug.js";
 
-import { audio, initAudio, musicEvents, playSound } from "./audio/audio.js";
+import { audio, musicEvents, playSound, setupAudioUnlock } from "./audio/audio.js";
+import { deviceController, setupDeviceUnlock } from "./device/DeviceController.js";
+import { GameStateController } from "./game/GameStateController.js";
 import { GameRuntime } from "./game/GameRuntime.js";
 import { getMatchCode } from "./game/routing.js";
-import { applyStaticTranslations, getRequiredElement, requestFullscreenFromUserGesture, toggleFullscreen } from "./ui/domControls.js";
+import { getRequiredElement, requestFullscreenFromUserGesture, toggleFullscreen, applyStaticTranslations } from "./ui/domControls.js";
 import { SettingsOverlay } from "./ui/SettingsOverlay.js";
-import { PauseOverlay } from "./ui/PauseOverlay.js";
 import { CharacterSelect } from "./ui/CharacterSelect.js";
 import { TouchControls } from "./ui/TouchControls.js";
 import { GameOverPopup } from "./ui/GameOverPopup.js";
@@ -21,6 +22,7 @@ import "./styles/index.css";
 
 const SOUNDS_ENABLED_KEY = "smashing-cats-sounds-enabled";
 const MUSIC_ENABLED_KEY = "smashing-cats-music-enabled";
+const VIBRATION_ENABLED_KEY = "smashing-cats-vibration-enabled";
 const LOCALE_KEY = "smashing-cats-locale";
 const VIEW_KEY = "smashing-cats-view";
 const CHARACTER_KEY = "smashing-cats-character";
@@ -37,7 +39,8 @@ const VIEW_SHORTCUTS: Record<string, ViewKind> = {
 void bootstrap();
 
 async function bootstrap(): Promise<void> {
-  await initAudio();
+  setupAudioUnlock();
+  setupDeviceUnlock();
 
   const root = getRequiredElement<HTMLElement>("#game-root", "Game root");
   const uiRoot = getRequiredElement<HTMLElement>("#ui-root", "UI root");
@@ -46,11 +49,9 @@ async function bootstrap(): Promise<void> {
   const matchCode = getMatchCode(params);
   const multiplayer = matchCode !== undefined;
 
-  let locale = params.get("locale") ?? localStorage.getItem(LOCALE_KEY) ?? "en";
-  let t = createTranslator(locale);
-
-  let soundsEnabled = localStorage.getItem(SOUNDS_ENABLED_KEY) !== "false";
+  let soundEnabled = localStorage.getItem(SOUNDS_ENABLED_KEY) !== "false";
   let musicEnabled = localStorage.getItem(MUSIC_ENABLED_KEY) !== "false";
+  let vibrationEnabled = localStorage.getItem(VIBRATION_ENABLED_KEY) !== "false";
 
   let viewKind = parseViewKind(params.get("view") ?? localStorage.getItem(VIEW_KEY));
   let selectedCharacterKind = localStorage.getItem(CHARACTER_KEY) as EntityKind | null;
@@ -63,20 +64,30 @@ async function bootstrap(): Promise<void> {
 
   let lastSnapshot: GameSnapshot | undefined;
   let lastPlayerId: PlayerId | undefined;
-  let settingsPausedGame = false;
 
-  audio.setSoundsEnabled(soundsEnabled);
+  audio.setSoundsEnabled(soundEnabled);
   audio.setMusicEnabled(musicEnabled);
-  view.setLocale?.(locale, t);
 
-  const hud = new Hud(uiRoot, t);
-  const pauseOverlay = new PauseOverlay(uiRoot, t);
+  const hud = new Hud(uiRoot);
   const touchControls = TouchControls.isTouchDevice() ? new TouchControls() : undefined;
+  const gameStateController = new GameStateController();
 
-  const helpPopup = new HelpPopup(uiRoot, t, {
+  gameStateController
+    .on("enemyKilled", (enemy) => {
+      if (enemy.kind === "crow") {
+        setTimeout(() => deviceController.vibrate(100), 500);
+      }
+    })
+    .on("localPlayerHurt", (enemy) => {
+      deviceController.vibrate([50]);
+    })
+    .on("localPlayerDied", () => {
+      deviceController.vibrate([200, 100, 200]);
+    });
+
+  const helpPopup = new HelpPopup(uiRoot, {
     onClose: () => {
-      playSound("sound.ui_click");
-      if (!settingsPausedGame && runtime?.isGameRunning() === true) {
+      if (runtime?.isGameRunning() === true) {
         runtime.setPaused(false);
       }
     },
@@ -92,10 +103,11 @@ async function bootstrap(): Promise<void> {
 
   const syncSettingsOverlay = (): void => {
     settingsOverlay?.setState({
+      currentLanguage: i18n.getLocale(),
       currentEngine: viewKind,
-      currentLanguage: locale === "uk" ? "uk" : "en",
-      soundEnabled: soundsEnabled,
+      soundEnabled,
       musicEnabled,
+      vibrationEnabled,
       fullscreenEnabled: document.fullscreenElement !== null,
     });
   };
@@ -109,20 +121,20 @@ async function bootstrap(): Promise<void> {
       lastSnapshot = snapshot;
       lastPlayerId = playerId;
 
+      gameStateController.update(snapshot, playerId);
+
       view.render(snapshot, playerId);
       hud.render(snapshot, playerId);
-      pauseOverlay.render(snapshot, playerId);
       settingsOverlay?.render(snapshot, playerId);
       gameOverPopup?.render(snapshot, playerId);
-      touchControls?.update(snapshot, playerId);
+      touchControls?.render(snapshot, playerId);
     },
   });
 
-  document.addEventListener("fullscreenchange", () => {
-    syncSettingsOverlay();
-  });
+  deviceController.on("orientationChange", () => syncOrientation());
+  document.addEventListener("fullscreenchange", () => syncSettingsOverlay());
 
-  gameOverPopup = new GameOverPopup(uiRoot, t, {
+  gameOverPopup = new GameOverPopup(uiRoot, {
     onRestart: () => {
       playSound("sound.ui_click");
       runtime?.restart();
@@ -130,8 +142,6 @@ async function bootstrap(): Promise<void> {
   });
 
   characterSelect = new CharacterSelect(uiRoot, {
-    locale,
-    t,
     initialCharacterKind: selectedCharacterKind ?? undefined,
     onSelect: (characterKind: EntityKind) => {
       if (runtime === undefined || !runtime.selectCharacter(characterKind)) {
@@ -147,24 +157,11 @@ async function bootstrap(): Promise<void> {
     },
   });
 
-  settingsOverlay = new SettingsOverlay(uiRoot, t, {
-    onOpen: () => {
-      if (runtime === undefined || !runtime.isGameRunning() || runtime.isPaused()) {
-        settingsPausedGame = false;
-        settingsOverlay?.setPauseDisabled(false);
-        return;
-      }
+  settingsOverlay = new SettingsOverlay(uiRoot, {
+    isGameRunning: () => runtime?.isGameRunning() === true,
 
-      runtime.setPaused(true);
-      settingsPausedGame = true;
-      settingsOverlay?.setPauseDisabled(true);
-    },
-
-    onClose: () => {
-      if (settingsPausedGame) {
-        runtime?.setPaused(false);
-        settingsPausedGame = false;
-      }
+    onToggleMenu: () => {
+      playSound("sound.ui_click");
     },
 
     onHelp: () => {
@@ -184,12 +181,12 @@ async function bootstrap(): Promise<void> {
     },
 
     onToggleSound: () => {
-      soundsEnabled = !soundsEnabled;
+      soundEnabled = !soundEnabled;
 
-      localStorage.setItem(SOUNDS_ENABLED_KEY, String(soundsEnabled));
-      audio.setSoundsEnabled(soundsEnabled);
+      localStorage.setItem(SOUNDS_ENABLED_KEY, String(soundEnabled));
+      audio.setSoundsEnabled(soundEnabled);
 
-      if (soundsEnabled) {
+      if (soundEnabled) {
         playSound("sound.ui_click");
       }
 
@@ -208,6 +205,17 @@ async function bootstrap(): Promise<void> {
       syncSettingsOverlay();
     },
 
+    onToggleVibration: () => {
+      vibrationEnabled = !vibrationEnabled;
+
+      localStorage.setItem(VIBRATION_ENABLED_KEY, String(vibrationEnabled));
+      deviceController.setVibrationEnabled(vibrationEnabled);
+
+      playSound("sound.ui_click");
+
+      syncSettingsOverlay();
+    },
+
     onToggleFullscreen: () => {
       playSound("sound.ui_click");
 
@@ -219,42 +227,30 @@ async function bootstrap(): Promise<void> {
 
     onSelectView: (view: ViewKind) => switchView(view),
 
-    onSelectLanguage: (nextLocale: string) => setLocale(nextLocale),
+    onSelectLanguage: (nextLocale: string) => i18n.changeLocale(nextLocale),
 
     onExit: () => {
-      playSound("sound.ui_click");
       runtime?.restart();
     },
   });
 
+  syncOrientation();
   syncSettingsOverlay();
   renderCharacterSelect();
-  applyStaticTranslations(locale, t);
   bindFullscreenGesture();
   bindViewShortcuts();
 
-  runtime.start();
-
-  function setLocale(nextLocale: string): void {
-    playSound("sound.ui_click");
-
-    locale = nextLocale;
-    t = createTranslator(locale);
-
-    localStorage.setItem(LOCALE_KEY, locale);
-
-    applyStaticTranslations(locale, t);
-
-    hud.setTranslator(t);
-    characterSelect?.setLocale(locale, t);
+  // Run the game
+  i18n.onLocaleChanged((newLocale) => {
+    localStorage.setItem(LOCALE_KEY, newLocale);
+    document.title = i18n.t("title");
+    applyStaticTranslations();
     renderCharacterSelect();
-
-    view.setLocale?.(locale, t);
-
-    document.title = t("title");
-
     syncSettingsOverlay();
-  }
+  });
+  i18n.changeLocale(params.get("locale") ?? localStorage.getItem(LOCALE_KEY) ?? "en");
+
+  runtime.start();
 
   async function switchView(nextViewKind: ViewKind): Promise<void> {
     playSound("sound.ui_click");
@@ -275,7 +271,6 @@ async function bootstrap(): Promise<void> {
 
       localStorage.setItem(VIEW_KEY, nextViewKind);
 
-      nextView.setLocale?.(locale, t);
       nextView.render(snapshot, playerId);
 
       viewKind = nextViewKind;
@@ -322,5 +317,15 @@ function isEditableTarget(target: EventTarget | null): boolean {
     return false;
   }
 
-  return target.isContentEditable || target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement;
+  return (
+    target.isContentEditable ||
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement
+  );
+}
+
+function syncOrientation() {
+  document.body.className = document.body.className.replace(/\borientation-\w+\b/g, "");
+  document.body.className = screen.orientation.type;
 }

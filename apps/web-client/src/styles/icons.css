@@ -3,91 +3,86 @@
   height: 112px;
   background-image: url("/ui/icons.png");
   background-repeat: no-repeat;
-  background-size: 1904px 112px;
+  background-size: 1792px 112px;
   image-rendering: auto;
 }
 
 /* 0 */
-.icon-settings {
+.icon-menu {
   background-position: 0 0;
 }
 
 /* 1 */
-.icon-pause {
+.icon-fullscreen {
   background-position: -112px 0;
 }
 
 /* 2 */
-.icon-play {
+.icon-help {
   background-position: -224px 0;
 }
 
 /* 3 */
-.icon-sound {
+.icon-exit {
   background-position: -336px 0;
 }
 
 /* 4 */
-.icon-music {
+.icon-sound {
   background-position: -448px 0;
 }
 
 /* 5 */
-.icon-fullscreen {
+.icon-music {
   background-position: -560px 0;
 }
 
 /* 6 */
-.icon-exit {
+.icon-vibro {
   background-position: -672px 0;
 }
 
 /* 7 */
-.icon-en {
+.icon-canvas {
   background-position: -784px 0;
 }
 
 /* 8 */
-.icon-ua {
+.icon-phaser {
   background-position: -896px 0;
 }
 
 /* 9 */
-.icon-hp {
+.icon-three {
   background-position: -1008px 0;
 }
 
 /* 10 */
-.icon-jump {
+.icon-en {
   background-position: -1120px 0;
 }
 
 /* 11 */
-.icon-speed {
+.icon-ua {
   background-position: -1232px 0;
 }
 
 /* 12 */
-.icon-score {
+.icon-hp {
   background-position: -1344px 0;
 }
 
 /* 13 */
-.icon-canvas {
+.icon-jump {
   background-position: -1456px 0;
 }
 
 /* 14 */
-.icon-phaser {
+.icon-speed {
   background-position: -1568px 0;
 }
 
 /* 15 */
-.icon-three {
+.icon-score {
   background-position: -1680px 0;
-}
-
-/* 16 */
-.icon-help {
-  background-position: -1792px 0;
 }

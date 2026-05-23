@@ -1,5 +1,5 @@
 import type { EntityKind, GameSnapshot, PlayerId } from "@smashing-cats/protocol";
-import type { Translator } from "@smashing-cats/i18n";
+import { t } from "@smashing-cats/i18n";
 
 type GameOverPopupOptions = {
   onRestart: () => void;
@@ -9,7 +9,6 @@ const SHOW_DELAY_MS = 2000;
 
 export class GameOverPopup {
   private readonly element: HTMLDivElement;
-  private readonly t: Translator;
   private readonly onRestart: () => void;
 
   private visible = false;
@@ -17,8 +16,7 @@ export class GameOverPopup {
   private deadAt: number | undefined;
   private shownForPlayerId: PlayerId | undefined;
 
-  public constructor(root: HTMLElement, t: Translator, options: GameOverPopupOptions) {
-    this.t = t;
+  public constructor(root: HTMLElement, options: GameOverPopupOptions) {
     this.onRestart = options.onRestart;
 
     this.element = document.createElement("div");
@@ -68,7 +66,7 @@ export class GameOverPopup {
 
     this.element.innerHTML = `
       <div class="card">
-        <h2>${this.t("gameOverTitle")}</h2>
+        <h2>${t("gameOverTitle")}</h2>
         <div class="character-preview">
           <img
             class="platform"
@@ -82,10 +80,10 @@ export class GameOverPopup {
           />
         </div>
         <div class="score">
-          ${this.t("score")}: <strong>${score}</strong>
+          ${t("score")}: <strong>${score}</strong>
         </div>
         <button class="button restart" type="button">
-          ${this.t("restart")}
+          ${t("restart")}
         </button>
       </div>
     `;

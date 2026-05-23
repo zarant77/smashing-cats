@@ -33,23 +33,23 @@ export function resolvePlayerEntityCollisions(context: CollisionContext): void {
     }
 
     const playerHurtCircle = getPlayerCircle(player, context.scrollX);
+    const smashTargets = getSmashTargets(context, player);
     let shouldStopSmash = false;
+
+    for (const entity of smashTargets) {
+      shouldStopSmash = resolvePlayerEntityCollision(context, player, entity, true) || shouldStopSmash;
+    }
 
     for (const entity of context.entities) {
       if (!entity.alive) {
         continue;
       }
 
-      const entityCircle = getEntityCircle(entity);
-
-      if (player.smashingForCollision && entity.type !== "obstacle") {
-        const smashBox = getPlayerSmashBox(player, context.scrollX);
-
-        if (intersects(smashBox, circleToBounds(entityCircle)) || context.intersectsCompensatedEntity(player, entity)) {
-          shouldStopSmash = resolvePlayerEntityCollision(context, player, entity, true) || shouldStopSmash;
-          continue;
-        }
+      if (smashTargets.has(entity)) {
+        continue;
       }
+
+      const entityCircle = getEntityCircle(entity);
 
       if (circlesIntersect(playerHurtCircle, entityCircle)) {
         resolveDamagingCollision(context, player, entity);
@@ -60,6 +60,30 @@ export function resolvePlayerEntityCollisions(context: CollisionContext): void {
       stopSmash(player);
     }
   }
+}
+
+function getSmashTargets(context: CollisionContext, player: Player): Set<Entity> {
+  const targets = new Set<Entity>();
+
+  if (!player.smashingForCollision) {
+    return targets;
+  }
+
+  const smashBox = getPlayerSmashBox(player, context.scrollX);
+
+  for (const entity of context.entities) {
+    if (!entity.alive || entity.type === "obstacle") {
+      continue;
+    }
+
+    const entityCircle = getEntityCircle(entity);
+
+    if (intersects(smashBox, circleToBounds(entityCircle)) || context.intersectsCompensatedEntity(player, entity)) {
+      targets.add(entity);
+    }
+  }
+
+  return targets;
 }
 
 function resolvePlayerEntityCollision(context: CollisionContext, player: Player, entity: Entity, smashCollision = false): boolean {

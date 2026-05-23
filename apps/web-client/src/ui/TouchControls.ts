@@ -1,4 +1,3 @@
-import type { Translator } from "@smashing-cats/i18n";
 import type { GameSnapshot, PlayerId, PlayerInput } from "@smashing-cats/protocol";
 
 type TouchState = {
@@ -62,8 +61,10 @@ export class TouchControls {
     return navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches;
   }
 
-  public update(snapshot: GameSnapshot | undefined, playerId: PlayerId | undefined): void {
+  public render(snapshot: GameSnapshot | undefined, playerId: PlayerId | undefined): void {
     const player = snapshot?.players.find((item) => item.playerId === playerId);
+
+    this.root.style.display = snapshot === undefined ? "none" : "block";
 
     this.setActionMode(player !== undefined && !player.grounded ? "smash" : "jump");
   }

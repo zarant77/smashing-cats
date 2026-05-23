@@ -26,6 +26,7 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^8.3.4",
-    "@types/three": "^0.184.1"
+    "@types/three": "^0.184.1",
+    "@vitejs/plugin-basic-ssl": "^2.3.0"
   }
 }

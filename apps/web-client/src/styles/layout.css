@@ -33,3 +33,14 @@
 
   font-size: 24px;
 }
+
+body.portrait-primary #viewport-root {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: 100vh;
+  height: 100vw;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  transform-origin: center;
+  overflow: hidden;
+}

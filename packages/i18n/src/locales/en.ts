@@ -4,7 +4,7 @@ export const en = {
   enginePhaser: "Engine: Phaser",
   engineThree: "Engine: Three.js",
   locale: "Locale",
-  pause: "PAUSE",
+  pause: "<b>P</b><b>A</b><b>U</b><b>S</b><b>E</b>",
   matchCode: "Session code",
   startGame: "Start game",
   stats: "Stats",

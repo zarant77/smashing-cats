@@ -1,21 +1,14 @@
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
-import type { Translator } from "@smashing-cats/i18n";
+import { t } from "@smashing-cats/i18n";
 
 export class Hud {
   private readonly element: HTMLDivElement;
-  private t: Translator;
 
-  public constructor(root: HTMLElement, t: Translator) {
-    this.t = t;
-
+  public constructor(root: HTMLElement) {
     this.element = document.createElement("div");
     this.element.className = "hud";
 
     root.append(this.element);
-  }
-
-  public setTranslator(t: Translator): void {
-    this.t = t;
   }
 
   public render(snapshot: GameSnapshot | undefined, localPlayerId: PlayerId | undefined): void {
@@ -41,7 +34,7 @@ export class Hud {
 
           <div class="hud-player-content">
             <div class="hud-player-top">
-              <strong>${this.t(player.kind)}</strong>
+              <strong>${t(player.kind)}</strong>
               <span class="hud-player-score">⭐ ${player.score}</span>
             </div>
 
@@ -51,7 +44,7 @@ export class Hud {
               <div
                 class="hud-hp-segments"
                 style="grid-template-columns: repeat(${player.maxHp}, 1fr)"
-                aria-label="${this.t("hp")} ${player.hp}/${player.maxHp}"
+                aria-label="${t("hp")} ${player.hp}/${player.maxHp}"
               >
                 ${createHpSegments(player.hp, player.maxHp)}
               </div>

@@ -1,12 +1,11 @@
 @import "./base.css";
 @import "./icons.css";
 @import "./layout.css";
-@import "./settings-overlay.css";
+@import "./pause.css";
 @import "./hud.css";
+@import "./settings-overlay.css";
 @import "./character-select.css";
 @import "./touch-controls.css";
 @import "./game-over.css";
-@import "./pause-overlay.css";
-@import "./orientation-overlay.css";
 @import "./help-popup.css";
 @import "./desktop.css";
