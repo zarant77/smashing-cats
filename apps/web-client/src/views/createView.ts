@@ -2,13 +2,16 @@ import { preloadAssets } from "../assetManager/assetManager.js";
 import type { GameView, ViewKind } from "./types.js";
 
 export async function createView(kind: ViewKind, root: HTMLElement): Promise<GameView> {
-  showSplash(true);
+  updateSplash(true);
 
   try {
-    await preloadAssets(kind);
+    await preloadAssets(kind, {
+      onProgress: ({ percent }) => updateSplash(true, percent),
+    });
+
     return await createLoadedView(kind, root);
   } finally {
-    showSplash(false);
+    updateSplash(false);
   }
 }
 
@@ -42,10 +45,43 @@ export function parseViewKind(value: string | null): ViewKind {
   }
 }
 
-function showSplash(isShow: boolean): void {
-  const splash = document.getElementById("loading");
+let splash: HTMLDivElement | null = null;
+let loadingText: HTMLDivElement | null = null;
+let loadingProgressBar: HTMLDivElement | null = null;
+let loadingProgressBarFill: HTMLDivElement | null = null;
+let lastPercent: number | null = null;
+let lastShow: boolean | null = null;
 
-  if (splash !== null) {
+function updateSplash(isShow: boolean, percent?: number): void {
+  if (!splash) {
+    splash = document.getElementById("loading") as HTMLDivElement;
+  }
+
+  if (!loadingText) {
+    loadingText = splash.querySelector(".loading-progress") as HTMLDivElement;
+  }
+
+  if (!loadingProgressBar) {
+    loadingProgressBar = splash.querySelector(".loading-progress-bar") as HTMLDivElement;
+  }
+
+  if (!loadingProgressBarFill) {
+    loadingProgressBarFill = splash.querySelector(".loading-progress-bar-fill") as HTMLDivElement;
+  }
+
+  if (isShow !== lastShow) {
     splash.style.display = isShow ? "flex" : "none";
+    loadingText.hidden = !isShow;
+    loadingProgressBar.hidden = !isShow;
+    lastShow = isShow;
+  }
+
+  const normalizedPercent = Math.max(0, Math.min(100, percent ?? 0));
+
+  if (normalizedPercent !== lastPercent) {
+    loadingText.textContent = `${normalizedPercent}%`;
+    loadingProgressBar.setAttribute("aria-valuenow", String(normalizedPercent));
+    loadingProgressBarFill.style.width = `${normalizedPercent}%`;
+    lastPercent = normalizedPercent;
   }
 }

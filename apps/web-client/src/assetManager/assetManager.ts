@@ -3,9 +3,7 @@ import { ImageCache } from "./ImageCache.js";
 import { ModelCache } from "./ModelCache.js";
 
 import { IMAGES as canvasImages, AUDIO as canvasAudio, MODELS as canvasModels } from "./manifests/canvas.js";
-
 import { IMAGES as phaserImages, AUDIO as phaserAudio, MODELS as phaserModels } from "./manifests/phaser.js";
-
 import { IMAGES as threeImages, AUDIO as threeAudio, MODELS as threeModels } from "./manifests/three.js";
 
 import type { ViewKind } from "../views/types.js";
@@ -16,6 +14,23 @@ export type AssetManifest = {
   images?: AssetMap;
   audio?: AssetMap;
   models?: AssetMap;
+};
+
+export type AssetLoadProgress = {
+  loaded: number;
+  total: number;
+  percent: number;
+  group: keyof AssetManifest;
+  path: string;
+};
+
+export type PreloadAssetsOptions = {
+  onProgress?: (progress: AssetLoadProgress) => void;
+};
+
+type AssetEntry = {
+  group: keyof AssetManifest;
+  path: string;
 };
 
 const manifestList = {
@@ -47,26 +62,47 @@ const DEFAULT_IMAGE_KEY = "default";
 let currentManifest: AssetManifest | undefined;
 const missingAssetWarnings = new Set<string>();
 
-export async function preloadAssets(engine: ViewKind): Promise<void> {
+export async function preloadAssets(engine: ViewKind, options: PreloadAssetsOptions = {}): Promise<void> {
   const manifest = manifestList[engine];
 
   currentManifest = manifest;
 
-  const promises: Promise<void>[] = [];
+  const entries = [
+    ...getAssetEntries("images", manifest.images),
+    ...getAssetEntries("audio", manifest.audio),
+    ...getAssetEntries("models", manifest.models),
+  ];
 
-  if (manifest.images !== undefined) {
-    promises.push(images.preload(Object.values(manifest.images)));
+  let loaded = 0;
+  const total = entries.length;
+
+  if (total === 0) {
+    options.onProgress?.({
+      loaded: 0,
+      total: 0,
+      percent: 100,
+      group: "images",
+      path: "",
+    });
+
+    return;
   }
 
-  if (manifest.audio !== undefined) {
-    promises.push(audio.preload(Object.values(manifest.audio)));
-  }
+  await Promise.all(
+    entries.map(async (entry) => {
+      await preloadSingleAsset(entry);
 
-  if (manifest.models !== undefined) {
-    promises.push(models.preload(Object.values(manifest.models)));
-  }
+      loaded += 1;
 
-  await Promise.all(promises);
+      options.onProgress?.({
+        loaded,
+        total,
+        percent: Math.round((loaded / total) * 100),
+        group: entry.group,
+        path: entry.path,
+      });
+    }),
+  );
 }
 
 export function getImageAsset(key: string): string {
@@ -127,6 +163,33 @@ function getAsset(group: keyof AssetManifest, key: string): string | undefined {
   }
 
   return findAssetInAnyManifest(group, key);
+}
+
+function getAssetEntries(group: keyof AssetManifest, assets: AssetMap | undefined): AssetEntry[] {
+  if (assets === undefined) {
+    return [];
+  }
+
+  return Object.values(assets).map((path) => ({
+    group,
+    path,
+  }));
+}
+
+function preloadSingleAsset(entry: AssetEntry): Promise<void> {
+  if (entry.group === "images") {
+    return images.preload([entry.path]);
+  }
+
+  if (entry.group === "audio") {
+    return audio.preload([entry.path]);
+  }
+
+  if (entry.group === "models") {
+    return models.preload([entry.path]);
+  }
+
+  return Promise.resolve();
 }
 
 function findAssetInAnyManifest(group: keyof AssetManifest, key: string): string | undefined {

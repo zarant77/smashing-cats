@@ -4,6 +4,9 @@ export const IMAGES = {
   default: "/default.png",
 
   // UI
+  "ui.arrow_left": "/ui/arrow_left.png",
+  "ui.character_platform": "/ui/character_platform.png",
+  "ui.icons": "/ui/icons.png",
   "ui.joy_arrow": "/ui/joy_arrow.png",
   "ui.joy_center": "/ui/joy_center.png",
   "ui.joy_jump": "/ui/joy_jump.png",
