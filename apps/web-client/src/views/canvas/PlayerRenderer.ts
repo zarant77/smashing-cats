@@ -1,6 +1,6 @@
 import type { GameSnapshot, PlayerSnapshot } from "@smashing-cats/protocol";
 import { GAME_CONFIG } from "@smashing-cats/core";
-import { getImageAsset, images } from "../../assets/assets.js";
+import { getImageAsset, images } from "../../assetManager/assetManager.js";
 import { drawDebugShape } from "./DebugShapeRenderer.js";
 import type { EffectRenderer } from "./EffectRenderer.js";
 import { SpriteAnimation } from "./SpriteAnimation.js";
@@ -64,10 +64,29 @@ export class PlayerRenderer {
 
     const shouldBlinkOff = player.invulnerable && Math.floor(snapshot.tick / 2) % 2 === 0;
 
-    this.updateSmashLandingEffect(player, effects, screenX, snapshot.world.groundY, physicsWidth, physicsHeight, viewport.scale);
+    this.updateSmashLandingEffect(
+      player,
+      effects,
+      screenX,
+      snapshot.world.groundY,
+      physicsWidth,
+      physicsHeight,
+      viewport.scale,
+    );
 
     if (!player.alive) {
-      this.drawDeadPlayer(ctx, viewport, player, image, screenX, screenY, physicsWidth, physicsHeight, renderSize, isLocal);
+      this.drawDeadPlayer(
+        ctx,
+        viewport,
+        player,
+        image,
+        screenX,
+        screenY,
+        physicsWidth,
+        physicsHeight,
+        renderSize,
+        isLocal,
+      );
 
       return;
     }
@@ -162,7 +181,8 @@ export class PlayerRenderer {
     const elapsed = (performance.now() - state.startedAt) / 1000;
 
     const x = state.x + DEATH_DRIFT_X * elapsed * viewport.scale;
-    const y = state.y + DEATH_JUMP_VELOCITY * elapsed * viewport.scale + DEATH_GRAVITY * elapsed * elapsed * viewport.scale;
+    const y =
+      state.y + DEATH_JUMP_VELOCITY * elapsed * viewport.scale + DEATH_GRAVITY * elapsed * elapsed * viewport.scale;
 
     const rotation = elapsed * DEATH_ROTATION_SPEED;
     const alpha = y > ctx.canvas.height + renderSize.height ? 0 : 1;

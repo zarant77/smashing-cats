@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { getModelAsset, models } from "../../../assets/assets.js";
+import { getModelAsset, models } from "../../../assetManager/assetManager.js";
 import { getModelInfoByKey } from "./threeModels.js";
 
 const FALLBACK_MODEL_COLOR = 0xffcc33;

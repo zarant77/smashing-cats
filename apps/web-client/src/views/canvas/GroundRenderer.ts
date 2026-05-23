@@ -1,5 +1,5 @@
 import type { GameSnapshot } from "@smashing-cats/protocol";
-import { getImageAsset, images } from "../../assets/assets.js";
+import { getImageAsset, images } from "../../assetManager/assetManager.js";
 import type { RenderViewport } from "../viewport.js";
 
 const TILE_KEY = "environment.ground";
@@ -8,7 +8,12 @@ const DESIGN_TILE_WIDTH = 800;
 const GROUND_OFFSET_Y = -55;
 
 export class GroundRenderer {
-  public draw(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, snapshot: GameSnapshot, viewport: RenderViewport): void {
+  public draw(
+    ctx: CanvasRenderingContext2D,
+    canvas: HTMLCanvasElement,
+    snapshot: GameSnapshot,
+    viewport: RenderViewport,
+  ): void {
     const image = images.getLoaded(getImageAsset(TILE_KEY));
 
     const tileWidth = viewport.worldToScreenSize(DESIGN_TILE_WIDTH);
@@ -27,7 +32,11 @@ export class GroundRenderer {
     const firstTileIndex = Math.floor(scrollX / tileWidth);
     const offsetX = -(scrollX - firstTileIndex * tileWidth);
 
-    for (let tileIndex = firstTileIndex; offsetX + (tileIndex - firstTileIndex) * tileWidth < canvas.width + tileWidth; tileIndex++) {
+    for (
+      let tileIndex = firstTileIndex;
+      offsetX + (tileIndex - firstTileIndex) * tileWidth < canvas.width + tileWidth;
+      tileIndex++
+    ) {
       const x = offsetX + (tileIndex - firstTileIndex) * tileWidth;
 
       this.drawTile(ctx, image, x, groundY, tileWidth, tileHeight, tileIndex);

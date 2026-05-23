@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { GameSnapshot } from "@smashing-cats/protocol";
-import { getImageAsset, images } from "../../../assets/assets.js";
+import { getImageAsset, images } from "../../../assetManager/assetManager.js";
 import { deviceController } from "../../../device/DeviceController.js";
 import type { RenderViewport } from "../../viewport.js";
 

@@ -1,11 +1,10 @@
 import blessed from "blessed";
-import type { Translator } from "@smashing-cats/i18n";
+import { t } from "@smashing-cats/i18n";
 
 type GameOverOverlayOptions = {
   parent: blessed.Widgets.Node;
   screen: blessed.Widgets.Screen;
   score: number;
-  t: Translator;
   onRestart: () => void;
   onExit: () => void;
 };
@@ -32,13 +31,13 @@ export class GameOverOverlay {
       },
       content: [
         "",
-        `{bold}{red-fg}${this.options.t("gameOverTitle")}{/red-fg}{/bold}`,
+        `{bold}{red-fg}${t("gameOverTitle")}{/red-fg}{/bold}`,
         "",
-        `${this.options.t("score")}: ${this.options.score}`,
+        `${t("score")}: ${this.options.score}`,
         "",
-        `[ ENTER ] ${this.options.t("restart")}`,
-        `[ ESC ] ${this.options.t("toMainMenu")}`,
-        `[ Ctrl+C ] ${this.options.t("exit")}`,
+        `[ ENTER ] ${t("restart")}`,
+        `[ ESC ] ${t("toMainMenu")}`,
+        `[ Ctrl+C ] ${t("exit")}`,
       ].join("\n"),
     });
 

@@ -3,7 +3,7 @@ import Phaser from "phaser";
 import type { EntitySnapshot, GameSnapshot } from "@smashing-cats/protocol";
 import type { Translator } from "@smashing-cats/i18n";
 
-import { getImageAsset, images } from "../../../assets/assets.js";
+import { getImageAsset, images } from "../../../assetManager/assetManager.js";
 import type { RenderViewport } from "../../viewport.js";
 
 import { DebugRenderer } from "./DebugRenderer.js";
@@ -157,7 +157,10 @@ export class EntityRenderer {
       fallback.setDepth(depth);
       fallback.setOrigin(0.5, isFlyingToScreen ? 0.5 : 1);
       fallback.setPosition(Math.round(renderX), Math.round(renderY));
-      fallback.setSize(Math.round(physicsWidth * transform.scaleX * extraScale), Math.round(physicsHeight * transform.scaleY * extraScale));
+      fallback.setSize(
+        Math.round(physicsWidth * transform.scaleX * extraScale),
+        Math.round(physicsHeight * transform.scaleY * extraScale),
+      );
       fallback.setRotation(rotation);
       fallback.setAlpha(alpha);
       fallback.setFillStyle(getEntityFallbackColor(entity));

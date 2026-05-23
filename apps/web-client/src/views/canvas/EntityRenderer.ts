@@ -1,6 +1,6 @@
 import { GAME_CONFIG } from "@smashing-cats/core";
 import type { EntitySnapshot } from "@smashing-cats/protocol";
-import { getImageAsset, images } from "../../assets/assets.js";
+import { getImageAsset, images } from "../../assetManager/assetManager.js";
 import { drawDebugShape } from "./DebugShapeRenderer.js";
 import type { EffectRenderer } from "./EffectRenderer.js";
 import { SpriteAnimation } from "./SpriteAnimation.js";

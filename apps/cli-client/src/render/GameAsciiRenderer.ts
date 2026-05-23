@@ -1,4 +1,3 @@
-import type { Translator } from "@smashing-cats/i18n";
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
 import { AsciiBuffer } from "./AsciiBuffer.js";
 import { AsciiCamera } from "./AsciiCamera.js";
@@ -21,7 +20,7 @@ export class GameAsciiRenderer {
   private readonly entityRenderer = new EntityAsciiRenderer();
   private readonly floatingTextRenderer = new FloatingTextAsciiRenderer();
 
-  public render(snapshot: GameSnapshot | undefined, localPlayerId: PlayerId | undefined, t: Translator): string {
+  public render(snapshot: GameSnapshot | undefined, localPlayerId: PlayerId | undefined): string {
     if (snapshot === undefined) {
       return "Waiting for snapshot...";
     }
@@ -32,7 +31,7 @@ export class GameAsciiRenderer {
 
     this.drawClouds(scrollX);
     this.floatingTextRenderer.update(snapshot);
-    this.hudRenderer.render(this.buffer, snapshot, t);
+    this.hudRenderer.render(this.buffer, snapshot);
 
     const groundRow = this.camera.worldToScreenY(snapshot.world.groundY, snapshot.world.groundY);
     this.groundRenderer.render(this.buffer, groundRow);

@@ -1,5 +1,5 @@
 import type { GameSnapshot } from "@smashing-cats/protocol";
-import { getImageAsset, images } from "../../assets/assets.js";
+import { getImageAsset, images } from "../../assetManager/assetManager.js";
 import type { RenderViewport } from "../viewport.js";
 
 const SPAWN_PROBABILITY = 0.5;
@@ -51,7 +51,12 @@ export class ForegroundRenderer {
   private lastScrollX: number | undefined;
   private nextSpawnX = 0;
 
-  public draw(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, snapshot: GameSnapshot, viewport: RenderViewport): void {
+  public draw(
+    ctx: CanvasRenderingContext2D,
+    canvas: HTMLCanvasElement,
+    snapshot: GameSnapshot,
+    viewport: RenderViewport,
+  ): void {
     ctx.imageSmoothingEnabled = false;
 
     const deltaScrollX = this.getDeltaScrollX(snapshot.world.scrollX);
@@ -150,7 +155,12 @@ export class ForegroundRenderer {
     }
   }
 
-  private drawObject(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, viewport: RenderViewport, object: ForegroundObject): void {
+  private drawObject(
+    ctx: CanvasRenderingContext2D,
+    canvas: HTMLCanvasElement,
+    viewport: RenderViewport,
+    object: ForegroundObject,
+  ): void {
     const image = images.getLoaded(getImageAsset(object.key));
 
     const width = Math.round(image.naturalWidth * object.scale * viewport.scale);

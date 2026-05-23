@@ -1,4 +1,4 @@
-import { getAudioAsset } from "../assets/assets.js";
+import { getAudioAsset } from "../assetManager/assetManager.js";
 import { AudioManager } from "./audioManager.js";
 
 export const audio = new AudioManager(4);

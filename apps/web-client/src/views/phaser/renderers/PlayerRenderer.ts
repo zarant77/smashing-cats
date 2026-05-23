@@ -3,7 +3,7 @@ import Phaser from "phaser";
 import type { GameSnapshot, PlayerId, PlayerSnapshot } from "@smashing-cats/protocol";
 import type { Translator } from "@smashing-cats/i18n";
 
-import { getImageAsset, images } from "../../../assets/assets.js";
+import { getImageAsset, images } from "../../../assetManager/assetManager.js";
 import type { RenderViewport } from "../../viewport.js";
 
 import { DebugRenderer } from "./DebugRenderer.js";
@@ -102,7 +102,10 @@ export class PlayerRenderer {
 
     sprite.setVisible(true);
     sprite.setPosition(Math.round(x + transform.offsetX), Math.round(y + transform.offsetY));
-    sprite.setDisplaySize(Math.round(renderSize.width * transform.scaleX), Math.round(renderSize.height * transform.scaleY));
+    sprite.setDisplaySize(
+      Math.round(renderSize.width * transform.scaleX),
+      Math.round(renderSize.height * transform.scaleY),
+    );
     sprite.setRotation(transform.rotation);
     sprite.setFlipX(true);
 

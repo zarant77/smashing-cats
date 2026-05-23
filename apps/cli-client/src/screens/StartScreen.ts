@@ -1,5 +1,5 @@
 import blessed from "blessed";
-import type { Translator } from "@smashing-cats/i18n";
+import { t } from "@smashing-cats/i18n";
 import type { EntityKind } from "@smashing-cats/protocol";
 import { CharacterListView } from "../ui/CharacterListView.js";
 import { CharacterStatsView } from "../ui/CharacterStatsView.js";
@@ -8,7 +8,6 @@ import type { Screen } from "./Screen.js";
 
 type StartScreenOptions = {
   screen: blessed.Widgets.Screen;
-  t: Translator;
   onStart: (options: StartGameOptions) => void;
 };
 
@@ -47,13 +46,12 @@ export class StartScreen implements Screen {
       width: "shrink",
       height: 1,
       tags: true,
-      content: `{bold}${this.options.t("title")}{/bold}`,
+      content: `{bold}${t("title")}{/bold}`,
       style: { fg: "yellow" },
     });
 
     this.characterList = new CharacterListView({
       parent: this.root,
-      t: this.options.t,
       onFocus: () => this.focusBlock("cats"),
       onSelect: () => this.updateDetails(),
     });
@@ -75,7 +73,7 @@ export class StartScreen implements Screen {
       left: 4,
       width: 30,
       height: 1,
-      content: this.options.t("matchCode"),
+      content: t("matchCode"),
       style: { fg: "white" },
     });
 
@@ -98,7 +96,7 @@ export class StartScreen implements Screen {
       left: 36,
       width: 24,
       height: 3,
-      content: ` ${this.options.t("startGame")} `,
+      content: ` ${t("startGame")} `,
       align: "center",
       valign: "middle",
       mouse: true,
@@ -118,7 +116,7 @@ export class StartScreen implements Screen {
       width: "90%",
       height: 2,
       tags: true,
-      content: this.options.t("startScreenHint"),
+      content: t("startScreenHint"),
       style: { fg: "gray" },
     });
 
@@ -247,8 +245,8 @@ export class StartScreen implements Screen {
   private updateDetails(): void {
     const character = this.characterList.getSelectedCharacter();
 
-    this.details.setLabel(` ${this.options.t(character.kind)} `);
-    this.details.setContent(this.statsView.render(character, this.options.t));
+    this.details.setLabel(` ${t(character.kind)} `);
+    this.details.setContent(this.statsView.render(character, t));
     this.options.screen.render();
   }
 }

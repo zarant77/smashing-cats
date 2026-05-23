@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import type { GameSnapshot } from "@smashing-cats/protocol";
 import type { Translator } from "@smashing-cats/i18n";
-import { getImageAsset, images } from "../../../assets/assets.js";
+import { getImageAsset, images } from "../../../assetManager/assetManager.js";
 import { deviceController } from "../../../device/DeviceController.js";
 import type { RenderViewport } from "../../viewport.js";
 

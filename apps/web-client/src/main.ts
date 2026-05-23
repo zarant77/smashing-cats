@@ -9,7 +9,12 @@ import { loadHeavyEffectsIfAllowed } from "./device/loadHeavyEffectsIfAllowed.js
 import { GameStateController } from "./game/GameStateController.js";
 import { GameRuntime } from "./game/GameRuntime.js";
 import { getMatchCode } from "./game/routing.js";
-import { getRequiredElement, requestFullscreenFromUserGesture, toggleFullscreen, applyStaticTranslations } from "./ui/domControls.js";
+import {
+  getRequiredElement,
+  requestFullscreenFromUserGesture,
+  toggleFullscreen,
+  applyStaticTranslations,
+} from "./ui/domControls.js";
 import { SettingsOverlay } from "./ui/SettingsOverlay.js";
 import { CharacterSelect } from "./ui/CharacterSelect.js";
 import { TouchControls } from "./ui/TouchControls.js";
@@ -243,7 +248,7 @@ async function bootstrap(): Promise<void> {
   // Run the game
   i18n.onLocaleChanged((newLocale) => {
     localStorage.setItem(LOCALE_KEY, newLocale);
-    document.title = i18n.t("title");
+    document.title = `${i18n.t("title")} v${__ASSET_VERSION__}`;
     applyStaticTranslations();
     renderCharacterSelect();
     syncSettingsOverlay();

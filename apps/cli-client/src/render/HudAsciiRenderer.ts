@@ -1,9 +1,9 @@
-import type { Translator } from "@smashing-cats/i18n";
+import { t } from "@smashing-cats/i18n";
 import type { GameSnapshot } from "@smashing-cats/protocol";
 import { AsciiBuffer } from "./AsciiBuffer.js";
 
 export class HudAsciiRenderer {
-  public render(buffer: AsciiBuffer, snapshot: GameSnapshot, t: Translator): void {
+  public render(buffer: AsciiBuffer, snapshot: GameSnapshot): void {
     let x = 1;
 
     for (const player of snapshot.players) {

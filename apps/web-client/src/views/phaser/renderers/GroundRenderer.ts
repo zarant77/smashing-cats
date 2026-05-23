@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import type { GameSnapshot } from "@smashing-cats/protocol";
 import type { Translator } from "@smashing-cats/i18n";
 import type { RenderViewport } from "../../viewport.js";
-import { getImageAsset, images } from "../../../assets/assets.js";
+import { getImageAsset, images } from "../../../assetManager/assetManager.js";
 
 const TILE_KEY = "environment.ground";
 const DESIGN_TILE_WIDTH = 800;

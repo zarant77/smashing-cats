@@ -1,4 +1,4 @@
-import { getImageAsset, images } from "../../assets/assets.js";
+import { getImageAsset, images } from "../../assetManager/assetManager.js";
 import type { RenderViewport } from "../viewport.js";
 
 type Particle = {
@@ -46,7 +46,12 @@ export class ParticlesRenderer {
     }
   }
 
-  public draw(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, deltaTime: number, viewport: RenderViewport): void {
+  public draw(
+    ctx: CanvasRenderingContext2D,
+    canvas: HTMLCanvasElement,
+    deltaTime: number,
+    viewport: RenderViewport,
+  ): void {
     this.time += deltaTime;
 
     const screenWorldRight = canvas.width / viewport.scale;
@@ -54,10 +59,15 @@ export class ParticlesRenderer {
     for (const particle of this.particles) {
       particle.x += particle.speedX * deltaTime;
       particle.baseY += particle.speedY * deltaTime;
-      particle.y = particle.baseY + Math.sin(this.time * particle.swaySpeed + particle.swayOffset) * particle.swayAmount;
+      particle.y =
+        particle.baseY + Math.sin(this.time * particle.swaySpeed + particle.swayOffset) * particle.swayAmount;
       particle.rotation += particle.rotationSpeed * deltaTime;
 
-      if (particle.x > screenWorldRight + particle.size || particle.y > WORLD_HEIGHT + particle.size || particle.y < -particle.size) {
+      if (
+        particle.x > screenWorldRight + particle.size ||
+        particle.y > WORLD_HEIGHT + particle.size ||
+        particle.y < -particle.size
+      ) {
         Object.assign(particle, this.createParticle(-particle.size, Math.random() * WORLD_HEIGHT * 0.75));
       }
 

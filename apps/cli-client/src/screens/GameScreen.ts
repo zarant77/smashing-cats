@@ -1,6 +1,6 @@
 import blessed from "blessed";
 import clipboard from "clipboardy";
-import type { Translator } from "@smashing-cats/i18n";
+import { t } from "@smashing-cats/i18n";
 import type { CharacterDefinition, EntityKind, GameSnapshot, PlayerId, PlayerSnapshot } from "@smashing-cats/protocol";
 import { LocalPlayerPredictor, SnapshotInterpolator } from "@smashing-cats/client-netcode";
 import { CliConnection, type PlayerInput } from "../network/CliConnection.js";
@@ -15,13 +15,9 @@ type GameScreenOptions = {
   serverUrl: string;
   characterKind: EntityKind;
   matchCode: string;
-  t: Translator;
   onExit: () => void;
   onRestart: () => void;
 };
-
-const VIEW_WIDTH = 100;
-const VIEW_HEIGHT = 28;
 
 export class GameScreen implements Screen {
   private readonly root: blessed.Widgets.BoxElement;
@@ -105,7 +101,7 @@ export class GameScreen implements Screen {
       width: "100%",
       height: 2,
       tags: true,
-      content: this.options.t("gameScreenHint"),
+      content: t("gameScreenHint"),
       style: {
         fg: "gray",
       },
@@ -214,7 +210,7 @@ export class GameScreen implements Screen {
         this.characters,
       );
 
-      const content = this.renderer.render(snapshot, this.playerId, this.options.t);
+      const content = this.renderer.render(snapshot, this.playerId);
       this.viewport.setContent(this.paused ? this.withPauseOverlay(content) : content);
 
       if (snapshot !== undefined) {
@@ -279,7 +275,6 @@ export class GameScreen implements Screen {
       parent: this.root,
       screen: this.options.screen,
       score,
-      t: this.options.t,
       onRestart: () => {
         this.options.onRestart();
       },
@@ -310,7 +305,7 @@ export class GameScreen implements Screen {
   }
 
   private setStatus(matchCode: string, message?: string): void {
-    let statusContent = `${this.options.t("matchCode")}: ${matchCode}`;
+    let statusContent = `${t("matchCode")}: ${matchCode}`;
 
     if (message !== undefined) {
       statusContent += ` | ${message}`;

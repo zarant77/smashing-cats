@@ -1,4 +1,4 @@
-import { preloadAssets } from "../assets/assets.js";
+import { preloadAssets } from "../assetManager/assetManager.js";
 import type { GameView, ViewKind } from "./types.js";
 
 export async function createView(kind: ViewKind, root: HTMLElement): Promise<GameView> {

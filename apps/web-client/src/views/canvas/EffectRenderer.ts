@@ -1,4 +1,4 @@
-import { getImageAsset, images } from "../../assets/assets.js";
+import { getImageAsset, images } from "../../assetManager/assetManager.js";
 import type { RenderViewport } from "../viewport.js";
 
 export type EffectSpace = "screen" | "world";
@@ -54,7 +54,12 @@ export class EffectRenderer {
     this.effects = [];
   }
 
-  private drawEffect(ctx: CanvasRenderingContext2D, viewport: RenderViewport, effect: SpriteEffect, progress: number): void {
+  private drawEffect(
+    ctx: CanvasRenderingContext2D,
+    viewport: RenderViewport,
+    effect: SpriteEffect,
+    progress: number,
+  ): void {
     const image = images.getLoaded(getImageAsset(effect.imageKey));
 
     if (!isImageReady(image)) {

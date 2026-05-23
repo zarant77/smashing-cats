@@ -1,6 +1,6 @@
 import type { GameSnapshot } from "@smashing-cats/protocol";
 
-import { getImageAsset, images } from "../../assets/assets.js";
+import { getImageAsset, images } from "../../assetManager/assetManager.js";
 import { deviceController } from "../../device/DeviceController.js";
 
 import type { RenderViewport } from "../viewport.js";
@@ -47,7 +47,12 @@ export class BackgroundRenderer {
     });
   }
 
-  public draw(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, snapshot: GameSnapshot, viewport: RenderViewport): void {
+  public draw(
+    ctx: CanvasRenderingContext2D,
+    canvas: HTMLCanvasElement,
+    snapshot: GameSnapshot,
+    viewport: RenderViewport,
+  ): void {
     const gameRunning = snapshot.simulation.rngState !== 0;
 
     this.updateSmoothTilt(gameRunning);

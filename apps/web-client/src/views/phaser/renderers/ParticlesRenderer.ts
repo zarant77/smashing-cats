@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { getImageAsset } from "../../../assets/assets.js";
+import { getImageAsset } from "../../../assetManager/assetManager.js";
 
 type Particle = {
   image: Phaser.GameObjects.Image;
@@ -55,10 +55,15 @@ export class ParticlesRenderer {
     for (const particle of this.particles) {
       particle.x += particle.speedX * deltaTime;
       particle.baseY += particle.speedY * deltaTime;
-      particle.y = particle.baseY + Math.sin(this.time * particle.swaySpeed + particle.swayOffset) * particle.swayAmount;
+      particle.y =
+        particle.baseY + Math.sin(this.time * particle.swaySpeed + particle.swayOffset) * particle.swayAmount;
       particle.rotation += particle.rotationSpeed * deltaTime;
 
-      if (particle.x > screenWorldRight + particle.size || particle.y > WORLD_HEIGHT + particle.size || particle.y < -particle.size) {
+      if (
+        particle.x > screenWorldRight + particle.size ||
+        particle.y > WORLD_HEIGHT + particle.size ||
+        particle.y < -particle.size
+      ) {
         this.resetParticle(particle, -particle.size, Math.random() * WORLD_HEIGHT * 0.75);
       }
 

@@ -1,6 +1,6 @@
 import { Command } from "commander";
 
-import { createTranslator } from "@smashing-cats/i18n";
+import { i18n } from "@smashing-cats/i18n";
 import { AppController } from "./AppController.js";
 
 const program = new Command();
@@ -16,11 +16,8 @@ const options = program.opts<{
   locale: string;
 }>();
 
-const t = createTranslator(options.locale);
+i18n.changeLocale(options.locale ?? "en");
 
-const app = new AppController({
-  serverUrl: options.server,
-  t,
-});
+const app = new AppController(options.server);
 
 app.start();

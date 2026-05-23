@@ -1,11 +1,10 @@
 import blessed from "blessed";
-import type { Translator } from "@smashing-cats/i18n";
+import { t } from "@smashing-cats/i18n";
 import { terminalBell } from "../audio/TerminalBell.js";
 import { CLI_CHARACTERS, type CliCharacter } from "../config/characters.js";
 
 type CharacterListViewOptions = {
   parent: blessed.Widgets.Node;
-  t: Translator;
   onSelect: (character: CliCharacter, index: number) => void;
   onFocus: () => void;
 };
@@ -22,12 +21,12 @@ export class CharacterListView {
       left: 4,
       width: 28,
       height: 12,
-      label: ` ${this.options.t("chooseCat")} `,
+      label: ` ${t("chooseCat")} `,
       border: "line",
       keys: true,
       mouse: true,
       vi: true,
-      items: CLI_CHARACTERS.map((character) => this.options.t(character.kind)),
+      items: CLI_CHARACTERS.map((character) => t(character.kind)),
       style: {
         selected: {
           bg: "blue",
