@@ -25,20 +25,25 @@ const LAYERS: ParallaxLayer[] = [
 
 const TILE_START_PADDING = 2;
 
-const MAX_TILT_OFFSET_X = 160;
-const TILT_SMOOTHING = 0.06;
+const MAX_TILT_OFFSET_X = 96;
+const MAX_TILT_OFFSET_Y = 10;
+const TILT_SMOOTHING = 0.03;
 const MIN_TILT_PARALLAX = 0.35;
 const MAX_TILT_DEGREES_X = 16;
+const MAX_TILT_DEGREES_Y = 16;
 const TILT_DEAD_ZONE = 0.05;
 
 export class BackgroundRenderer {
   private tiltX = 0;
+  private tiltY = 0;
 
   private smoothTiltX = 0;
+  private smoothTiltY = 0;
 
   public constructor() {
     deviceController.on("tilt", (tilt) => {
       this.tiltX = tilt.x;
+      this.tiltY = tilt.y;
     });
   }
 
@@ -81,8 +86,9 @@ export class BackgroundRenderer {
     const parallaxStrength = this.getTiltParallaxStrength(layer.speed);
 
     const tiltOffsetX = gameRunning ? 0 : -this.smoothTiltX * MAX_TILT_OFFSET_X * parallaxStrength;
+    const tiltOffsetY = gameRunning ? 0 : this.smoothTiltY * MAX_TILT_OFFSET_Y * parallaxStrength;
 
-    const drawY = Math.round(viewport.worldToScreenSize(layer.y));
+    const drawY = Math.round(viewport.worldToScreenSize(layer.y) + tiltOffsetY);
 
     const scroll = snapshot.world.scrollX * layer.speed * viewport.scale;
 
@@ -116,13 +122,19 @@ export class BackgroundRenderer {
   }
 
   private updateSmoothTilt(gameRunning: boolean): void {
-    const target = gameRunning ? 0 : this.normalizeTiltX(this.tiltX);
+    const targetX = gameRunning ? 0 : this.normalizeTiltX(this.tiltX);
+    const targetY = gameRunning ? 0 : this.normalizeTiltY(this.tiltY);
 
-    this.smoothTiltX = this.lerp(this.smoothTiltX, target, TILT_SMOOTHING);
+    this.smoothTiltX = this.lerp(this.smoothTiltX, targetX, TILT_SMOOTHING);
+    this.smoothTiltY = this.lerp(this.smoothTiltY, targetY, TILT_SMOOTHING);
   }
 
   private normalizeTiltX(tiltX: number): number {
     return this.applyDeadZone(this.clamp(tiltX / MAX_TILT_DEGREES_X, -1, 1));
+  }
+
+  private normalizeTiltY(tiltY: number): number {
+    return this.applyDeadZone(this.clamp(tiltY / MAX_TILT_DEGREES_Y, -1, 1));
   }
 
   private applyDeadZone(value: number): number {

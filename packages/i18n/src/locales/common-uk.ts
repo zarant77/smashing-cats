@@ -1,4 +1,4 @@
-export const uk = {
+export const commonUK = {
   title: "Руйн!вні Коти",
   engineCanvas: "Рушій: Canvas",
   enginePhaser: "Рушій: Phaser",
@@ -42,20 +42,6 @@ export const uk = {
   nextCharacter: "Наступний кіт",
   changeCharacter: "Змінити кота",
   selectCharacter: "Обрати цього кота",
-
-  batcat: "КажанКіт",
-  ironcat: "Залізнокіт",
-  darkcat: "Кіт Пітьми",
-  robocat: "Робокіт",
-  termicator: "Термікатор",
-  punishcat: "Каракіт",
-  carrambacat: "Каррамба-кіт",
-  commandocat: "Котандо",
-  cybercat: "Кіберкіт",
-  samurcat: "Самуркіт",
-  zombocat: "Зомбокіт",
-  ghostcat: "Прикіт",
-  kotan: "Котан Руйнівник",
 
   helpContent: `
 <h3>🐾 Керування</h3>

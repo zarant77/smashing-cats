@@ -1,20 +1,23 @@
 import type { EntityKind, GameSnapshot, PlayerId } from "@smashing-cats/protocol";
-import { t } from "@smashing-cats/i18n";
+import { getDeathPhrase, t } from "@smashing-cats/i18n";
 
 type GameOverPopupOptions = {
   onRestart: () => void;
 };
 
 const SHOW_DELAY_MS = 2000;
+const SPEECH_DELAY_MS = 1000;
 
 export class GameOverPopup {
   private readonly element: HTMLDivElement;
   private readonly onRestart: () => void;
 
   private visible = false;
+  private speechVisible = false;
 
   private deadAt: number | undefined;
   private shownForPlayerId: PlayerId | undefined;
+  private speechPhrase = "";
 
   public constructor(root: HTMLElement, options: GameOverPopupOptions) {
     this.onRestart = options.onRestart;
@@ -32,6 +35,7 @@ export class GameOverPopup {
     if (player === undefined || player.alive) {
       this.deadAt = undefined;
       this.shownForPlayerId = undefined;
+      this.speechPhrase = "";
 
       this.hide();
 
@@ -41,6 +45,7 @@ export class GameOverPopup {
     if (this.shownForPlayerId !== player.playerId) {
       this.shownForPlayerId = player.playerId;
       this.deadAt = performance.now();
+      this.speechPhrase = getDeathPhrase(player.kind);
     }
 
     if (this.deadAt === undefined) {
@@ -54,6 +59,10 @@ export class GameOverPopup {
     }
 
     this.show(player.kind, player.score);
+
+    if (elapsed >= SHOW_DELAY_MS + SPEECH_DELAY_MS) {
+      this.showSpeech();
+    }
   }
 
   private show(kind: EntityKind, score: number): void {
@@ -62,12 +71,18 @@ export class GameOverPopup {
     }
 
     this.visible = true;
+    this.speechVisible = false;
     this.element.hidden = false;
 
     this.element.innerHTML = `
       <div class="card">
         <h2>${t("gameOverTitle")}</h2>
+
         <div class="character-preview">
+          <div class="game-over-speech" hidden>
+            ${this.speechPhrase}
+          </div>
+
           <img
             class="platform"
             src="/ui/character_platform.png"
@@ -79,9 +94,11 @@ export class GameOverPopup {
             alt="${kind}"
           />
         </div>
+
         <div class="score">
           ${t("score")}: <strong>${score}</strong>
         </div>
+
         <button class="button restart" type="button">
           ${t("restart")}
         </button>
@@ -95,12 +112,24 @@ export class GameOverPopup {
     });
   }
 
+  private showSpeech(): void {
+    if (this.speechVisible) {
+      return;
+    }
+
+    this.speechVisible = true;
+
+    const speech = this.element.querySelector<HTMLElement>(".game-over-speech");
+    speech?.removeAttribute("hidden");
+  }
+
   private hide(): void {
     if (!this.visible) {
       return;
     }
 
     this.visible = false;
+    this.speechVisible = false;
 
     this.element.hidden = true;
     this.element.replaceChildren();

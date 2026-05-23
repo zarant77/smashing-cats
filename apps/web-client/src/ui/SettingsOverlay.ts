@@ -1,7 +1,8 @@
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
 import { t } from "@smashing-cats/i18n";
-import { ViewKind } from "../views/types.js";
+import type { ViewKind } from "../views/types.js";
 import { playSound } from "../audio/audio.js";
+import { deviceController } from "../device/DeviceController.js";
 
 type EngineKind = "canvas" | "phaser" | "three";
 type LanguageKind = "en" | "uk";
@@ -309,6 +310,7 @@ export class SettingsOverlay {
     this.setButtonActive(".sound-button", this.state.soundEnabled);
     this.setButtonActive(".music-button", this.state.musicEnabled);
     this.setButtonActive(".vibration-button", this.state.vibrationEnabled);
+    this.setButtonDisabled(".vibration-button", !(deviceController.isVibrationSupported && deviceController.isProbablyMobile));
     this.setButtonActive(".fullscreen-button", this.state.fullscreenEnabled);
 
     const pauseTitle = this.element.querySelector(".pause-title") as HTMLDivElement | null;
@@ -338,6 +340,12 @@ export class SettingsOverlay {
   private setButtonActive(selector: string, active: boolean): void {
     this.element.querySelectorAll<HTMLButtonElement>(selector).forEach((button) => {
       button.classList.toggle("active", active);
+    });
+  }
+
+  private setButtonDisabled(selector: string, disabled: boolean): void {
+    this.element.querySelectorAll<HTMLButtonElement>(selector).forEach((button) => {
+      button.disabled = disabled;
     });
   }
 

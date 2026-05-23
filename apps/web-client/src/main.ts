@@ -133,7 +133,6 @@ async function bootstrap(): Promise<void> {
     },
   });
 
-  deviceController.on("orientationChange", () => syncOrientation());
   document.addEventListener("fullscreenchange", () => syncSettingsOverlay());
 
   gameOverPopup = new GameOverPopup(uiRoot, {
@@ -236,7 +235,6 @@ async function bootstrap(): Promise<void> {
     },
   });
 
-  syncOrientation();
   syncSettingsOverlay();
   renderCharacterSelect();
   bindFullscreenGesture();
@@ -325,9 +323,4 @@ function isEditableTarget(target: EventTarget | null): boolean {
     target instanceof HTMLTextAreaElement ||
     target instanceof HTMLSelectElement
   );
-}
-
-function syncOrientation() {
-  document.body.className = document.body.className.replace(/\borientation-\w+\b/g, "");
-  document.body.className = screen.orientation.type;
 }

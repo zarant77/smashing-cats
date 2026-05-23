@@ -5,10 +5,6 @@ export type DeviceTilt = {
 
 type DeviceControllerEvents = {
   tilt: DeviceTilt;
-  orientationChange: {
-    isPortrait: boolean;
-    angle: number;
-  };
 };
 
 type Listener<T> = (payload: T) => void;
@@ -17,51 +13,75 @@ type DeviceOrientationWithPermission = typeof DeviceOrientationEvent & {
   requestPermission?: () => Promise<PermissionState>;
 };
 
+const ORIENTATION_CLASSES = ["portrait-primary", "portrait-secondary", "landscape-primary", "landscape-secondary"] as const;
+
+export async function initDevice(): Promise<void> {
+  setupDeviceUnlock();
+}
+
 export class DeviceController {
   public static readonly instance = new DeviceController();
 
   private readonly listeners = new Map<keyof DeviceControllerEvents, Set<Listener<DeviceControllerEvents[keyof DeviceControllerEvents]>>>();
 
+  public readonly isProbablyMobile = window.matchMedia("(pointer: coarse)").matches;
+
   private tiltEnabled = false;
+
   private tiltAllowed = true;
   private vibrationEnabled = true;
+  private vibrationSupported = false;
 
   private constructor() {
-    window.addEventListener("resize", this.emitOrientationChange);
-    window.addEventListener("orientationchange", this.emitOrientationChange);
+    window.addEventListener("resize", this.syncOrientation);
+    window.addEventListener("orientationchange", this.syncOrientation);
+
+    this.syncOrientation();
+  }
+
+  public get isVibrationSupported(): boolean {
+    return this.vibrationSupported;
   }
 
   public setVibrationEnabled(isEnabled: boolean): this {
     this.vibrationEnabled = isEnabled;
+
     return this;
   }
 
   public setTiltEnabled(isEnabled: boolean): this {
     this.tiltAllowed = isEnabled;
+
     return this;
   }
 
   public on<K extends keyof DeviceControllerEvents>(event: K, listener: Listener<DeviceControllerEvents[K]>): this {
     this.getListeners(event).add(listener as Listener<DeviceControllerEvents[keyof DeviceControllerEvents]>);
+
     return this;
   }
 
   public off<K extends keyof DeviceControllerEvents>(event: K, listener: Listener<DeviceControllerEvents[K]>): this {
     this.getListeners(event).delete(listener as Listener<DeviceControllerEvents[keyof DeviceControllerEvents]>);
+
     return this;
   }
 
-  public vibrate(pattern: number | number[]): void {
-    if (!this.vibrationEnabled || !("vibrate" in navigator)) {
-      return;
+  public vibrate(pattern: number | number[]): boolean {
+    if (!this.vibrationEnabled || !this.vibrationSupported) {
+      return false;
     }
 
-    navigator.vibrate(pattern);
+    return navigator.vibrate(pattern);
   }
 
   public async enableTilt(): Promise<boolean> {
-    if (!this.tiltAllowed || this.tiltEnabled) {
-      return this.tiltEnabled;
+    if (!this.tiltAllowed) {
+      return false;
+    }
+
+    if (this.tiltEnabled) {
+      return true;
     }
 
     if (!("DeviceOrientationEvent" in window)) {
@@ -79,6 +99,7 @@ export class DeviceController {
     }
 
     window.addEventListener("deviceorientation", this.handleDeviceOrientation);
+
     this.tiltEnabled = true;
 
     return true;
@@ -90,16 +111,38 @@ export class DeviceController {
     }
 
     window.removeEventListener("deviceorientation", this.handleDeviceOrientation);
+
     this.tiltEnabled = false;
 
     return this;
   }
 
-  public getOrientationState(): DeviceControllerEvents["orientationChange"] {
-    return {
-      isPortrait: window.innerHeight > window.innerWidth,
-      angle: screen.orientation?.angle ?? window.orientation ?? 0,
-    };
+  public detectCapabilities(): this {
+    this.vibrationSupported = this.isProbablyMobile && "vibrate" in navigator;
+
+    return this;
+  }
+
+  private readonly syncOrientation = (): void => {
+    document.body.classList.remove(...ORIENTATION_CLASSES);
+
+    const isPortrait = window.innerHeight > window.innerWidth;
+
+    if (isPortrait) {
+      document.body.classList.add(this.getPortraitOrientationClass());
+
+      return;
+    }
+
+    document.body.classList.add(this.getLandscapeOrientationClass());
+  };
+
+  private getPortraitOrientationClass(): "portrait-primary" | "portrait-secondary" {
+    return screen.orientation?.angle === 180 ? "portrait-secondary" : "portrait-primary";
+  }
+
+  private getLandscapeOrientationClass(): "landscape-primary" | "landscape-secondary" {
+    return Math.abs(screen.orientation?.angle ?? 0) === 90 ? "landscape-primary" : "landscape-secondary";
   }
 
   private readonly handleDeviceOrientation = (event: DeviceOrientationEvent): void => {
@@ -111,10 +154,6 @@ export class DeviceController {
       x: event.beta ?? 0,
       y: event.gamma ?? 0,
     });
-  };
-
-  private readonly emitOrientationChange = (): void => {
-    this.emit("orientationChange", this.getOrientationState());
   };
 
   private emit<K extends keyof DeviceControllerEvents>(event: K, payload: DeviceControllerEvents[K]): void {
@@ -130,14 +169,11 @@ export class DeviceController {
 
     if (eventListeners === undefined) {
       eventListeners = new Set();
+
       this.listeners.set(event, eventListeners);
     }
 
     return eventListeners;
-  }
-
-  private clamp(value: number, min: number, max: number): number {
-    return Math.min(max, Math.max(min, value));
   }
 }
 
@@ -154,13 +190,18 @@ export function setupDeviceUnlock(): void {
     deviceUnlocked = true;
 
     window.removeEventListener("pointerdown", unlock);
+
     window.removeEventListener("keydown", unlock);
+
     window.removeEventListener("touchstart", unlock);
+
+    deviceController.detectCapabilities();
 
     setTimeout(() => {
       void deviceController.enableTilt();
+
       deviceController.vibrate(10);
-    }, 2000);
+    }, 100);
   };
 
   window.addEventListener("pointerdown", unlock, {

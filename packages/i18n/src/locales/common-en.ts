@@ -1,4 +1,4 @@
-export const en = {
+export const commonEN = {
   title: "Smash!ng Cats",
   engineCanvas: "Engine: Canvas",
   enginePhaser: "Engine: Phaser",
@@ -42,20 +42,6 @@ export const en = {
   nextCharacter: "Next cat",
   changeCharacter: "Change cat",
   selectCharacter: "Choose your cat",
-
-  batcat: "Batcat",
-  ironcat: "Ironcat",
-  darkcat: "Darkcat",
-  robocat: "Robocat",
-  termicator: "Termicator",
-  punishcat: "Punishcat",
-  carrambacat: "Carrambacat",
-  commandocat: "Commandocat",
-  cybercat: "Cybercat",
-  samurcat: "Samurcat",
-  zombocat: "Zombocat",
-  ghostcat: "Ghostcat",
-  kotan: "Kotan the Destroyer",
 
   helpContent: `
 <h3>🐾 Controls</h3>

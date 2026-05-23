@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import type { GameSnapshot } from "@smashing-cats/protocol";
 import { getImageAsset, images } from "../../../assets/assets.js";
+import { deviceController } from "../../../device/DeviceController.js";
 import type { RenderViewport } from "../../viewport.js";
 
 type ParallaxLayer = {
@@ -33,11 +34,26 @@ const LAYERS: ParallaxLayer[] = [
 const SKY_COLOR = 0x87ceeb;
 const BACKGROUND_Z = 300;
 const RENDER_ORDER_BASE = -100;
+const TILE_START_PADDING = 2;
+
+const MAX_TILT_OFFSET_X = 96;
+const MAX_TILT_OFFSET_Y = 10;
+const TILT_SMOOTHING = 0.03;
+const MIN_TILT_PARALLAX = 0.35;
+const MAX_TILT_DEGREES_X = 16;
+const MAX_TILT_DEGREES_Y = 16;
+const TILT_DEAD_ZONE = 0.05;
 
 export class BackgroundRenderer {
   private readonly states = new Map<string, LayerState>();
 
   private readonly sky: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
+
+  private tiltX = 0;
+  private tiltY = 0;
+
+  private smoothTiltX = 0;
+  private smoothTiltY = 0;
 
   public constructor(private readonly scene: THREE.Scene) {
     this.sky = new THREE.Mesh(
@@ -54,13 +70,22 @@ export class BackgroundRenderer {
     this.sky.frustumCulled = false;
 
     this.scene.add(this.sky);
+
+    deviceController.on("tilt", (tilt) => {
+      this.tiltX = tilt.x;
+      this.tiltY = tilt.y;
+    });
   }
 
   public draw(snapshot: GameSnapshot, viewport: RenderViewport): void {
+    const gameRunning = snapshot.simulation.rngState !== 0;
+
+    this.updateSmoothTilt(gameRunning);
+
     this.drawSky(viewport);
 
     for (let index = 0; index < LAYERS.length; index++) {
-      this.drawLayer(snapshot, viewport, LAYERS[index], index);
+      this.drawLayer(snapshot, viewport, LAYERS[index], index, gameRunning);
     }
   }
 
@@ -87,7 +112,13 @@ export class BackgroundRenderer {
     this.sky.scale.set(viewport.screenWidth, -viewport.screenHeight, 1);
   }
 
-  private drawLayer(snapshot: GameSnapshot, viewport: RenderViewport, layer: ParallaxLayer, layerIndex: number): void {
+  private drawLayer(
+    snapshot: GameSnapshot,
+    viewport: RenderViewport,
+    layer: ParallaxLayer,
+    layerIndex: number,
+    gameRunning: boolean,
+  ): void {
     const path = getImageAsset(layer.key);
     const source = images.getLoaded(path);
 
@@ -104,12 +135,18 @@ export class BackgroundRenderer {
 
     const drawWidth = Math.ceil(width) + 1;
     const drawHeight = Math.ceil(height);
-    const drawY = Math.round(viewport.worldToScreenSize(layer.y));
+
+    const parallaxStrength = this.getTiltParallaxStrength(layer.speed);
+
+    const tiltOffsetX = gameRunning ? 0 : -this.smoothTiltX * MAX_TILT_OFFSET_X * parallaxStrength;
+    const tiltOffsetY = gameRunning ? 0 : this.smoothTiltY * MAX_TILT_OFFSET_Y * parallaxStrength;
+
+    const drawY = Math.round(viewport.worldToScreenSize(layer.y) + tiltOffsetY);
 
     const scroll = snapshot.world.scrollX * layer.speed * viewport.scale;
-    const firstTileIndex = Math.floor(scroll / width) - 1;
-    const offsetX = -(scroll - firstTileIndex * width);
-    const visibleCount = Math.ceil(viewport.screenWidth / width) + 4;
+    const firstTileIndex = Math.floor(scroll / width) - TILE_START_PADDING - 1;
+    const offsetX = -(scroll - firstTileIndex * width) + tiltOffsetX;
+    const visibleCount = Math.ceil((viewport.screenWidth + MAX_TILT_OFFSET_X * 2) / width) + TILE_START_PADDING + 3;
 
     this.ensureTiles(state, texture, visibleCount, RENDER_ORDER_BASE + layerIndex);
 
@@ -131,6 +168,38 @@ export class BackgroundRenderer {
 
       tile.mesh.material.opacity = layer.alpha ?? 1;
     }
+  }
+
+  private updateSmoothTilt(gameRunning: boolean): void {
+    const targetX = gameRunning ? 0 : this.normalizeTiltX(this.tiltX);
+    const targetY = gameRunning ? 0 : this.normalizeTiltY(this.tiltY);
+
+    this.smoothTiltX = this.lerp(this.smoothTiltX, targetX, TILT_SMOOTHING);
+    this.smoothTiltY = this.lerp(this.smoothTiltY, targetY, TILT_SMOOTHING);
+  }
+
+  private normalizeTiltX(tiltX: number): number {
+    return this.applyDeadZone(this.clamp(tiltX / MAX_TILT_DEGREES_X, -1, 1));
+  }
+
+  private normalizeTiltY(tiltY: number): number {
+    return this.applyDeadZone(this.clamp(tiltY / MAX_TILT_DEGREES_Y, -1, 1));
+  }
+
+  private applyDeadZone(value: number): number {
+    return Math.abs(value) < TILT_DEAD_ZONE ? 0 : value;
+  }
+
+  private clamp(value: number, min: number, max: number): number {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  private getTiltParallaxStrength(speed: number): number {
+    return Math.max(speed, MIN_TILT_PARALLAX);
+  }
+
+  private lerp(from: number, to: number, factor: number): number {
+    return from + (to - from) * factor;
   }
 
   private getLayerState(key: string): LayerState {
