@@ -32,8 +32,6 @@
   background: rgba(10, 16, 24, 0.72);
   border-radius: 20px;
 
-  backdrop-filter: blur(10px);
-
   cursor: pointer;
 
   transition:

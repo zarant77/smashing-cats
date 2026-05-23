@@ -5,6 +5,7 @@ import "./ui/debug.js";
 
 import { audio, musicEvents, playSound, setupAudioUnlock } from "./audio/audio.js";
 import { deviceController, setupDeviceUnlock } from "./device/DeviceController.js";
+import { loadHeavyEffectsIfAllowed } from "./device/loadHeavyEffectsIfAllowed.js";
 import { GameStateController } from "./game/GameStateController.js";
 import { GameRuntime } from "./game/GameRuntime.js";
 import { getMatchCode } from "./game/routing.js";
@@ -41,6 +42,7 @@ void bootstrap();
 async function bootstrap(): Promise<void> {
   setupAudioUnlock();
   setupDeviceUnlock();
+  loadHeavyEffectsIfAllowed();
 
   const root = getRequiredElement<HTMLElement>("#game-root", "Game root");
   const uiRoot = getRequiredElement<HTMLElement>("#ui-root", "UI root");

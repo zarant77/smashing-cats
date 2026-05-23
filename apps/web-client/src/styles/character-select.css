@@ -84,15 +84,23 @@
 .character-card-name {
   grid-area: name;
   justify-self: center;
-  color: #ffffff;
+
+  color: #1d2733;
+
   font-size: 46px;
   line-height: 1;
-  font-weight: 900;
-  letter-spacing: 2px;
+  font-weight: 1000;
+
+  letter-spacing: 5px;
   text-transform: uppercase;
+
   text-shadow:
-    0 5px 0 rgba(0, 0, 0, 0.55),
-    0 12px 22px rgba(0, 0, 0, 0.34);
+    -2px -2px 0 #ffe7a3,
+    2px -2px 0 #ffe7a3,
+    -2px 2px 0 #ffe7a3,
+    2px 2px 0 #ffe7a3,
+    0 4px 0 rgba(0, 0, 0, 0.22),
+    0 8px 14px rgba(0, 0, 0, 0.18);
 }
 
 .character-card-image-enter-right {

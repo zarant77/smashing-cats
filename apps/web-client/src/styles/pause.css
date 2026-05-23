@@ -23,8 +23,6 @@
     0 12px 0 #e05600,
     0 18px 24px rgba(0, 0, 0, 0.55);
 
-  filter: drop-shadow(0 0 16px rgba(255, 190, 0, 0.45));
-
   animation:
     pause-wobble 2.4s ease-in-out infinite,
     pause-breathe 1.8s ease-in-out infinite;
