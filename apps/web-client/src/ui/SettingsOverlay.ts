@@ -1,11 +1,10 @@
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
-import { t } from "@smashing-cats/i18n";
+import { t, type TranslationLocale } from "@smashing-cats/i18n";
 import type { ViewKind } from "../views/types.js";
 import { playSound } from "../audio/audio.js";
 import { deviceController } from "../device/DeviceController.js";
 
 type EngineKind = "canvas" | "phaser" | "three";
-type LanguageKind = "en" | "uk";
 
 type SettingsOverlayOptions = {
   isGameRunning?: () => boolean;
@@ -24,7 +23,7 @@ type SettingsOverlayOptions = {
 
 type SettingsOverlayState = {
   currentEngine: EngineKind;
-  currentLanguage: LanguageKind;
+  currentLanguage: TranslationLocale;
   soundEnabled: boolean;
   musicEnabled: boolean;
   vibrationEnabled: boolean;
@@ -102,7 +101,7 @@ export class SettingsOverlay {
         <section class="settings-section">
           <h3 data-i18n="engine">${t("engine")}</h3>
 
-          <div class="settings-row settings-row-3">
+          <div class="settings-row">
             <button class="engine-canvas-button" type="button" data-i18n-title="engineCanvas" title="${t("engineCanvas")}" aria-label="${t("engineCanvas")}">
               <span class="icon icon-canvas"></span>
             </button>
@@ -120,13 +119,17 @@ export class SettingsOverlay {
         <section class="settings-section">
           <h3 data-i18n="language">${t("language")}</h3>
 
-          <div class="settings-row settings-row-2">
-            <button class="language-en-button" type="button" data-i18n-title="languageEnglish" title="${t("languageEnglish")}" aria-label="${t("languageEnglish")}">
-              <span class="icon icon-en"></span>
+          <div class="settings-row">
+            <button class="language-en-button" type="button" title="English" aria-label="English">
+              <span class="icon icon-flag">🇬🇧</span>
             </button>
 
-            <button class="language-ua-button" type="button" data-i18n-title="languageUkrainian" title="${t("languageUkrainian")}" aria-label="${t("languageUkrainian")}">
-              <span class="icon icon-ua"></span>
+            <button class="language-ua-button" type="button" title="Українська" aria-label="Українська">
+              <span class="icon icon-flag">🇺🇦</span>
+            </button>
+
+            <button class="language-pl-button" type="button" title="Polski" aria-label="Polski">
+              <span class="icon icon-flag">🇵🇱</span>
             </button>
           </div>
         </section>
@@ -134,7 +137,7 @@ export class SettingsOverlay {
         <section class="settings-section">
           <h3 data-i18n="audio">${t("audio")}</h3>
 
-          <div class="settings-row settings-row-3">
+          <div class="settings-row">
             <button class="sound-button" type="button" data-i18n-title="sound" title="${t("sound")}" aria-label="${t("sound")}">
               <span class="icon icon-sound"></span>
             </button>
@@ -259,15 +262,36 @@ export class SettingsOverlay {
     });
 
     this.element.querySelector<HTMLButtonElement>(".help-button")?.addEventListener("click", () => this.onHelp?.());
-    this.element.querySelector<HTMLButtonElement>(".fullscreen-button")?.addEventListener("click", () => this.onToggleFullscreen?.());
-    this.element.querySelector<HTMLButtonElement>(".music-button")?.addEventListener("click", () => this.onToggleMusic?.());
-    this.element.querySelector<HTMLButtonElement>(".sound-button")?.addEventListener("click", () => this.onToggleSound?.());
-    this.element.querySelector<HTMLButtonElement>(".vibration-button")?.addEventListener("click", () => this.onToggleVibration?.());
-    this.element.querySelector<HTMLButtonElement>(".engine-canvas-button")?.addEventListener("click", () => this.onSelectView?.("canvas"));
-    this.element.querySelector<HTMLButtonElement>(".engine-phaser-button")?.addEventListener("click", () => this.onSelectView?.("phaser"));
-    this.element.querySelector<HTMLButtonElement>(".engine-three-button")?.addEventListener("click", () => this.onSelectView?.("three"));
-    this.element.querySelector<HTMLButtonElement>(".language-en-button")?.addEventListener("click", () => this.onSelectLanguage?.("en"));
-    this.element.querySelector<HTMLButtonElement>(".language-ua-button")?.addEventListener("click", () => this.onSelectLanguage?.("uk"));
+    this.element
+      .querySelector<HTMLButtonElement>(".fullscreen-button")
+      ?.addEventListener("click", () => this.onToggleFullscreen?.());
+    this.element
+      .querySelector<HTMLButtonElement>(".music-button")
+      ?.addEventListener("click", () => this.onToggleMusic?.());
+    this.element
+      .querySelector<HTMLButtonElement>(".sound-button")
+      ?.addEventListener("click", () => this.onToggleSound?.());
+    this.element
+      .querySelector<HTMLButtonElement>(".vibration-button")
+      ?.addEventListener("click", () => this.onToggleVibration?.());
+    this.element
+      .querySelector<HTMLButtonElement>(".engine-canvas-button")
+      ?.addEventListener("click", () => this.onSelectView?.("canvas"));
+    this.element
+      .querySelector<HTMLButtonElement>(".engine-phaser-button")
+      ?.addEventListener("click", () => this.onSelectView?.("phaser"));
+    this.element
+      .querySelector<HTMLButtonElement>(".engine-three-button")
+      ?.addEventListener("click", () => this.onSelectView?.("three"));
+    this.element
+      .querySelector<HTMLButtonElement>(".language-en-button")
+      ?.addEventListener("click", () => this.onSelectLanguage?.("en"));
+    this.element
+      .querySelector<HTMLButtonElement>(".language-ua-button")
+      ?.addEventListener("click", () => this.onSelectLanguage?.("uk"));
+    this.element
+      .querySelector<HTMLButtonElement>(".language-pl-button")
+      ?.addEventListener("click", () => this.onSelectLanguage?.("pl"));
     this.element.querySelector<HTMLButtonElement>(".exit-button")?.addEventListener("click", () => this.onExit?.());
 
     this.element.addEventListener("pointerdown", (event) => {
@@ -307,10 +331,14 @@ export class SettingsOverlay {
     this.setButtonActive(".engine-three-button", this.state.currentEngine === "three");
     this.setButtonActive(".language-en-button", this.state.currentLanguage === "en");
     this.setButtonActive(".language-ua-button", this.state.currentLanguage === "uk");
+    this.setButtonActive(".language-pl-button", this.state.currentLanguage === "pl");
     this.setButtonActive(".sound-button", this.state.soundEnabled);
     this.setButtonActive(".music-button", this.state.musicEnabled);
     this.setButtonActive(".vibration-button", this.state.vibrationEnabled);
-    this.setButtonDisabled(".vibration-button", !(deviceController.isVibrationSupported && deviceController.isProbablyMobile));
+    this.setButtonDisabled(
+      ".vibration-button",
+      !(deviceController.isVibrationSupported && deviceController.isProbablyMobile),
+    );
     this.setButtonActive(".fullscreen-button", this.state.fullscreenEnabled);
 
     const pauseTitle = this.element.querySelector(".pause-title") as HTMLDivElement | null;

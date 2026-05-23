@@ -1,9 +1,15 @@
 import { catsEN } from "./locales/cats-en.js";
+import { catsPL } from "./locales/cats-pl.js";
 import { catsUK } from "./locales/cats-uk.js";
 import { commonEN } from "./locales/common-en.js";
+import { commonPL } from "./locales/common-pl.js";
 import { commonUK } from "./locales/common-uk.js";
 
-const DEFAULT_DEATH_PHRASES = ["I meant to do that.", "That floor looked suspicious.", "Tell my food bowl I loved it."] as const;
+const DEFAULT_DEATH_PHRASES = [
+  "I meant to do that.",
+  "That floor looked suspicious.",
+  "Tell my food bowl I loved it.",
+] as const;
 
 export const TRANSLATIONS = {
   en: {
@@ -14,10 +20,15 @@ export const TRANSLATIONS = {
     ...commonUK,
     ...catsUK.cats,
   },
+  pl: {
+    ...commonPL,
+    ...catsPL.cats,
+  },
 } as const;
 
 const DEATH_PHRASES = {
   en: catsEN.deathPhrases,
+  pl: catsPL.deathPhrases,
   uk: catsUK.deathPhrases,
 } as const;
 

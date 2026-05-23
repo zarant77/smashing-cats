@@ -23,8 +23,6 @@ export const commonEN = {
   settings: "Settings",
   engine: "Engine",
   language: "Language",
-  languageEnglish: "English",
-  languageUkrainian: "Ukrainian",
   audio: "Audio",
   sound: "Sound",
   music: "Music",

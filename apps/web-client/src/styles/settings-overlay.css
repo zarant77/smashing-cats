@@ -169,13 +169,6 @@
 .settings-overlay .settings-row {
   display: grid;
   gap: 10px;
-}
-
-.settings-overlay .settings-row-2 {
-  grid-template-columns: repeat(2, 72px);
-}
-
-.settings-overlay .settings-row-3 {
   grid-template-columns: repeat(3, 72px);
 }
 

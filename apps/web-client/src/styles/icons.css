@@ -7,6 +7,12 @@
   image-rendering: auto;
 }
 
+.icon-flag {
+  background: none;
+  font-size: 110px;
+  line-height: 1;
+}
+
 /* 0 */
 .icon-menu {
   background-position: 0 0;
@@ -58,12 +64,12 @@
 }
 
 /* 10 */
-.icon-en {
+.icon-empty-slot-01 {
   background-position: -1120px 0;
 }
 
 /* 11 */
-.icon-ua {
+.icon-empty-slot-02 {
   background-position: -1232px 0;
 }
 

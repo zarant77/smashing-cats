@@ -203,8 +203,7 @@
       Loading cats...
     </div>
 
-    <div class="loading-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
-      hidden>
+    <div class="loading-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden>
       <div class="loading-progress-bar-fill"></div>
     </div>
 
@@ -295,7 +294,6 @@
     const MESSAGE_CHANGE_INTERVAL_MS = 4_000;
 
     const locale = localStorage.getItem("smashing-cats-locale");
-    const normalizedLocale = locale === "uk" ? "uk" : "en";
 
     const loadingSubtitle = document.querySelector(".loading-subtitle");
 
@@ -311,12 +309,12 @@
       return result;
     }
 
-    let shuffledMessages = shuffle(LOADING_MESSAGES[normalizedLocale]);
+    let shuffledMessages = shuffle(LOADING_MESSAGES[locale] || LOADING_MESSAGES.en);
     let currentIndex = 0;
 
     function updateLoadingMessage() {
       if (currentIndex >= shuffledMessages.length) {
-        shuffledMessages = shuffle(LOADING_MESSAGES[normalizedLocale]);
+        shuffledMessages = shuffle(LOADING_MESSAGES[locale] || LOADING_MESSAGES.en);
         currentIndex = 0;
       }
 
@@ -331,11 +329,14 @@
       updateLoadingMessage();
     }, MESSAGE_CHANGE_INTERVAL_MS);
 
-    document.title = normalizedLocale === "uk"
-      ? "Руйн!вні Коти"
-      : "Smash!ng Cats";
+    const titles = {
+      en: "Smash!ng Cats",
+      pl: "M!ażdżące Koty",
+      uk: "Руйн!вні Коти",
+    };
 
-    document.documentElement.lang = normalizedLocale;
+    document.title = titles[locale] || titles.en;
+    document.documentElement.lang = locale || "en";
   </script>
 
   <script type="module" src="/src/main.ts"></script>
