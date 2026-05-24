@@ -9,6 +9,7 @@ export class ThreeModelFactory {
     try {
       const info = getModelInfoByKey(key);
       const path = getModelAsset(key);
+
       const model = await models.clone(path);
       const wrapper = this.normalizePivot(model);
 

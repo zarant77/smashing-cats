@@ -90,6 +90,7 @@ export const MODELS = {
   "civilian.dido": "/three/civilians/dido.glb",
 
   // Enemies
+  "enemy.dummy": "/three/enemies/dummy.glb",
   "enemy.boar": "/three/enemies/boar.glb",
   "enemy.crow": "/three/enemies/crow.glb",
   "enemy.orc": "/three/enemies/orc.glb",

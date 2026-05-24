@@ -17,6 +17,11 @@ export const ThreeModels = {
   },
 
   enemy: {
+    dummy: {
+      rotationY: 0,
+      offsetZ: 0,
+    },
+
     boar: {
       rotationY: -Math.PI / 2 + 0.2,
       offsetZ: 0,
