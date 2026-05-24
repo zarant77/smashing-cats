@@ -13,6 +13,7 @@ import { ScreenShake } from "./ScreenShake.js";
 import { TutorialRenderer } from "./TutorialRenderer.js";
 import { createRenderViewport, getViewSize } from "../viewport.js";
 import { EMPTY_SNAPSHOT } from "../emptySnapshot.js";
+import { isSnapshotGameRunning } from "../snapshotState.js";
 
 export class CanvasView implements GameView {
   private readonly context: CanvasRenderingContext2D;
@@ -74,6 +75,7 @@ export class CanvasView implements GameView {
     }
 
     const viewport = createRenderViewport(this.canvas.width, this.canvas.height, snapshot);
+    const gameRunning = isSnapshotGameRunning(snapshot);
 
     this.screenShake.update(snapshot, playerId);
     this.floatingTexts.update(snapshot);
@@ -90,6 +92,10 @@ export class CanvasView implements GameView {
     this.particles.draw(ctx, this.canvas, deltaTime, viewport);
 
     for (const entity of snapshot.entities) {
+      if (entity.dummy === true && !gameRunning) {
+        continue;
+      }
+
       this.entities.draw(ctx, this.canvas.width, viewport, entity, this.effects);
     }
 

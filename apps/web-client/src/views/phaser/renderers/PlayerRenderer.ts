@@ -86,14 +86,14 @@ export class PlayerRenderer {
 
     const sprite = this.getOrCreateImage(object, imageKey, image);
 
+    const baseScale = Math.min(physicsWidth / image.naturalWidth, physicsHeight / image.naturalHeight);
+
     sprite.setVisible(true);
     sprite.setPosition(Math.round(x + transform.offsetX), Math.round(y + transform.offsetY));
-    sprite.setDisplaySize(
-      Math.round(physicsWidth * transform.scaleX),
-      Math.round(physicsHeight * transform.scaleY),
-    );
+    sprite.setScale(baseScale * transform.scaleX, baseScale * transform.scaleY);
     sprite.setRotation(transform.rotation);
     sprite.setFlipX(true);
+    sprite.setAlpha(alpha);
 
     object.fallback?.setVisible(false);
 

@@ -3,6 +3,7 @@ import Phaser from "phaser";
 import type { EntitySnapshot, GameSnapshot } from "@smashing-cats/protocol";
 
 import { getImageAsset, images } from "../../../assetManager/assetManager.js";
+import { isSnapshotGameRunning } from "../../snapshotState.js";
 import type { RenderViewport } from "../../viewport.js";
 
 import { DebugRenderer } from "./DebugRenderer.js";
@@ -59,10 +60,15 @@ export class EntityRenderer {
 
   public draw(snapshot: GameSnapshot, viewport: RenderViewport): void {
     const visibleIds = new Set<string>();
+    const gameRunning = isSnapshotGameRunning(snapshot);
 
     this.debugRenderer.beginFrame();
 
     for (const entity of snapshot.entities) {
+      if (entity.dummy === true && !gameRunning) {
+        continue;
+      }
+
       visibleIds.add(entity.id);
       this.drawEntity(entity, viewport);
     }

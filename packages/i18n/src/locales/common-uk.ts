@@ -42,7 +42,7 @@ export const commonUK = {
   selectCharacter: "Обрати цього кота",
   tutorialEnabled: "Навчання увімкнено",
 
-  tutorialText: "Вліво, Вправо - рух\nПробіл - стрибок\nСтрибок у повітрі - СМЕШ!",
+  tutorialText: "← → Рух\n␣ Пробіл / Tap - Стрибок\n⭣ Стрибок у повітрі - СМЕШ!",
 
   helpContent: `
 <h3>🐾 Керування</h3>

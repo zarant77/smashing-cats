@@ -7,9 +7,17 @@ type AnimationState = {
   startedAt: number;
 };
 
-const DEFAULT_ANIMATION: SpriteAnimationKind = "bounce";
-
-const KNOWN_ANIMATIONS = new Set<string>(["bounce", "jump", "smash", "fall", "walk", "squish", "fly", "flyToScreen"]);
+const KNOWN_ANIMATIONS = new Set<string>([
+  "bounce",
+  "jump",
+  "smash",
+  "swing",
+  "fall",
+  "walk",
+  "squish",
+  "fly",
+  "flyToScreen",
+]);
 
 export class SpriteAnimationState {
   private readonly states = new Map<string, AnimationState>();
@@ -78,7 +86,11 @@ function resolveEntityAnimation(entity: EntitySnapshot): SpriteAnimationKind {
   return getAnimation(entity.animations, "idle", "walk");
 }
 
-function getAnimation(animations: AnimationSet | undefined, key: keyof AnimationSet, fallback: SpriteAnimationKind): SpriteAnimationKind {
+function getAnimation(
+  animations: AnimationSet | undefined,
+  key: keyof AnimationSet,
+  fallback: SpriteAnimationKind,
+): SpriteAnimationKind {
   const value = animations?.[key];
 
   if (value === undefined || !isSpriteAnimationKind(value)) {

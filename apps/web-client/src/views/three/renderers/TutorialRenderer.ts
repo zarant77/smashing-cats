@@ -3,6 +3,7 @@ import type { GameSnapshot } from "@smashing-cats/protocol";
 import { t } from "@smashing-cats/i18n";
 
 import { getImageAsset, images } from "../../../assetManager/assetManager.js";
+import { isSnapshotGameRunning } from "../../snapshotState.js";
 import type { RenderViewport } from "../../viewport.js";
 
 const CAMP_RIGHT_WORLD_X = 1050;
@@ -66,6 +67,7 @@ export class TutorialRenderer {
   private campVisible = false;
   private campFinished = false;
 
+  private lastTick: number | undefined;
   private wasTutorialActive = false;
   private wasOnGround = true;
   private wasSmashing = false;
@@ -89,6 +91,14 @@ export class TutorialRenderer {
     this.viewport = viewport;
     this.groundY = viewport.worldToScreenY(snapshot.world.groundY);
     this.visibleIds.clear();
+    this.resetForRestartedTutorial(snapshot);
+
+    if (!isSnapshotGameRunning(snapshot)) {
+      this.hideUnusedObjects();
+      this.wasTutorialActive = snapshot.tutorial.active;
+      this.lastTick = snapshot.tick;
+      return;
+    }
 
     if (snapshot.tutorial.active) {
       this.campVisible = true;
@@ -105,6 +115,7 @@ export class TutorialRenderer {
 
     this.hideUnusedObjects();
     this.wasTutorialActive = snapshot.tutorial.active;
+    this.lastTick = snapshot.tick;
   }
 
   public destroy(): void {
@@ -125,6 +136,25 @@ export class TutorialRenderer {
     this.texts.clear();
     this.textures.clear();
     this.handledEventIds.clear();
+  }
+
+  private resetForRestartedTutorial(snapshot: GameSnapshot): void {
+    const tickRestarted = this.lastTick !== undefined && snapshot.tick < this.lastTick;
+    const tutorialRestarted = snapshot.tutorial.active && (!this.wasTutorialActive || tickRestarted) && this.campFinished;
+
+    if (!tutorialRestarted) {
+      return;
+    }
+
+    this.campVisible = false;
+    this.campFinished = false;
+    this.wasOnGround = true;
+    this.wasSmashing = false;
+    this.smashedDuringAir = false;
+    this.previousPlayerX = undefined;
+    this.lastActionAt = performance.now();
+    this.handledEventIds.clear();
+    this.kenSpeech = undefined;
   }
 
   private drawCamp(): void {

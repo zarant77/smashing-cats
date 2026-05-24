@@ -3,6 +3,7 @@ import * as THREE from "three";
 import type { EntitySnapshot, GameSnapshot } from "@smashing-cats/protocol";
 
 import type { RenderViewport } from "../../viewport.js";
+import { isSnapshotGameRunning } from "../../snapshotState.js";
 import type { ThreeModelFactory } from "../models/ThreeModelFactory.js";
 import { ThreeModelAnimator } from "../models/ThreeModelAnimator.js";
 import { DebugRenderer } from "./DebugRenderer.js";
@@ -34,10 +35,15 @@ export class EntityRenderer {
 
   public draw(snapshot: GameSnapshot, viewport: RenderViewport): void {
     const visibleIds = new Set<string>();
+    const gameRunning = isSnapshotGameRunning(snapshot);
 
     this.debugRenderer.beginFrame();
 
     for (const entity of snapshot.entities) {
+      if (entity.dummy === true && !gameRunning) {
+        continue;
+      }
+
       visibleIds.add(entity.id);
 
       const object = this.entities.get(entity.id);

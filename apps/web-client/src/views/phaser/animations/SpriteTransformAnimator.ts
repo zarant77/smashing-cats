@@ -1,4 +1,13 @@
-export type SpriteAnimationKind = "bounce" | "jump" | "smash" | "fall" | "walk" | "squish" | "fly" | "flyToScreen";
+export type SpriteAnimationKind =
+  | "bounce"
+  | "jump"
+  | "smash"
+  | "fall"
+  | "walk"
+  | "squish"
+  | "fly"
+  | "flyToScreen"
+  | "swing";
 
 export type SpriteTransform = {
   scaleX: number;
@@ -33,6 +42,12 @@ export function getSpriteTransform(kind: SpriteAnimationKind, time: number): Spr
         scaleX: 1 + Math.sin(time * 12) * 0.04,
         scaleY: 1 - Math.sin(time * 12) * 0.04,
         rotation: Math.sin(time * 12) * 0.04,
+      };
+
+    case "swing":
+      return {
+        ...DEFAULT_SPRITE_TRANSFORM,
+        rotation: Math.sin(time * 4) * 0.04,
       };
 
     case "jump":
