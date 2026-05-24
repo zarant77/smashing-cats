@@ -94,6 +94,9 @@ export class AudioEventPlayer {
 
 function getEnemyDieSoundKey(kind: string): `sound.${string}` {
   switch (kind) {
+    case "dummy":
+      return "sound.dummy_enemy_die";
+
     case "boar":
       return "sound.boar_enemy_die";
 

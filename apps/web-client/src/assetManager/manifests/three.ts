@@ -125,6 +125,7 @@ export const AUDIO = {
   "sound.player_die": "/sfx/player_die.wav",
 
   "sound.enemy_die": "/sfx/enemy_die.wav",
+  "sound.dummy_enemy_die": "/sfx/enemy_die_dummy.wav",
   "sound.boar_enemy_die": "/sfx/enemy_die_boar.wav",
   "sound.crow_enemy_die": "/sfx/enemy_die_crow.wav",
   "sound.orc_enemy_die": "/sfx/enemy_die_orc.wav",

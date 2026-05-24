@@ -15,17 +15,18 @@ type CreateEntityOptions = {
 export function createEntity({ config, id, x, moveSpeed, laneOffsetY, dummy }: CreateEntityOptions): Entity {
   const [, height] = config.size;
   const y = GAME_CONFIG.groundY - height + laneOffsetY;
+  const isDummy = dummy === true || config.dummy === true;
 
   return {
     id,
     type: getEntityType(config),
     kind: config.kind,
-    dummy: dummy === true ? true : undefined,
+    dummy: isDummy ? true : undefined,
 
     x,
     y,
 
-    vx: dummy === true ? 0 : -moveSpeed,
+    vx: isDummy ? 0 : -moveSpeed,
     vy: 0,
 
     size: config.size,

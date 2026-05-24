@@ -59,6 +59,7 @@ type CharactersConfigFile = {
 
 type EntityBaseConfig = {
   kind: EntityKind;
+  dummy?: boolean;
   size: Size;
   hurt: HurtCircle;
   damage: number;
@@ -95,7 +96,7 @@ export const CIVILIANS = fromJson<CivilianConfig[]>(civiliansData);
 export const ENEMIES = fromJson<EnemyConfig[]>(enemiesData);
 export const OBSTACLES = fromJson<ObstacleConfig[]>(obstaclesData);
 
-export const SPAWNABLES = [...OBSTACLES, ...ENEMIES, ...CIVILIANS] satisfies SpawnableConfig[];
+export const SPAWNABLES = [...OBSTACLES, ...ENEMIES.filter((config) => config.dummy !== true), ...CIVILIANS] satisfies SpawnableConfig[];
 
 export const TICK_RATE = 60;
 export const SNAPSHOT_RATE = 15;

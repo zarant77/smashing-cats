@@ -313,7 +313,7 @@ export class Game {
   }
 
   private createTutorialDummy(index: number, dummyStartX: number, dummySpacingX: number): Entity {
-    const config = ENEMIES[0];
+    const config = ENEMIES.find((enemy) => enemy.dummy === true) ?? ENEMIES[0];
 
     return createEntity({
       config,
