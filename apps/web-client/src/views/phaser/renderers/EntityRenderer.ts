@@ -127,15 +127,17 @@ export class EntityRenderer {
 
     if (source.complete && source.naturalWidth > 0 && source.naturalHeight > 0) {
       const image = this.getOrCreateImage(object, imageKey, source);
+      const targetWidth = physicsWidth * transform.scaleX * extraScale;
+      const targetHeight = physicsHeight * transform.scaleY * extraScale;
+      const textureWidth = source.naturalWidth;
+      const textureHeight = source.naturalHeight;
+      const scale = Math.min(targetWidth / textureWidth, targetHeight / textureHeight);
 
       image.setVisible(true);
       image.setDepth(depth);
       image.setOrigin(0.5, isFlyingToScreen ? 0.5 : 1);
       image.setPosition(Math.round(renderX), Math.round(renderY));
-      image.setDisplaySize(
-        Math.round(physicsWidth * transform.scaleX * extraScale),
-        Math.round(physicsHeight * transform.scaleY * extraScale),
-      );
+      image.setDisplaySize(Math.round(textureWidth * scale), Math.round(textureHeight * scale));
       image.setRotation(rotation);
       image.setAlpha(alpha);
       image.setFlipX(false);

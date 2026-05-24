@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { GameSnapshot } from "@smashing-cats/protocol";
 import { t } from "@smashing-cats/i18n";
 
-import { getImageAsset, images } from "../../../assetManager/assetManager.js";
+import { getImageAsset, getModelAsset, images, models as modelCache } from "../../../assetManager/assetManager.js";
 import { isSnapshotGameRunning } from "../../snapshotState.js";
 import type { RenderViewport } from "../../viewport.js";
 
@@ -32,12 +32,21 @@ type KenSpeech = {
 type DrawImageOptions = {
   flip?: boolean;
   rotation?: number;
-  pivotX?: number;
-  pivotY?: number;
   offsetX?: number;
   offsetY?: number;
   scaleX?: number;
   scaleY?: number;
+};
+
+type DrawModelOptions = {
+  flip?: boolean;
+  rotationY?: number;
+  rotationZ?: number;
+  offsetX?: number;
+  offsetY?: number;
+  scaleX?: number;
+  scaleY?: number;
+  scaleZ?: number;
 };
 
 type DrawTextOptions = {
@@ -57,6 +66,12 @@ type TextState = {
   mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
   lastText: string;
   lastStyle: string;
+};
+
+type ModelState = {
+  key: string;
+  group: THREE.Group;
+  baseSize: THREE.Vector3;
 };
 
 export class TutorialRenderer {
@@ -82,6 +97,7 @@ export class TutorialRenderer {
   private readonly textures = new Map<string, THREE.Texture>();
   private readonly images = new Map<string, THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>>();
   private readonly texts = new Map<string, TextState>();
+  private readonly models = new Map<string, ModelState>();
   private readonly visibleIds = new Set<string>();
 
   public constructor(private readonly scene: THREE.Scene) {}
@@ -120,12 +136,16 @@ export class TutorialRenderer {
 
   public destroy(): void {
     for (const mesh of this.images.values()) {
-      this.disposeMesh(mesh);
+      this.disposePlaneMesh(mesh);
     }
 
     for (const state of this.texts.values()) {
-      this.disposeMesh(state.mesh);
+      this.disposePlaneMesh(state.mesh);
       state.texture.dispose();
+    }
+
+    for (const state of this.models.values()) {
+      this.scene.remove(state.group);
     }
 
     for (const texture of this.textures.values()) {
@@ -134,13 +154,15 @@ export class TutorialRenderer {
 
     this.images.clear();
     this.texts.clear();
+    this.models.clear();
     this.textures.clear();
     this.handledEventIds.clear();
   }
 
   private resetForRestartedTutorial(snapshot: GameSnapshot): void {
     const tickRestarted = this.lastTick !== undefined && snapshot.tick < this.lastTick;
-    const tutorialRestarted = snapshot.tutorial.active && (!this.wasTutorialActive || tickRestarted) && this.campFinished;
+    const tutorialRestarted =
+      snapshot.tutorial.active && (!this.wasTutorialActive || tickRestarted) && this.campFinished;
 
     if (!tutorialRestarted) {
       return;
@@ -158,13 +180,12 @@ export class TutorialRenderer {
   }
 
   private drawCamp(): void {
-    this.drawImage("tower", "tutorial.tower", 50, 0, 0.5);
-    this.drawImage("bag", "tutorial.bag", 700, 0, 0.3, { flip: true });
-
+    this.drawModel("tower", "tutorial.tower", 50, 0, 400);
+    this.drawModel("bag", "tutorial.bag", 700, 0, 220, { flip: true });
     this.drawKen();
 
-    this.drawImage("crates", "tutorial.crates", 180, 0, 0.3);
-    this.drawImage("signboard", "tutorial.signboard", 820, 0, 0.6);
+    this.drawModel("crates", "tutorial.crates", 180, 0, 150);
+    this.drawModel("signboard", "tutorial.signboard", 820, 0, 170);
 
     this.drawFlag();
     this.drawBanner();
@@ -172,7 +193,7 @@ export class TutorialRenderer {
   }
 
   private drawSchoolboard(): void {
-    this.drawImage("schoolboard", "tutorial.schoolboard", 350, 0, 0.22);
+    this.drawModel("schoolboard", "tutorial.schoolboard", 350, 0, 180);
 
     this.drawText("schoolboard-text", t("tutorialText"), 480, 150, {
       font: "500 14px 'Comic Sans MS', cursive",
@@ -189,8 +210,6 @@ export class TutorialRenderer {
 
     this.drawImage("flag", "tutorial.flag", 177, 363, 0.5, {
       rotation: wave,
-      pivotX: 0,
-      pivotY: 0,
     });
   }
 
@@ -199,26 +218,19 @@ export class TutorialRenderer {
 
     this.drawImage("banner", "tutorial.banner", 120, 110, 0.5, {
       rotation: swing,
-      pivotX: 25,
-      pivotY: 0,
     });
   }
 
   private drawKen(): void {
     const now = performance.now();
-
     const breathe = Math.sin(now * 0.004) * 0.005;
     const swing = Math.sin(now * 0.0025) * 0.005;
-
     const speech = this.getActiveKenSpeech();
-    const frame = speech === undefined ? "tutorial.ken1" : "tutorial.ken2";
 
-    this.drawImage("ken", frame, 230, 142, 0.15, {
-      rotation: swing,
+    this.drawModel("ken", "tutorial.ken", 230, 142, 128, {
+      rotationZ: swing,
       scaleX: 1 + breathe,
       scaleY: 1 - breathe,
-      pivotX: 90,
-      pivotY: 180,
     });
 
     if (speech !== undefined) {
@@ -368,7 +380,54 @@ export class TutorialRenderer {
     };
   }
 
-  private drawImage(id: string, key: string, worldX: number, y: number, scale: number, options?: DrawImageOptions): void {
+  private drawModel(
+    id: string,
+    key: string,
+    worldX: number,
+    y: number,
+    height: number,
+    options?: DrawModelOptions,
+  ): void {
+    const state = this.getModelState(id, key);
+    const baseHeight = Math.max(1, state.baseSize.y);
+    const scale = height / baseHeight;
+
+    const group = state.group;
+    const x = this.worldObjectX(worldX) + (options?.offsetX ?? 0);
+    const feetY = this.groundY - y + (options?.offsetY ?? 0);
+
+    group.visible = true;
+    group.rotation.set(0, options?.rotationY ?? 0, options?.rotationZ ?? 0);
+    group.scale.set(
+      (options?.flip === true ? -1 : 1) * scale * (options?.scaleX ?? 1),
+      -scale * (options?.scaleY ?? 1),
+      scale * (options?.scaleZ ?? 1),
+    );
+
+    group.position.set(0, 0, Z);
+    group.updateMatrixWorld(true);
+
+    const box = new THREE.Box3().setFromObject(group);
+    const center = new THREE.Vector3();
+
+    box.getCenter(center);
+
+    group.position.x += Math.round(x - center.x);
+    group.position.y += Math.round(feetY - box.max.y);
+    group.position.z += Z - center.z;
+    group.updateMatrixWorld(true);
+
+    this.visibleIds.add(id);
+  }
+
+  private drawImage(
+    id: string,
+    key: string,
+    worldX: number,
+    y: number,
+    scale: number,
+    options?: DrawImageOptions,
+  ): void {
     const source = images.getLoaded(getImageAsset(key));
 
     if (!source.complete || source.naturalWidth <= 0 || source.naturalHeight <= 0) {
@@ -377,17 +436,14 @@ export class TutorialRenderer {
 
     const width = source.naturalWidth * scale;
     const height = source.naturalHeight * scale;
-
     const x = this.worldObjectX(worldX) + (options?.offsetX ?? 0);
     const topY = this.groundY - height - y + (options?.offsetY ?? 0);
-
     const scaleX = options?.scaleX ?? 1;
     const scaleY = options?.scaleY ?? 1;
-
     const mesh = this.getImageMesh(id, key, source);
 
     mesh.visible = true;
-    mesh.position.set(Math.round(x + width / 2), Math.round(topY + height / 2), Z);
+    mesh.position.set(Math.round(x + width / 2), Math.round(topY + height / 2), Z + 20);
     mesh.scale.set((options?.flip === true ? -1 : 1) * width * scaleX, -height * scaleY, 1);
     mesh.rotation.set(0, 0, options?.rotation ?? 0);
     mesh.material.opacity = 1;
@@ -405,15 +461,7 @@ export class TutorialRenderer {
     const styleKey = `${font}:${color}:${align}:${maxWidth}:${lineHeight}:${options?.preserveNewlines ?? false}`;
 
     if (state.lastText !== text || state.lastStyle !== styleKey) {
-      this.renderTextTexture(state, text, {
-        ...options,
-        font,
-        color,
-        align,
-        maxWidth,
-        lineHeight,
-      });
-
+      this.renderTextTexture(state, text, { ...options, font, color, align, maxWidth, lineHeight });
       state.lastText = text;
       state.lastStyle = styleKey;
     }
@@ -422,11 +470,54 @@ export class TutorialRenderer {
     const drawY = this.groundY - y;
 
     state.mesh.visible = true;
-    state.mesh.position.set(Math.round(x), Math.round(drawY), Z + 1);
+    state.mesh.position.set(Math.round(x), Math.round(drawY), Z + 21);
     state.mesh.scale.set(state.canvas.width, -state.canvas.height, 1);
     state.mesh.rotation.set(0, 0, options?.rotation ?? 0);
 
     this.visibleIds.add(id);
+  }
+
+  private getModelState(id: string, key: string): ModelState {
+    const existing = this.models.get(id);
+
+    if (existing !== undefined && existing.key === key) {
+      return existing;
+    }
+
+    if (existing !== undefined) {
+      this.scene.remove(existing.group);
+      this.models.delete(id);
+    }
+
+    const source = modelCache.getLoaded(getModelAsset(key));
+    const group = source.clone(true);
+
+    group.traverse((object) => {
+      object.frustumCulled = false;
+
+      if (object instanceof THREE.Mesh) {
+        object.renderOrder = RENDER_ORDER;
+      }
+    });
+
+    group.visible = false;
+
+    this.scene.add(group);
+
+    const box = new THREE.Box3().setFromObject(group);
+    const baseSize = new THREE.Vector3();
+
+    box.getSize(baseSize);
+
+    const state: ModelState = {
+      key,
+      group,
+      baseSize,
+    };
+
+    this.models.set(id, state);
+
+    return state;
   }
 
   private getImageMesh(
@@ -577,7 +668,6 @@ export class TutorialRenderer {
   private wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
     const words = text.split(" ");
     const lines: string[] = [];
-
     let current = "";
 
     for (const word of words) {
@@ -607,6 +697,10 @@ export class TutorialRenderer {
     for (const [id, state] of this.texts) {
       state.mesh.visible = this.visibleIds.has(id);
     }
+
+    for (const [id, state] of this.models) {
+      state.group.visible = this.visibleIds.has(id);
+    }
   }
 
   private worldObjectX(worldX: number): number {
@@ -617,7 +711,7 @@ export class TutorialRenderer {
     return this.worldObjectX(CAMP_RIGHT_WORLD_X) < 0;
   }
 
-  private disposeMesh(mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>): void {
+  private disposePlaneMesh(mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>): void {
     this.scene.remove(mesh);
     mesh.geometry.dispose();
     mesh.material.dispose();

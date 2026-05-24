@@ -2,6 +2,7 @@ import type { GameSnapshot } from "@smashing-cats/protocol";
 import { t } from "@smashing-cats/i18n";
 
 const KEN_REACTION_DURATION_MS = 2000;
+const KEN_FINAL_REACTION_DURATION_MS = 5000;
 const KEN_IDLE_TRIGGER_MS = 7000;
 const KEN_SAME_PRIORITY_COOLDOWN_MS = 3000;
 
@@ -19,7 +20,6 @@ export type KenSpeech = {
   text: string;
   until: number;
   priority: KenSpeechPriority;
-  persistent: boolean;
 };
 
 type TutorialProgress = {
@@ -60,10 +60,6 @@ export class MasterKen {
       this.lastActionAt = now;
     }
 
-    if (this.speech?.persistent === true) {
-      return;
-    }
-
     const progress = this.getTutorialProgress(snapshot);
 
     if (progress.moved) {
@@ -72,13 +68,13 @@ export class MasterKen {
 
     if (progress.killedTarget && this.wasTutorialActive && !snapshot.tutorial.active) {
       this.markPlayerAction(now);
-      this.say("kenFinalPhrase", "finish", now, true);
+      this.say("kenFinalPhrase", "finish", now);
       this.wasTutorialActive = snapshot.tutorial.active;
       return;
     }
 
     if (this.wasTutorialActive && !snapshot.tutorial.active) {
-      this.say("kenFinalPhrase", "finish", now, true);
+      this.say("kenFinalPhrase", "finish", now);
       this.wasTutorialActive = snapshot.tutorial.active;
       return;
     }
@@ -113,7 +109,7 @@ export class MasterKen {
       return undefined;
     }
 
-    if (!this.speech.persistent && now > this.speech.until) {
+    if (now > this.speech.until) {
       this.speech = undefined;
       return undefined;
     }
@@ -130,22 +126,23 @@ export class MasterKen {
     this.markPlayerAction(now);
   }
 
-  private say(key: string, priority: KenSpeechPriority, now: number, persistent = false): void {
+  private say(key: string, priority: KenSpeechPriority, now: number): void {
     const activeSpeech = this.getActiveSpeech(now);
 
     if (activeSpeech !== undefined && KEN_SPEECH_PRIORITY[priority] <= KEN_SPEECH_PRIORITY[activeSpeech.priority]) {
       return;
     }
 
-    if (!persistent && this.isPriorityOnCooldown(priority, now)) {
+    if (priority !== "finish" && this.isPriorityOnCooldown(priority, now)) {
       return;
     }
 
+    const duration = priority === "finish" ? KEN_FINAL_REACTION_DURATION_MS : KEN_REACTION_DURATION_MS;
+
     this.speech = {
       text: t(key),
-      until: now + KEN_REACTION_DURATION_MS,
+      until: now + duration,
       priority,
-      persistent,
     };
 
     this.lastSpeechByPriority.set(priority, now);
