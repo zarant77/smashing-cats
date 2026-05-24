@@ -10,6 +10,7 @@ import { EntityRenderer } from "./renderers/EntityRenderer.js";
 import { ForegroundRenderer } from "./renderers/ForegroundRenderer.js";
 import { GroundRenderer } from "./renderers/GroundRenderer.js";
 import { PlayerRenderer } from "./renderers/PlayerRenderer.js";
+import { TutorialRenderer } from "./renderers/TutorialRenderer.js";
 
 export class SmashingCatsThreeScene {
   public readonly domElement: HTMLCanvasElement;
@@ -21,6 +22,7 @@ export class SmashingCatsThreeScene {
   private readonly lights: ThreeLights;
 
   private readonly backgroundRenderer: BackgroundRenderer;
+  private readonly tutorialRenderer: TutorialRenderer;
   private readonly groundRenderer: GroundRenderer;
   private readonly entityRenderer: EntityRenderer;
   private readonly playerRenderer: PlayerRenderer;
@@ -55,6 +57,7 @@ export class SmashingCatsThreeScene {
     this.viewport = createRenderViewport(width, height, this.snapshot);
 
     this.backgroundRenderer = new BackgroundRenderer(this.scene);
+    this.tutorialRenderer = new TutorialRenderer(this.scene);
     this.groundRenderer = new GroundRenderer(this.scene, models);
     this.entityRenderer = new EntityRenderer(this.scene, this.camera.active, models);
     this.playerRenderer = new PlayerRenderer(this.scene, this.camera.active, models);
@@ -86,6 +89,7 @@ export class SmashingCatsThreeScene {
     this.viewport = createRenderViewport(this.width, this.height, this.snapshot);
 
     this.backgroundRenderer.draw(this.snapshot, this.viewport);
+    this.tutorialRenderer.draw(this.snapshot, this.viewport);
     this.groundRenderer.draw(this.snapshot, this.viewport);
     this.entityRenderer.draw(this.snapshot, this.viewport);
     this.playerRenderer.draw(this.snapshot, this.viewport, this.playerId);
@@ -96,6 +100,7 @@ export class SmashingCatsThreeScene {
 
   public destroy(): void {
     this.backgroundRenderer.destroy();
+    this.tutorialRenderer.destroy();
     this.groundRenderer.destroy();
     this.entityRenderer.destroy();
     this.playerRenderer.destroy();

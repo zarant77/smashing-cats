@@ -16,6 +16,7 @@ export type CollisionContext = {
   scrollX: number;
   players: Iterable<Player>;
   entities: Entity[];
+  playerDamageDisabled?: boolean;
   addEvent: AddGameEvent;
   intersectsCompensatedEntity: (player: Player, entity: Entity) => boolean;
 };
@@ -134,6 +135,10 @@ function resolveCivilianCollision(context: CollisionContext, player: Player, ent
 }
 
 function resolveDamagingCollision(context: CollisionContext, player: Player, entity: Entity): void {
+  if (context.playerDamageDisabled === true) {
+    return;
+  }
+
   const damage = damagePlayer(player, entity, context.scrollX, context.tick);
 
   if (damage > 0) {

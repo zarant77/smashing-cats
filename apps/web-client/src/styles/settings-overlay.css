@@ -173,7 +173,8 @@
 }
 
 .settings-overlay .settings-row button,
-.settings-overlay .exit-button {
+.settings-overlay .exit-button,
+.settings-overlay .tutorial-button {
   width: 72px;
   height: 72px;
 }
@@ -192,11 +193,12 @@
 
 .settings-overlay .settings-exit-row {
   display: flex;
+  gap: 10px;
   justify-content: center;
 }
 
 .settings-overlay .exit-button {
-  width: 176px;
+  width: 94px;
   background: rgba(80, 18, 18, 0.78);
 }
 

@@ -1,11 +1,13 @@
+import { storage } from "../storage.js";
+
 type Settings = {
   showFPS?: boolean;
   boundings?: boolean;
 };
 
-class Debug {
-  private readonly storageKey = "smashing-cats-debug";
+const STORAGE_KEY = "debug";
 
+class Debug {
   private readonly fpsElement: HTMLDivElement;
 
   private fpsEnabled = false;
@@ -37,7 +39,7 @@ class Debug {
 
     document.body.append(this.fpsElement);
 
-    this.applySettings(this.loadSettings());
+    this.applySettings((storage.get(STORAGE_KEY) || {}) as Settings);
 
     requestAnimationFrame(this.loop);
   }
@@ -97,27 +99,13 @@ class Debug {
     requestAnimationFrame(this.loop);
   };
 
-  private loadSettings(): Settings {
-    try {
-      const json = localStorage.getItem(this.storageKey);
-
-      if (!json) {
-        return {};
-      }
-
-      return JSON.parse(json) as Settings;
-    } catch {
-      return {};
-    }
-  }
-
   private saveSettings(): void {
     const settings: Settings = {
       showFPS: this.showFPS,
       boundings: this.boundings,
     };
 
-    localStorage.setItem(this.storageKey, JSON.stringify(settings));
+    storage.set(STORAGE_KEY, settings);
   }
 }
 

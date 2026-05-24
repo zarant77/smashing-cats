@@ -14,11 +14,6 @@ type EntityObject = {
   fallback?: Phaser.GameObjects.Rectangle;
 };
 
-type RenderSize = {
-  width: number;
-  height: number;
-};
-
 type FlyToScreenState = {
   startedAt: number;
   fromX: number;
@@ -106,7 +101,6 @@ export class EntityRenderer {
 
     const imageKey = getEntityImageKey(entity);
     const source = images.getLoaded(getImageAsset(imageKey));
-    const renderSize = getRenderSize(source, physicsWidth, physicsHeight);
 
     const x = screenX + physicsWidth / 2;
     const y = screenY + physicsHeight;
@@ -133,8 +127,8 @@ export class EntityRenderer {
       image.setOrigin(0.5, isFlyingToScreen ? 0.5 : 1);
       image.setPosition(Math.round(renderX), Math.round(renderY));
       image.setDisplaySize(
-        Math.round(renderSize.width * transform.scaleX * extraScale),
-        Math.round(renderSize.height * transform.scaleY * extraScale),
+        Math.round(physicsWidth * transform.scaleX * extraScale),
+        Math.round(physicsHeight * transform.scaleY * extraScale),
       );
       image.setRotation(rotation);
       image.setAlpha(alpha);
@@ -347,18 +341,4 @@ function getEntityFallbackColor(entity: EntitySnapshot): number {
   }
 
   return 0x8b3a3a;
-}
-
-function getRenderSize(image: HTMLImageElement, fallbackWidth: number, fallbackHeight: number): RenderSize {
-  if (!image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
-    return {
-      width: fallbackWidth,
-      height: fallbackHeight,
-    };
-  }
-
-  return {
-    width: fallbackWidth,
-    height: fallbackWidth * (image.naturalHeight / image.naturalWidth),
-  };
 }

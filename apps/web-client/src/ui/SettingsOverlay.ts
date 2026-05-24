@@ -3,6 +3,7 @@ import { t, type TranslationLocale } from "@smashing-cats/i18n";
 import type { ViewKind } from "../views/types.js";
 import { playSound } from "../audio/audio.js";
 import { deviceController } from "../device/DeviceController.js";
+import { storage } from "../storage.js";
 
 type EngineKind = "canvas" | "phaser" | "three";
 
@@ -31,6 +32,7 @@ type SettingsOverlayState = {
 };
 
 const MENU_ANIMATION_MS = 220;
+const TUTORIAL_DONE_KEY = "tutorial-done";
 
 export class SettingsOverlay {
   private readonly element: HTMLDivElement;
@@ -155,6 +157,10 @@ export class SettingsOverlay {
         <div class="settings-exit-separator" aria-hidden="true"></div>
 
         <div class="settings-exit-row">
+          <button class="tutorial-button" type="button" data-i18n-title="tutorialEnabled" title="${t("tutorialEnabled")}" aria-label="${t("tutorialEnabled")}">
+            <span class="icon icon-tutorial"></span>
+          </button>
+
           <button class="exit-button" type="button" data-i18n-title="exit" title="${t("exit")}" aria-label="${t("exit")}">
             <span class="icon icon-exit"></span>
           </button>
@@ -278,6 +284,15 @@ export class SettingsOverlay {
     this.element
       .querySelector<HTMLButtonElement>(".vibration-button")
       ?.addEventListener("click", () => this.onToggleVibration?.());
+    this.element.querySelector<HTMLButtonElement>(".tutorial-button")?.addEventListener("click", () => {
+      if (this.isTutorialEnabled()) {
+        storage.set(TUTORIAL_DONE_KEY, "true");
+      } else {
+        storage.remove(TUTORIAL_DONE_KEY);
+      }
+
+      this.syncActiveButtons();
+    });
     this.element
       .querySelector<HTMLButtonElement>(".engine-canvas-button")
       ?.addEventListener("click", () => this.onSelectView?.("canvas"));
@@ -339,6 +354,7 @@ export class SettingsOverlay {
     this.setButtonActive(".sound-button", this.state.soundEnabled);
     this.setButtonActive(".music-button", this.state.musicEnabled);
     this.setButtonActive(".vibration-button", this.state.vibrationEnabled);
+    this.setButtonActive(".tutorial-button", this.isTutorialEnabled());
     this.setButtonDisabled(
       ".vibration-button",
       !(deviceController.isVibrationSupported && deviceController.isProbablyMobile),
@@ -367,6 +383,10 @@ export class SettingsOverlay {
     if (!paused && this.isVisible()) {
       this.hide();
     }
+  }
+
+  private isTutorialEnabled(): boolean {
+    return !storage.get(TUTORIAL_DONE_KEY);
   }
 
   private setButtonActive(selector: string, active: boolean): void {

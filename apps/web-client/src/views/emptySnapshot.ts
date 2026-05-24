@@ -4,6 +4,11 @@ export const EMPTY_SNAPSHOT: GameSnapshot = {
   tick: 0,
   seed: 0,
   gamePaused: false,
+  tutorial: {
+    active: false,
+    targetsDestroyed: 0,
+    targetsRequired: 0,
+  },
   simulation: {
     rngState: 0,
     nextEntityIndex: 0,

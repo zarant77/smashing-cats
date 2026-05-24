@@ -21,6 +21,8 @@ type AnimateInput = {
   snapshot: AnimatedSnapshot;
   tick: number;
   baseScale: number;
+  baseScaleX?: number;
+  baseScaleY?: number;
   baseScaleZ?: number;
   baseRotationX?: number;
 };
@@ -79,10 +81,14 @@ export class ThreeModelAnimator {
 
     this.flyToScreenStates.delete(input.snapshot.id);
 
+    const baseScaleX = input.baseScaleX ?? input.baseScale;
+    const baseScaleY = input.baseScaleY ?? input.baseScale;
+    const baseScaleZ = input.baseScaleZ ?? input.baseScale;
+
     input.model.scale.set(
-      input.baseScale * this.getScaleX(animation, time),
-      input.baseScale * this.getScaleY(animation, time),
-      input.baseScaleZ ?? input.baseScale,
+      baseScaleX * this.getScaleX(animation, time),
+      baseScaleY * this.getScaleY(animation, time),
+      baseScaleZ,
     );
 
     input.model.rotation.x = input.baseRotationX ?? 0;
@@ -102,7 +108,7 @@ export class ThreeModelAnimator {
     input.model.position.lerpVectors(state.startPosition, state.targetPosition, flyEased);
     input.model.position.y += FLY_TO_SCREEN_FALL_DISTANCE * fallEased;
 
-    input.model.scale.set(input.baseScale, input.baseScale, input.baseScaleZ ?? input.baseScale);
+    input.model.scale.set(input.baseScaleX ?? input.baseScale, input.baseScaleY ?? input.baseScale, input.baseScaleZ ?? input.baseScale);
 
     input.model.rotation.x = input.baseRotationX ?? 0;
 

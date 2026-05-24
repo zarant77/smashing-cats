@@ -4,6 +4,7 @@ import { i18n } from "@smashing-cats/i18n";
 import "./uncrasher.js";
 import "./ui/debug.js";
 
+import { storage } from "./storage.js";
 import { audio, musicEvents, playSound, setupAudioUnlock } from "./audio/audio.js";
 import { deviceController, setupDeviceUnlock } from "./device/DeviceController.js";
 import { loadHeavyEffectsIfAllowed } from "./device/loadHeavyEffectsIfAllowed.js";
@@ -27,12 +28,12 @@ import type { GameView, ViewKind } from "./views/types.js";
 
 import "./styles/index.css";
 
-const SOUNDS_ENABLED_KEY = "smashing-cats-sounds-enabled";
-const MUSIC_ENABLED_KEY = "smashing-cats-music-enabled";
-const VIBRATION_ENABLED_KEY = "smashing-cats-vibration-enabled";
-const LOCALE_KEY = "smashing-cats-locale";
-const VIEW_KEY = "smashing-cats-view";
-const CHARACTER_KEY = "smashing-cats-character";
+const SOUNDS_ENABLED_KEY = "sounds-enabled";
+const MUSIC_ENABLED_KEY = "music-enabled";
+const VIBRATION_ENABLED_KEY = "vibration-enabled";
+const LOCALE_KEY = "locale";
+const VIEW_KEY = "view";
+const CHARACTER_KEY = "character";
 
 const VIEW_SHORTCUTS: Record<string, ViewKind> = {
   Digit1: "canvas",
@@ -57,12 +58,12 @@ async function bootstrap(): Promise<void> {
   const matchCode = getMatchCode(params);
   const multiplayer = matchCode !== undefined;
 
-  let soundEnabled = localStorage.getItem(SOUNDS_ENABLED_KEY) !== "false";
-  let musicEnabled = localStorage.getItem(MUSIC_ENABLED_KEY) !== "false";
-  let vibrationEnabled = localStorage.getItem(VIBRATION_ENABLED_KEY) !== "false";
+  let soundEnabled = !!storage.get(SOUNDS_ENABLED_KEY);
+  let musicEnabled = !!storage.get(MUSIC_ENABLED_KEY);
+  let vibrationEnabled = !!storage.get(VIBRATION_ENABLED_KEY);
 
-  let viewKind = parseViewKind(params.get("view") ?? localStorage.getItem(VIEW_KEY));
-  let selectedCharacterKind = localStorage.getItem(CHARACTER_KEY) as EntityKind | null;
+  let viewKind = parseViewKind(params.get("view") ?? storage.get(VIEW_KEY));
+  let selectedCharacterKind = storage.get(CHARACTER_KEY) as EntityKind | null;
 
   let view: GameView = await createView(viewKind, root);
   let characterSelect: CharacterSelect | undefined;
@@ -158,7 +159,7 @@ async function bootstrap(): Promise<void> {
       playSound("sound.ui_click");
 
       selectedCharacterKind = characterKind;
-      localStorage.setItem(CHARACTER_KEY, characterKind);
+      storage.set(CHARACTER_KEY, characterKind);
 
       characterSelect?.setPreferredCharacter(characterKind);
     },
@@ -190,7 +191,7 @@ async function bootstrap(): Promise<void> {
     onToggleSound: () => {
       soundEnabled = !soundEnabled;
 
-      localStorage.setItem(SOUNDS_ENABLED_KEY, String(soundEnabled));
+      storage.set(SOUNDS_ENABLED_KEY, !!soundEnabled);
       audio.setSoundsEnabled(soundEnabled);
 
       if (soundEnabled) {
@@ -203,7 +204,7 @@ async function bootstrap(): Promise<void> {
     onToggleMusic: () => {
       musicEnabled = !musicEnabled;
 
-      localStorage.setItem(MUSIC_ENABLED_KEY, String(musicEnabled));
+      storage.set(MUSIC_ENABLED_KEY, !!musicEnabled);
       audio.setMusicEnabled(musicEnabled);
 
       playSound("sound.ui_click");
@@ -215,7 +216,7 @@ async function bootstrap(): Promise<void> {
     onToggleVibration: () => {
       vibrationEnabled = !vibrationEnabled;
 
-      localStorage.setItem(VIBRATION_ENABLED_KEY, String(vibrationEnabled));
+      storage.set(VIBRATION_ENABLED_KEY, !!vibrationEnabled);
       deviceController.setVibrationEnabled(vibrationEnabled);
 
       playSound("sound.ui_click");
@@ -248,13 +249,13 @@ async function bootstrap(): Promise<void> {
 
   // Run the game
   i18n.onLocaleChanged((newLocale) => {
-    localStorage.setItem(LOCALE_KEY, newLocale);
+    storage.set(LOCALE_KEY, newLocale);
     document.title = `${i18n.t("title")} v${__ASSET_VERSION__}`;
     applyStaticTranslations();
     renderCharacterSelect();
     syncSettingsOverlay();
   });
-  i18n.changeLocale(params.get("locale") ?? localStorage.getItem(LOCALE_KEY) ?? "en");
+  i18n.changeLocale(params.get("locale") ?? storage.get(LOCALE_KEY) ?? "en");
 
   runtime.start();
 
@@ -275,7 +276,7 @@ async function bootstrap(): Promise<void> {
 
       const nextView = await createView(nextViewKind, root);
 
-      localStorage.setItem(VIEW_KEY, nextViewKind);
+      storage.set(VIEW_KEY, nextViewKind);
 
       nextView.render(snapshot, playerId);
 

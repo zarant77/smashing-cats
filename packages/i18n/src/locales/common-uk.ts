@@ -40,6 +40,9 @@ export const commonUK = {
   nextCharacter: "Наступний кіт",
   changeCharacter: "Змінити кота",
   selectCharacter: "Обрати цього кота",
+  tutorialEnabled: "Навчання увімкнено",
+
+  tutorialText: "Вліво, Вправо - рух\nПробіл - стрибок\nСтрибок у повітрі - СМЕШ!",
 
   helpContent: `
 <h3>🐾 Керування</h3>

@@ -12,6 +12,23 @@ export const IMAGES = {
   "ui.joy_jump": "/ui/joy_jump.png",
   "ui.joy_smash": "/ui/joy_smash.png",
 
+  // Common
+  "common.speech_bubble": "/img/speech_bubble.png",
+
+  // Tutorial
+  "tutorial.bag": "/tutorial/bag.png",
+  "tutorial.banner": "/tutorial/banner.png",
+  "tutorial.schoolboard": "/tutorial/schoolboard.png",
+  "tutorial.crates": "/tutorial/crates.png",
+  "tutorial.flag": "/tutorial/flag.png",
+  "tutorial.ken1": "/tutorial/master_ken_1.png",
+  "tutorial.ken2": "/tutorial/master_ken_2.png",
+  "tutorial.signboard": "/tutorial/signboard.png",
+  "tutorial.tower": "/tutorial/tower.png",
+
+  "enemy.dummy": "/canvas/enemies/dummy.png",
+  "enemy.dummy_dead": "/canvas/enemies/dummy-dead.png",
+
   // Environment
   "environment.sky": "/canvas/environments/sky.png",
   "environment.clouds": "/canvas/environments/clouds.png",

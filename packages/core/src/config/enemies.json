@@ -1,5 +1,19 @@
 [
   {
+    "dummy": true,
+    "kind": "dummy",
+    "size": [80, 120],
+    "hurt": [40, 0, -20],
+    "damage": 1,
+    "score": 10,
+    "minMoveSpeed": 0,
+    "maxMoveSpeed": 0,
+    "animations": {
+      "idle": "swing",
+      "death": "squish"
+    }
+  },
+  {
     "kind": "orc",
     "size": [128, 128],
     "hurt": [40, 0, 0],

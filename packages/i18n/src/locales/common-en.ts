@@ -40,6 +40,9 @@ export const commonEN = {
   nextCharacter: "Next cat",
   changeCharacter: "Change cat",
   selectCharacter: "Choose your cat",
+  tutorialEnabled: "Tutorial enabled",
+
+  tutorialText: "Left, Right - move\nSpace - jump\nJump in air - SMASH!",
 
   helpContent: `
 <h3>🐾 Controls</h3>

@@ -10,6 +10,7 @@ import { GroundRenderer } from "./GroundRenderer.js";
 import { ParticlesRenderer } from "./ParticlesRenderer.js";
 import { PlayerRenderer } from "./PlayerRenderer.js";
 import { ScreenShake } from "./ScreenShake.js";
+import { TutorialRenderer } from "./TutorialRenderer.js";
 import { createRenderViewport, getViewSize } from "../viewport.js";
 import { EMPTY_SNAPSHOT } from "../emptySnapshot.js";
 
@@ -23,6 +24,7 @@ export class CanvasView implements GameView {
   private readonly ground = new GroundRenderer();
   private readonly particles = new ParticlesRenderer(10);
   private readonly effects = new EffectRenderer();
+  private readonly tutorial = new TutorialRenderer();
 
   private readonly entities: EntityRenderer;
   private readonly players: PlayerRenderer;
@@ -77,6 +79,7 @@ export class CanvasView implements GameView {
     this.floatingTexts.update(snapshot);
 
     this.background.draw(ctx, this.canvas, snapshot, viewport);
+    this.tutorial.draw(ctx, snapshot, viewport);
 
     const shake = this.screenShake.getOffset(viewport.scale);
 

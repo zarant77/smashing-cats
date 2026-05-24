@@ -15,6 +15,7 @@ export function createDeltaSnapshot(previous: GameSnapshot, next: GameSnapshot):
   };
 
   assignOptional(delta, "gamePaused", changed(previous.gamePaused, next.gamePaused));
+  assignOptional(delta, "tutorial", getTutorialDelta(previous, next));
   assignOptional(delta, "simulation", getSimulationDelta(previous, next));
   assignOptional(delta, "scrollX", changed(previous.world.scrollX, next.world.scrollX));
   assignOptional(delta, "addedPlayers", getAddedPlayers(previous.players, next.players));
@@ -29,6 +30,14 @@ export function createDeltaSnapshot(previous: GameSnapshot, next: GameSnapshot):
   }
 
   return compactDelta(delta);
+}
+
+function getTutorialDelta(previous: GameSnapshot, next: GameSnapshot): GameSnapshot["tutorial"] | undefined {
+  return Object.is(previous.tutorial.active, next.tutorial.active) &&
+    Object.is(previous.tutorial.targetsDestroyed, next.tutorial.targetsDestroyed) &&
+    Object.is(previous.tutorial.targetsRequired, next.tutorial.targetsRequired)
+    ? undefined
+    : { ...next.tutorial };
 }
 
 function getSimulationDelta(previous: GameSnapshot, next: GameSnapshot): GameSnapshot["simulation"] | undefined {
@@ -183,6 +192,7 @@ function compactDelta(delta: DeltaSnapshot): DeltaSnapshot {
   return {
     tick: delta.tick,
     ...(delta.gamePaused !== undefined ? { gamePaused: delta.gamePaused } : {}),
+    ...(delta.tutorial !== undefined ? { tutorial: delta.tutorial } : {}),
     ...(delta.simulation !== undefined ? { simulation: delta.simulation } : {}),
     ...(delta.scrollX !== undefined ? { scrollX: delta.scrollX } : {}),
 

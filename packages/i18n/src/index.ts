@@ -1,39 +1,8 @@
-import { catsEN } from "./locales/cats-en.js";
-import { catsPL } from "./locales/cats-pl.js";
-import { catsUK } from "./locales/cats-uk.js";
-import { commonEN } from "./locales/common-en.js";
-import { commonPL } from "./locales/common-pl.js";
-import { commonUK } from "./locales/common-uk.js";
-
-const DEFAULT_DEATH_PHRASES = [
-  "I meant to do that.",
-  "That floor looked suspicious.",
-  "Tell my food bowl I loved it.",
-] as const;
-
-export const TRANSLATIONS = {
-  en: {
-    ...commonEN,
-    ...catsEN.cats,
-  },
-  uk: {
-    ...commonUK,
-    ...catsUK.cats,
-  },
-  pl: {
-    ...commonPL,
-    ...catsPL.cats,
-  },
-} as const;
-
-const DEATH_PHRASES = {
-  en: catsEN.deathPhrases,
-  pl: catsPL.deathPhrases,
-  uk: catsUK.deathPhrases,
-} as const;
+import { TRANSLATIONS, DEATH_PHRASES } from "./locales/index.js";
 
 export type TranslationLocale = keyof typeof TRANSLATIONS;
 export type TranslationKey = keyof typeof TRANSLATIONS.en;
+export type TranslationValue = string | readonly string[];
 
 export type Translator = (key: string) => string;
 
@@ -43,21 +12,34 @@ class I18n {
   private locale: TranslationLocale = "en";
 
   private readonly listeners = new Set<LocaleChangedListener>();
+  private readonly phraseBags = new Map<string, string[]>();
 
   public t: Translator = (key) => {
-    const dictionary = TRANSLATIONS[this.locale] as Record<string, string>;
+    const dictionary = TRANSLATIONS[this.locale] as Record<string, TranslationValue>;
+    const fallbackDictionary = TRANSLATIONS.en as Record<string, TranslationValue>;
 
-    return dictionary[key] ?? key;
+    const value = dictionary[key] ?? fallbackDictionary[key];
+
+    if (value === undefined) {
+      return key;
+    }
+
+    return this.resolveTranslationValue(key, value);
   };
 
   public getDeathPhrase(kind: string): string {
     const localePhrases = DEATH_PHRASES[this.locale] as Record<string, readonly string[]>;
     const fallbackPhrases = DEATH_PHRASES.en as Record<string, readonly string[]>;
 
-    const phrases = localePhrases[kind] ?? fallbackPhrases[kind] ?? DEFAULT_DEATH_PHRASES;
+    const phrases = localePhrases[kind] ?? fallbackPhrases[kind];
+
+    if (phrases === undefined || phrases.length === 0) {
+      return kind;
+    }
+
     const index = Math.floor(Math.random() * phrases.length);
 
-    return phrases[index] ?? DEFAULT_DEATH_PHRASES[0];
+    return phrases[index] ?? kind;
   }
 
   public getLocale(): TranslationLocale {
@@ -86,6 +68,39 @@ class I18n {
     };
   }
 
+  private resolveTranslationValue(key: string, value: TranslationValue): string {
+    if (typeof value === "string") {
+      return value;
+    }
+
+    if (value.length === 0) {
+      return key;
+    }
+
+    const bagKey = `${this.locale}:${key}`;
+
+    let bag = this.phraseBags.get(bagKey);
+
+    if (bag === undefined || bag.length === 0) {
+      bag = this.shuffle([...value]);
+      this.phraseBags.set(bagKey, bag);
+    }
+
+    return bag.shift() ?? key;
+  }
+
+  private shuffle(items: string[]): string[] {
+    for (let index = items.length - 1; index > 0; index -= 1) {
+      const swapIndex = Math.floor(Math.random() * (index + 1));
+
+      const item = items[index];
+      items[index] = items[swapIndex];
+      items[swapIndex] = item;
+    }
+
+    return items;
+  }
+
   private normalizeLocale(locale: string | null | undefined): TranslationLocale {
     const normalizedLocale = locale?.toLowerCase() ?? "en";
 
@@ -100,4 +115,5 @@ class I18n {
 export const i18n = new I18n();
 
 export const t = i18n.t;
+
 export const getDeathPhrase = i18n.getDeathPhrase.bind(i18n);

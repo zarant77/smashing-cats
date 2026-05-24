@@ -19,6 +19,7 @@ export type Entity = {
   id: string;
   type: EntityType;
   kind: EntityKind;
+  dummy?: boolean;
 
   x: number;
   y: number;
@@ -34,6 +35,12 @@ export type Entity = {
   animations?: AnimationSet;
 
   alive: boolean;
+};
+
+export type TutorialState = {
+  active: boolean;
+  targetsDestroyed: number;
+  targetsRequired: number;
 };
 
 export type Player = Entity & {

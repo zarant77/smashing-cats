@@ -16,11 +16,6 @@ type PlayerObject = {
   fallback?: Phaser.GameObjects.Rectangle;
 };
 
-type RenderSize = {
-  width: number;
-  height: number;
-};
-
 const DEPTH = 50;
 
 export class PlayerRenderer {
@@ -81,7 +76,6 @@ export class PlayerRenderer {
 
     const imageKey = `player.${player.kind}`;
     const image = images.getLoaded(getImageAsset(imageKey));
-    const renderSize = this.getRenderSize(image, physicsWidth, physicsHeight);
 
     const shouldBlinkOff = player.invulnerable && Math.floor(snapshot.tick / 2) % 2 === 0;
     const alpha = shouldBlinkOff ? 0.35 : 1;
@@ -95,8 +89,8 @@ export class PlayerRenderer {
     sprite.setVisible(true);
     sprite.setPosition(Math.round(x + transform.offsetX), Math.round(y + transform.offsetY));
     sprite.setDisplaySize(
-      Math.round(renderSize.width * transform.scaleX),
-      Math.round(renderSize.height * transform.scaleY),
+      Math.round(physicsWidth * transform.scaleX),
+      Math.round(physicsHeight * transform.scaleY),
     );
     sprite.setRotation(transform.rotation);
     sprite.setFlipX(true);
@@ -158,19 +152,5 @@ export class PlayerRenderer {
       this.animationState.remove(id);
       this.objects.delete(id);
     }
-  }
-
-  private getRenderSize(image: HTMLImageElement, fallbackWidth: number, fallbackHeight: number): RenderSize {
-    if (!image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
-      return {
-        width: fallbackWidth,
-        height: fallbackHeight,
-      };
-    }
-
-    return {
-      width: fallbackWidth,
-      height: fallbackWidth * (image.naturalHeight / image.naturalWidth),
-    };
   }
 }

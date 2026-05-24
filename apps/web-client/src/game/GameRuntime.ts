@@ -12,12 +12,14 @@ import type {
   ServerToClientMessage,
 } from "@smashing-cats/protocol";
 
+import { storage } from "../storage.js";
 import { consumePauseToggle, isPaused, setPaused as setInputPaused, togglePause, readInput } from "../input.js";
 import { createSocket, parseServerMessage, sendClientMessage } from "../network/clientConnection.js";
 import type { TouchControls } from "../ui/TouchControls.js";
 import { createLocalGame } from "./localGame.js";
 
 const LOCAL_PLAYER_ID = "p1";
+const TUTORIAL_DONE_KEY = "tutorial-done";
 
 type GameRuntimeOptions = {
   multiplayer: boolean;
@@ -60,7 +62,9 @@ export class GameRuntime {
     this.charactersValue = this.multiplayer ? [] : [...CHARACTERS];
     this.playerId = this.multiplayer ? undefined : LOCAL_PLAYER_ID;
     this.socket = this.multiplayer ? createSocket() : undefined;
-    this.localGame = this.multiplayer ? undefined : createLocalGame();
+    this.localGame = this.multiplayer
+      ? undefined
+      : createLocalGame({ tutorialEnabled: !storage.get(TUTORIAL_DONE_KEY) });
 
     this.bindSocketEvents();
   }
@@ -95,7 +99,7 @@ export class GameRuntime {
       this.socket = createSocket();
       this.bindSocketEvents();
     } else {
-      this.localGame = createLocalGame();
+      this.localGame = createLocalGame({ tutorialEnabled: !storage.get(TUTORIAL_DONE_KEY) });
     }
 
     this.onCharacterStateChange();
@@ -103,7 +107,10 @@ export class GameRuntime {
   }
 
   public selectCharacter(characterKind: EntityKind): boolean {
-    if (this.multiplayer && (this.socket?.readyState !== WebSocket.OPEN || this.playerId === undefined || this.matchCode === undefined)) {
+    if (
+      this.multiplayer &&
+      (this.socket?.readyState !== WebSocket.OPEN || this.playerId === undefined || this.matchCode === undefined)
+    ) {
       return false;
     }
 
@@ -127,7 +134,7 @@ export class GameRuntime {
     }
 
     this.playerId = LOCAL_PLAYER_ID;
-    this.localGame = createLocalGame();
+    this.localGame = createLocalGame({ tutorialEnabled: !storage.get(TUTORIAL_DONE_KEY) });
     this.localGame.addPlayer(this.playerId, characterKind);
     this.localSnapshot = this.localGame.createSnapshot();
     this.previousLocalSnapshot = this.localSnapshot;
@@ -308,7 +315,12 @@ export class GameRuntime {
     sendClientMessage(this.socket, inputMessage);
   }
 
-  private updateLocalGame(canPlay: boolean, currentPlayerId: PlayerId | undefined, currentInputSeq: number, input: PlayerInput): void {
+  private updateLocalGame(
+    canPlay: boolean,
+    currentPlayerId: PlayerId | undefined,
+    currentInputSeq: number,
+    input: PlayerInput,
+  ): void {
     if (this.multiplayer || !canPlay || this.localGame === undefined || currentPlayerId === undefined) {
       this.lastLocalUpdateAt = performance.now();
       this.localUpdateAccumulator = 0;
@@ -328,13 +340,18 @@ export class GameRuntime {
       this.previousLocalSnapshot = this.localSnapshot;
       this.localGame.update(FIXED_DT);
       this.localSnapshot = this.localGame.createSnapshot();
+      saveTutorialDoneIfFinished(this.previousLocalSnapshot, this.localSnapshot);
       this.localUpdateAccumulator -= FIXED_DT;
     }
   }
 
   private getRenderSnapshot(currentInputSeq: number, input: PlayerInput): GameSnapshot | undefined {
     if (!this.multiplayer) {
-      return interpolateSnapshot(this.previousLocalSnapshot, this.localSnapshot, this.localUpdateAccumulator / FIXED_DT);
+      return interpolateSnapshot(
+        this.previousLocalSnapshot,
+        this.localSnapshot,
+        this.localUpdateAccumulator / FIXED_DT,
+      );
     }
 
     const interpolatedSnapshot = this.interpolator.get(this.playerId);
@@ -349,7 +366,14 @@ export class GameRuntime {
       return interpolatedSnapshot;
     }
 
-    return this.predictor.apply(interpolatedSnapshot, latestSnapshot, this.playerId, currentInputSeq, input, this.charactersValue);
+    return this.predictor.apply(
+      interpolatedSnapshot,
+      latestSnapshot,
+      this.playerId,
+      currentInputSeq,
+      input,
+      this.charactersValue,
+    );
   }
 }
 
@@ -414,6 +438,12 @@ function lerp(from: number, to: number, alpha: number): number {
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
+}
+
+function saveTutorialDoneIfFinished(previous: GameSnapshot | undefined, current: GameSnapshot | undefined): void {
+  if (previous?.tutorial.active === true && current?.tutorial.active === false) {
+    storage.set(TUTORIAL_DONE_KEY, true);
+  }
 }
 
 function isSameInput(left: PlayerInput, right: PlayerInput): boolean {

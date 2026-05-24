@@ -9,9 +9,10 @@ type CreateEntityOptions = {
   x: number;
   moveSpeed: number;
   laneOffsetY: number;
+  dummy?: boolean;
 };
 
-export function createEntity({ config, id, x, moveSpeed, laneOffsetY }: CreateEntityOptions): Entity {
+export function createEntity({ config, id, x, moveSpeed, laneOffsetY, dummy }: CreateEntityOptions): Entity {
   const [, height] = config.size;
   const y = GAME_CONFIG.groundY - height + laneOffsetY;
 
@@ -19,11 +20,12 @@ export function createEntity({ config, id, x, moveSpeed, laneOffsetY }: CreateEn
     id,
     type: getEntityType(config),
     kind: config.kind,
+    dummy: dummy === true ? true : undefined,
 
     x,
     y,
 
-    vx: -moveSpeed,
+    vx: dummy === true ? 0 : -moveSpeed,
     vy: 0,
 
     size: config.size,

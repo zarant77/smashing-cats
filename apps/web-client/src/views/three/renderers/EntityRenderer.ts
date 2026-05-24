@@ -68,13 +68,14 @@ export class EntityRenderer {
 
       const fitScaleX = object.baseSize.x > 0 ? physicsWidth / object.baseSize.x : 1;
       const fitScaleY = object.baseSize.y > 0 ? physicsHeight / object.baseSize.y : 1;
-      const scale = Math.min(fitScaleX, fitScaleY);
 
       this.animator.animate({
         model: object.model,
         snapshot: entity,
         tick: snapshot.tick,
-        baseScale: scale,
+        baseScale: fitScaleX,
+        baseScaleX: fitScaleX,
+        baseScaleY: fitScaleY,
         baseRotationX: Math.PI,
       });
 

@@ -8,6 +8,7 @@ import { ForegroundRenderer } from "./renderers/ForegroundRenderer.js";
 import { GroundRenderer } from "./renderers/GroundRenderer.js";
 import { PlayerRenderer } from "./renderers/PlayerRenderer.js";
 import { ParticlesRenderer } from "./renderers/ParticlesRenderer.js";
+import { TutorialRenderer } from "./renderers/TutorialRenderer.js";
 import { HitStopController } from "./effects/HitStopController.js";
 
 import { EMPTY_SNAPSHOT } from "../emptySnapshot.js";
@@ -19,6 +20,7 @@ export class SmashingCatsScene extends Phaser.Scene {
   private playerId: PlayerId | undefined;
 
   private background?: BackgroundRenderer;
+  private tutorial?: TutorialRenderer;
   private ground?: GroundRenderer;
   private entities?: EntityRenderer;
   private players?: PlayerRenderer;
@@ -39,6 +41,7 @@ export class SmashingCatsScene extends Phaser.Scene {
     this.viewport = createRenderViewport(this.scale.width, this.scale.height, this.snapshot);
 
     this.background = new BackgroundRenderer(this);
+    this.tutorial = new TutorialRenderer(this);
     this.ground = new GroundRenderer(this);
     this.entities = new EntityRenderer(this);
     this.players = new PlayerRenderer(this);
@@ -55,6 +58,7 @@ export class SmashingCatsScene extends Phaser.Scene {
     const screenWorldRight = this.scale.width / this.viewport.scale;
 
     this.background?.draw(renderSnapshot, this.viewport);
+    this.tutorial?.draw(renderSnapshot, this.viewport);
     this.ground?.draw(renderSnapshot, this.viewport);
     this.entities?.draw(renderSnapshot, this.viewport);
     this.players?.draw(renderSnapshot, this.playerId, this.viewport);

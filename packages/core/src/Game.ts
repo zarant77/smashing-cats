@@ -1,8 +1,9 @@
 import type { DeltaSnapshot, EntityKind, GameEvent, GameSnapshot, PlayerId, PlayerInput } from "@smashing-cats/protocol";
-import type { Entity, Player } from "./types.js";
-import { type CharacterConfig, GAME_CONFIG, TICK_RATE, getCharacterConfig } from "./config.js";
+import type { Entity, Player, TutorialState } from "./types.js";
+import { type CharacterConfig, ENEMIES, GAME_CONFIG, TICK_RATE, getCharacterConfig } from "./config.js";
 import { Random } from "./Random.js";
 import { resolveEnemyCivilianCollisions, resolvePlayerEntityCollisions } from "./collision/collisionSystem.js";
+import { createEntity } from "./entity/entityFactory.js";
 import { spawnAhead } from "./entity/entitySpawner.js";
 import { cleanupEntities, updateEntities } from "./entity/entitySystem.js";
 import { createGameEvent } from "./event/gameEventFactory.js";
@@ -15,6 +16,13 @@ import { createPlayer } from "./player/playerFactory.js";
 import { createGameSnapshot } from "./snapshot/snapshotFactory.js";
 import { createDeltaSnapshot } from "./snapshot/deltaSnapshotFactory.js";
 
+export type StartTutorialOptions = {
+  targetsRequired?: number;
+  dummyStartX: number;
+  dummySpacingX: number;
+  gameStartDelaySeconds: number;
+};
+
 export class Game {
   private readonly seed: number;
   private readonly rng: Random;
@@ -25,6 +33,9 @@ export class Game {
   private nextEventIndex = 1;
   private nextSpawnX = GAME_CONFIG.worldWidth + 240;
   private gamePaused = false;
+  private tutorial: TutorialState = createInactiveTutorialState();
+  private tutorialGameStartDelayTicks = 0;
+  private tutorialFinishTick: number | undefined;
 
   private readonly players = new Map<PlayerId, Player>();
   private readonly entityHistory: EntityHistoryFrame[] = [];
@@ -121,6 +132,25 @@ export class Game {
     return this.gamePaused;
   }
 
+  public startTutorial(options: StartTutorialOptions): void {
+    const targetsRequired = Math.max(1, Math.floor(options.targetsRequired ?? 1));
+
+    this.tutorialGameStartDelayTicks = Math.max(0, Math.ceil(options.gameStartDelaySeconds * TICK_RATE));
+    this.tutorialFinishTick = undefined;
+
+    this.tutorial = {
+      active: true,
+      targetsDestroyed: 0,
+      targetsRequired,
+    };
+
+    this.entities = this.entities.filter((entity) => entity.dummy !== true);
+
+    for (let index = 0; index < targetsRequired; index += 1) {
+      this.entities.push(this.createTutorialDummy(index, options.dummyStartX, options.dummySpacingX));
+    }
+  }
+
   public update(dt: number): void {
     if (this.gamePaused) {
       return;
@@ -131,8 +161,9 @@ export class Game {
     this.events = [];
 
     const hasAlivePlayers = this.hasAlivePlayers();
+    const tutorialActive = this.tutorial.active;
 
-    if (hasAlivePlayers) {
+    if (hasAlivePlayers && !tutorialActive) {
       this.scrollX += GAME_CONFIG.scrollSpeed * dt;
       this.spawnAhead();
     }
@@ -143,6 +174,8 @@ export class Game {
     });
 
     if (hasAlivePlayers) {
+      const dummiesAliveBeforeCollisions = getAliveDummyIds(this.entities);
+
       updateEntities({
         entities: this.entities,
         dt,
@@ -153,6 +186,7 @@ export class Game {
         scrollX: this.scrollX,
         players: this.players.values(),
         entities: this.entities,
+        playerDamageDisabled: tutorialActive,
         addEvent: this.addEvent.bind(this),
 
         intersectsCompensatedEntity: (player, entity): boolean =>
@@ -170,6 +204,9 @@ export class Game {
         entities: this.entities,
         addEvent: this.addEvent.bind(this),
       });
+
+      this.updateTutorialTargets(dummiesAliveBeforeCollisions);
+      this.updateTutorialFinishDelay();
     }
 
     this.entities = cleanupEntities({
@@ -191,6 +228,7 @@ export class Game {
       tick: this.tick,
       seed: this.seed,
       gamePaused: this.gamePaused,
+      tutorial: this.tutorial,
       simulation: {
         rngState: this.rng.getState(),
         nextEntityIndex: this.nextEntityIndex,
@@ -213,6 +251,8 @@ export class Game {
 
     this.tick = snapshot.tick;
     this.gamePaused = snapshot.gamePaused;
+    this.tutorial = { ...(snapshot.tutorial ?? createInactiveTutorialState()) };
+    this.tutorialFinishTick = undefined;
     this.scrollX = snapshot.world.scrollX;
     this.nextEntityIndex = snapshot.simulation.nextEntityIndex;
     this.nextEventIndex = snapshot.simulation.nextEventIndex;
@@ -272,6 +312,69 @@ export class Game {
     return [...this.players.values()].some((player) => player.alive);
   }
 
+  private createTutorialDummy(index: number, dummyStartX: number, dummySpacingX: number): Entity {
+    const config = ENEMIES[0];
+
+    return createEntity({
+      config,
+      id: `tutorial-${config.kind}-${this.nextEntityIndex++}`,
+      x: this.scrollX + dummyStartX + index * dummySpacingX,
+      moveSpeed: 0,
+      laneOffsetY: 0,
+      dummy: true,
+    });
+  }
+
+  private updateTutorialTargets(previouslyAliveDummyIds: Set<string>): void {
+    if (!this.tutorial.active) {
+      return;
+    }
+
+    let destroyedCount = 0;
+
+    for (const entity of this.entities) {
+      if (entity.dummy === true && !entity.alive && previouslyAliveDummyIds.has(entity.id)) {
+        destroyedCount += 1;
+      }
+    }
+
+    if (destroyedCount === 0) {
+      return;
+    }
+
+    this.tutorial.targetsDestroyed += destroyedCount;
+
+    if (this.tutorial.targetsDestroyed >= this.tutorial.targetsRequired) {
+      this.startTutorialFinishDelay();
+    }
+  }
+
+  private startTutorialFinishDelay(): void {
+    if (this.tutorialFinishTick !== undefined) {
+      return;
+    }
+
+    this.entities = this.entities.filter((entity) => entity.dummy !== true);
+    this.tutorialFinishTick = this.tick + this.tutorialGameStartDelayTicks;
+
+    if (this.tutorialGameStartDelayTicks === 0) {
+      this.finishTutorial();
+    }
+  }
+
+  private updateTutorialFinishDelay(): void {
+    if (this.tutorialFinishTick === undefined || this.tick < this.tutorialFinishTick) {
+      return;
+    }
+
+    this.finishTutorial();
+  }
+
+  private finishTutorial(): void {
+    this.tutorial.active = false;
+    this.tutorialFinishTick = undefined;
+  }
+
   private addEvent(type: GameEvent["type"], player: Player | undefined, entity: Entity, damage: number, scoreDelta: number): void {
     this.events.push(
       createGameEvent({
@@ -285,4 +388,16 @@ export class Game {
       }),
     );
   }
+}
+
+function createInactiveTutorialState(): TutorialState {
+  return {
+    active: false,
+    targetsDestroyed: 0,
+    targetsRequired: 0,
+  };
+}
+
+function getAliveDummyIds(entities: Entity[]): Set<string> {
+  return new Set(entities.filter((entity) => entity.dummy === true && entity.alive).map((entity) => entity.id));
 }

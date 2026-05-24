@@ -12,6 +12,7 @@ export type EntitySnapshot = {
   id: EntityId;
   type: EntityType;
   kind: EntityKind;
+  dummy?: boolean;
   x: number;
   y: number;
   vx: number;
@@ -57,6 +58,7 @@ export type GameSnapshot = {
   tick: number;
   seed: number;
   gamePaused: boolean;
+  tutorial: TutorialState;
   simulation: GameSimulationState;
   world: {
     scrollX: number;
@@ -76,6 +78,12 @@ export type GameSimulationState = {
   nextEntityIndex: number;
   nextEventIndex: number;
   nextSpawnX: number;
+};
+
+export type TutorialState = {
+  active: boolean;
+  targetsDestroyed: number;
+  targetsRequired: number;
 };
 
 export type EntityPatch = {
@@ -103,6 +111,7 @@ export type PlayerPatch = EntityPatch & {
 export type DeltaSnapshot = {
   tick: number;
   gamePaused?: boolean;
+  tutorial?: TutorialState;
   simulation?: GameSimulationState;
   scrollX?: number;
 

@@ -70,14 +70,15 @@ export class PlayerRenderer {
 
       const fitScaleX = object.baseSize.x > 0 ? physicsWidth / object.baseSize.x : 1;
       const fitScaleY = object.baseSize.y > 0 ? physicsHeight / object.baseSize.y : 1;
-      const scale = Math.min(fitScaleX, fitScaleY);
 
       this.animator.animate({
         model: object.model,
         snapshot: player,
         tick: snapshot.tick,
-        baseScale: scale,
-        baseScaleZ: -scale,
+        baseScale: fitScaleX,
+        baseScaleX: fitScaleX,
+        baseScaleY: fitScaleY,
+        baseScaleZ: -fitScaleX,
         baseRotationX: Math.PI,
       });
 

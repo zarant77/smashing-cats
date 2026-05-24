@@ -40,6 +40,9 @@ export const commonPL = {
   nextCharacter: "Następny kot",
   changeCharacter: "Zmień kota",
   selectCharacter: "Wybierz swojego kota",
+  tutorialEnabled: "Samouczek włączony",
+
+  tutorialText: "Wlęwo, W prawo - ruch\nSpacja - skok\nSkok w powietrzu - SMESH!",
 
   helpContent: `
 <h3>🐾 Sterowanie</h3>

@@ -1,4 +1,4 @@
-import type { EntitySnapshot, GameEvent, GameSnapshot, PlayerSnapshot } from "@smashing-cats/protocol";
+import type { EntitySnapshot, GameEvent, GameSnapshot, PlayerSnapshot, TutorialState } from "@smashing-cats/protocol";
 
 import { GAME_CONFIG } from "../config.js";
 import { getPlayerSnapshotX, isPlayerInvulnerable } from "../player/playerState.js";
@@ -9,6 +9,7 @@ type CreateGameSnapshotOptions = {
   tick: number;
   seed: number;
   gamePaused: boolean;
+  tutorial: TutorialState;
   simulation: GameSnapshot["simulation"];
   scrollX: number;
   players: Iterable<Player>;
@@ -20,6 +21,7 @@ export function createGameSnapshot({
   tick,
   seed,
   gamePaused,
+  tutorial,
   simulation,
   scrollX,
   players,
@@ -30,10 +32,11 @@ export function createGameSnapshot({
     tick,
     seed,
     gamePaused,
+    tutorial: { ...tutorial },
     simulation: { ...simulation },
     world: {
       scrollX,
-      speed: GAME_CONFIG.scrollSpeed,
+      speed: tutorial.active ? 0 : GAME_CONFIG.scrollSpeed,
       width: GAME_CONFIG.worldWidth,
       height: GAME_CONFIG.worldHeight,
       groundY: GAME_CONFIG.groundY,
@@ -89,6 +92,7 @@ function createEntitySnapshots(entities: Entity[]): EntitySnapshot[] {
     id: entity.id,
     type: entity.type,
     kind: entity.kind,
+    dummy: entity.dummy,
 
     x: entity.x,
     y: entity.y,
