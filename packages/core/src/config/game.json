@@ -13,6 +13,7 @@
     "targetsRequired": 3,
     "dummyStartX": 350,
     "dummySpacingX": 140,
-    "gameStartDelaySeconds": 5
+    "gameStartDelaySeconds": 5,
+    "runStartDelaySeconds": 1
   }
 }

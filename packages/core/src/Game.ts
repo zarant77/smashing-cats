@@ -21,6 +21,8 @@ export type StartTutorialOptions = {
   dummyStartX: number;
   dummySpacingX: number;
   gameStartDelaySeconds: number;
+  runStartDelaySeconds: number;
+  completed?: boolean;
 };
 
 export class Game {
@@ -36,6 +38,7 @@ export class Game {
   private tutorial: TutorialState = createInactiveTutorialState();
   private tutorialGameStartDelayTicks = 0;
   private tutorialFinishTick: number | undefined;
+  private runStartTick: number | undefined;
 
   private readonly players = new Map<PlayerId, Player>();
   private readonly entityHistory: EntityHistoryFrame[] = [];
@@ -134,17 +137,24 @@ export class Game {
 
   public startTutorial(options: StartTutorialOptions): void {
     const targetsRequired = Math.max(1, Math.floor(options.targetsRequired ?? 1));
+    const completed = options.completed === true;
 
     this.tutorialGameStartDelayTicks = Math.max(0, Math.ceil(options.gameStartDelaySeconds * TICK_RATE));
     this.tutorialFinishTick = undefined;
+    this.runStartTick = this.tick + Math.max(0, Math.ceil(options.runStartDelaySeconds * TICK_RATE));
 
     this.tutorial = {
-      active: true,
-      targetsDestroyed: 0,
+      active: !completed,
+      completed,
+      targetsDestroyed: completed ? targetsRequired : 0,
       targetsRequired,
     };
 
     this.entities = this.entities.filter((entity) => entity.dummy !== true);
+
+    if (this.tutorial.completed || !this.tutorial.active) {
+      return;
+    }
 
     for (let index = 0; index < targetsRequired; index += 1) {
       this.entities.push(this.createTutorialDummy(index, options.dummyStartX, options.dummySpacingX));
@@ -162,8 +172,9 @@ export class Game {
 
     const hasAlivePlayers = this.hasAlivePlayers();
     const tutorialActive = this.tutorial.active;
+    const worldLocked = this.isWorldLocked();
 
-    if (hasAlivePlayers && !tutorialActive) {
+    if (hasAlivePlayers && !worldLocked) {
       this.scrollX += GAME_CONFIG.scrollSpeed * dt;
       this.spawnAhead();
     }
@@ -229,6 +240,7 @@ export class Game {
       seed: this.seed,
       gamePaused: this.gamePaused,
       tutorial: this.tutorial,
+      worldSpeed: this.isWorldLocked() ? 0 : GAME_CONFIG.scrollSpeed,
       simulation: {
         rngState: this.rng.getState(),
         nextEntityIndex: this.nextEntityIndex,
@@ -251,8 +263,9 @@ export class Game {
 
     this.tick = snapshot.tick;
     this.gamePaused = snapshot.gamePaused;
-    this.tutorial = { ...(snapshot.tutorial ?? createInactiveTutorialState()) };
+    this.tutorial = { ...createInactiveTutorialState(), ...(snapshot.tutorial ?? {}) };
     this.tutorialFinishTick = undefined;
+    this.runStartTick = undefined;
     this.scrollX = snapshot.world.scrollX;
     this.nextEntityIndex = snapshot.simulation.nextEntityIndex;
     this.nextEventIndex = snapshot.simulation.nextEventIndex;
@@ -312,6 +325,10 @@ export class Game {
     return [...this.players.values()].some((player) => player.alive);
   }
 
+  private isWorldLocked(): boolean {
+    return this.tutorial.active || (this.runStartTick !== undefined && this.tick < this.runStartTick);
+  }
+
   private createTutorialDummy(index: number, dummyStartX: number, dummySpacingX: number): Entity {
     const config = ENEMIES.find((enemy) => enemy.dummy === true) ?? ENEMIES[0];
 
@@ -326,7 +343,7 @@ export class Game {
   }
 
   private updateTutorialTargets(previouslyAliveDummyIds: Set<string>): void {
-    if (!this.tutorial.active) {
+    if (!this.tutorial.active || this.tutorial.completed) {
       return;
     }
 
@@ -345,6 +362,7 @@ export class Game {
     this.tutorial.targetsDestroyed += destroyedCount;
 
     if (this.tutorial.targetsDestroyed >= this.tutorial.targetsRequired) {
+      this.tutorial.completed = true;
       this.startTutorialFinishDelay();
     }
   }
@@ -393,6 +411,7 @@ export class Game {
 function createInactiveTutorialState(): TutorialState {
   return {
     active: false,
+    completed: false,
     targetsDestroyed: 0,
     targetsRequired: 0,
   };

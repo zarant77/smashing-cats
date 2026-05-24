@@ -10,6 +10,7 @@ type CreateGameSnapshotOptions = {
   seed: number;
   gamePaused: boolean;
   tutorial: TutorialState;
+  worldSpeed: number;
   simulation: GameSnapshot["simulation"];
   scrollX: number;
   players: Iterable<Player>;
@@ -22,6 +23,7 @@ export function createGameSnapshot({
   seed,
   gamePaused,
   tutorial,
+  worldSpeed,
   simulation,
   scrollX,
   players,
@@ -36,7 +38,7 @@ export function createGameSnapshot({
     simulation: { ...simulation },
     world: {
       scrollX,
-      speed: tutorial.active ? 0 : GAME_CONFIG.scrollSpeed,
+      speed: worldSpeed,
       width: GAME_CONFIG.worldWidth,
       height: GAME_CONFIG.worldHeight,
       groundY: GAME_CONFIG.groundY,

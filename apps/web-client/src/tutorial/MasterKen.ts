@@ -62,18 +62,21 @@ export class MasterKen {
       this.lastActionAt = now;
     }
 
+    if (snapshot.tutorial.completed) {
+      if (!this.tutorialCompleteAnnounced) {
+        this.markPlayerAction(now);
+        this.say("kenFinalPhrase", "finish", now);
+        this.tutorialCompleteAnnounced = true;
+      }
+
+      this.wasTutorialActive = snapshot.tutorial.active;
+      return;
+    }
+
     const progress = this.getTutorialProgress(snapshot);
 
     if (progress.moved) {
       this.markPlayerAction(now);
-    }
-
-    if (this.isTutorialComplete(snapshot) && !this.tutorialCompleteAnnounced) {
-      this.markPlayerAction(now);
-      this.say("kenFinalPhrase", "finish", now);
-      this.tutorialCompleteAnnounced = true;
-      this.wasTutorialActive = snapshot.tutorial.active;
-      return;
     }
 
     if (this.wasTutorialActive && !snapshot.tutorial.active && !this.tutorialCompleteAnnounced) {
@@ -164,13 +167,6 @@ export class MasterKen {
 
   private markPlayerAction(now: number): void {
     this.lastActionAt = now;
-  }
-
-  private isTutorialComplete(snapshot: GameSnapshot): boolean {
-    return (
-      snapshot.tutorial.targetsRequired > 0 &&
-      snapshot.tutorial.targetsDestroyed >= snapshot.tutorial.targetsRequired
-    );
   }
 
   private getTutorialProgress(snapshot: GameSnapshot): TutorialProgress {

@@ -34,6 +34,7 @@ export function createDeltaSnapshot(previous: GameSnapshot, next: GameSnapshot):
 
 function getTutorialDelta(previous: GameSnapshot, next: GameSnapshot): GameSnapshot["tutorial"] | undefined {
   return Object.is(previous.tutorial.active, next.tutorial.active) &&
+    Object.is(previous.tutorial.completed, next.tutorial.completed) &&
     Object.is(previous.tutorial.targetsDestroyed, next.tutorial.targetsDestroyed) &&
     Object.is(previous.tutorial.targetsRequired, next.tutorial.targetsRequired)
     ? undefined

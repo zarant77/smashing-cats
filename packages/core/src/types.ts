@@ -39,6 +39,7 @@ export type Entity = {
 
 export type TutorialState = {
   active: boolean;
+  completed: boolean;
   targetsDestroyed: number;
   targetsRequired: number;
 };

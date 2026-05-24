@@ -24,6 +24,7 @@ import { GameOverPopup } from "./ui/GameOverPopup.js";
 import { HelpPopup } from "./ui/HelpPopup.js";
 import { Hud } from "./ui/Hud.js";
 import { createView, parseViewKind } from "./views/createView.js";
+import { getViewSize } from "./views/viewport.js";
 import type { GameView, ViewKind } from "./views/types.js";
 
 import "./styles/index.css";
@@ -126,6 +127,7 @@ async function bootstrap(): Promise<void> {
     matchCode,
     touchControls,
     onCharacterStateChange: renderCharacterSelect,
+    getVisibleWorldWidth: () => getViewSize(root).visibleWorldWidth,
     render: (snapshot, playerId) => {
       lastSnapshot = snapshot;
       lastPlayerId = playerId;

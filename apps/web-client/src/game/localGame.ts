@@ -7,9 +7,10 @@ type CreateLocalGameOptions = {
 export function createLocalGame(options: CreateLocalGameOptions = {}): Game {
   const game = new Game(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
 
-  if (options.tutorialEnabled !== false) {
-    game.startTutorial(GAME_CONFIG.tutorial);
-  }
+  game.startTutorial({
+    ...GAME_CONFIG.tutorial,
+    completed: options.tutorialEnabled === false,
+  });
 
   return game;
 }

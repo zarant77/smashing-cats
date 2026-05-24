@@ -20,12 +20,14 @@ import { createLocalGame } from "./localGame.js";
 
 const LOCAL_PLAYER_ID = "p1";
 const TUTORIAL_DONE_KEY = "tutorial-done";
+const VIEWPORT_RIGHT_PADDING = 48;
 
 type GameRuntimeOptions = {
   multiplayer: boolean;
   matchCode: string | undefined;
   touchControls: TouchControls | undefined;
   onCharacterStateChange(): void;
+  getVisibleWorldWidth(): number;
   render(snapshot: GameSnapshot | undefined, playerId: PlayerId | undefined): void;
 };
 
@@ -34,6 +36,7 @@ export class GameRuntime {
   private readonly matchCode: string | undefined;
   private readonly touchControls: TouchControls | undefined;
   private readonly onCharacterStateChange: () => void;
+  private readonly getVisibleWorldWidth: () => number;
   private readonly renderFrame: (snapshot: GameSnapshot | undefined, playerId: PlayerId | undefined) => void;
 
   private charactersValue: CharacterDefinition[];
@@ -57,6 +60,7 @@ export class GameRuntime {
     this.matchCode = options.matchCode;
     this.touchControls = options.touchControls;
     this.onCharacterStateChange = options.onCharacterStateChange;
+    this.getVisibleWorldWidth = options.getVisibleWorldWidth;
     this.renderFrame = options.render;
 
     this.charactersValue = this.multiplayer ? [] : [...CHARACTERS];
@@ -252,7 +256,7 @@ export class GameRuntime {
       }
     }
 
-    const input = this.readPlayerInput();
+    const input = this.applyLocalViewportRightGuard(this.readPlayerInput(), currentPlayerId);
     const currentInputSeq = this.getCurrentInputSeq(canSend && !isPaused(), input);
 
     this.updateLocalGame(canPlay, currentPlayerId, currentInputSeq, input);
@@ -272,6 +276,36 @@ export class GameRuntime {
       left: keyboardInput.left || touchInput?.left === true,
       right: keyboardInput.right || touchInput?.right === true,
       jump: keyboardInput.jump || touchInput?.jump === true,
+    };
+  }
+
+  private applyLocalViewportRightGuard(input: PlayerInput, playerId: PlayerId | undefined): PlayerInput {
+    if (this.multiplayer || !input.right || playerId === undefined) {
+      return input;
+    }
+
+    const snapshot = this.localSnapshot;
+    const player = snapshot?.players.find((item) => item.playerId === playerId);
+
+    if (player === undefined) {
+      return input;
+    }
+
+    const visibleWorldWidth = this.getVisibleWorldWidth();
+
+    if (!Number.isFinite(visibleWorldWidth) || visibleWorldWidth <= 0) {
+      return input;
+    }
+
+    const safeRightX = visibleWorldWidth - player.size[0] - VIEWPORT_RIGHT_PADDING;
+
+    if (player.x < safeRightX) {
+      return input;
+    }
+
+    return {
+      ...input,
+      right: false,
     };
   }
 
@@ -441,7 +475,10 @@ function clamp01(value: number): number {
 }
 
 function saveTutorialDoneIfFinished(previous: GameSnapshot | undefined, current: GameSnapshot | undefined): void {
-  if (previous?.tutorial.active === true && current?.tutorial.active === false) {
+  if (
+    (previous?.tutorial.completed !== true && current?.tutorial.completed === true) ||
+    (previous?.tutorial.active === true && current?.tutorial.active === false)
+  ) {
     storage.set(TUTORIAL_DONE_KEY, true);
   }
 }

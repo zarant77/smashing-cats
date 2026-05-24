@@ -18,6 +18,7 @@ const FIELD_MAP = {
   gamePaused: "gp",
   tutorial: "tu",
   active: "a",
+  completed: "co",
   targetsDestroyed: "td",
   targetsRequired: "tr",
   dummy: "du",

@@ -4,31 +4,12 @@ import { t } from "@smashing-cats/i18n";
 
 import { getImageAsset, getModelAsset, images, models as modelCache } from "../../../assetManager/assetManager.js";
 import { isSnapshotGameRunning } from "../../snapshotState.js";
+import { MasterKen } from "../../../tutorial/MasterKen.js";
 import type { RenderViewport } from "../../viewport.js";
 
 const CAMP_RIGHT_WORLD_X = 1050;
 const Z = 240;
 const RENDER_ORDER = 0;
-
-const KEN_REACTION_DURATION_MS = 2000;
-const KEN_FINAL_REACTION_DURATION_MS = 5000;
-const KEN_IDLE_TRIGGER_MS = 7000;
-
-type KenSpeechPriority = "idle" | "jump" | "smash" | "kill" | "finish";
-
-const KEN_SPEECH_PRIORITY: Record<KenSpeechPriority, number> = {
-  idle: 0,
-  jump: 1,
-  smash: 2,
-  kill: 3,
-  finish: 4,
-};
-
-type KenSpeech = {
-  text: string;
-  until: number;
-  priority: KenSpeechPriority;
-};
 
 type DrawImageOptions = {
   flip?: boolean;
@@ -85,16 +66,8 @@ export class TutorialRenderer {
 
   private lastTick: number | undefined;
   private wasTutorialActive = false;
-  private wasOnGround = true;
-  private wasSmashing = false;
-  private smashedDuringAir = false;
 
-  private previousPlayerX: number | undefined;
-  private lastActionAt = performance.now();
-
-  private handledEventIds = new Set<string>();
-  private kenSpeech: KenSpeech | undefined;
-  private tutorialCompleteAnnounced = false;
+  private readonly masterKen = new MasterKen();
 
   private readonly textures = new Map<string, THREE.Texture>();
   private readonly images = new Map<string, THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>>();
@@ -118,13 +91,15 @@ export class TutorialRenderer {
       return;
     }
 
-    if (snapshot.tutorial.active) {
+    if (snapshot.tutorial.active || snapshot.tutorial.completed) {
       this.campVisible = true;
     }
 
     if (this.campVisible && !this.campFinished) {
-      this.updateKenReaction();
-      this.drawCamp();
+      const now = performance.now();
+
+      this.masterKen.update(snapshot, now);
+      this.drawCamp(now);
 
       if (!snapshot.tutorial.active && this.isCampOutsideScreen()) {
         this.campFinished = true;
@@ -158,13 +133,13 @@ export class TutorialRenderer {
     this.texts.clear();
     this.models.clear();
     this.textures.clear();
-    this.handledEventIds.clear();
   }
 
   private resetForRestartedTutorial(snapshot: GameSnapshot): void {
     const tickRestarted = this.lastTick !== undefined && snapshot.tick < this.lastTick;
     const tutorialRestarted =
-      snapshot.tutorial.active && (!this.wasTutorialActive || tickRestarted) && this.campFinished;
+      (tickRestarted && (snapshot.tutorial.active || snapshot.tutorial.completed)) ||
+      (this.campFinished && snapshot.tutorial.active && !this.wasTutorialActive);
 
     if (!tutorialRestarted) {
       return;
@@ -172,26 +147,19 @@ export class TutorialRenderer {
 
     this.campVisible = false;
     this.campFinished = false;
-    this.wasOnGround = true;
-    this.wasSmashing = false;
-    this.smashedDuringAir = false;
-    this.previousPlayerX = undefined;
-    this.lastActionAt = performance.now();
-    this.handledEventIds.clear();
-    this.kenSpeech = undefined;
-    this.tutorialCompleteAnnounced = false;
+    this.masterKen.reset(performance.now());
   }
 
-  private drawCamp(): void {
+  private drawCamp(now: number): void {
     this.drawModel("tower", "tutorial.tower", 50, 0, 400);
     this.drawModel("bag", "tutorial.bag", 700, 0, 220, { flip: true });
-    this.drawKen();
+    this.drawKen(now);
 
     this.drawModel("crates", "tutorial.crates", 180, 0, 150);
     this.drawModel("signboard", "tutorial.signboard", 820, 0, 170);
 
-    this.drawFlag();
-    this.drawBanner();
+    this.drawFlag(now);
+    this.drawBanner(now);
     this.drawSchoolboard();
   }
 
@@ -208,27 +176,26 @@ export class TutorialRenderer {
     });
   }
 
-  private drawFlag(): void {
-    const wave = Math.sin(performance.now() * 0.002) * 0.04;
+  private drawFlag(now: number): void {
+    const wave = Math.sin(now * 0.002) * 0.04;
 
     this.drawImage("flag", "tutorial.flag", 177, 363, 0.5, {
       rotation: wave,
     });
   }
 
-  private drawBanner(): void {
-    const swing = Math.sin(performance.now() * 0.0025) * 0.035;
+  private drawBanner(now: number): void {
+    const swing = Math.sin(now * 0.0025) * 0.035;
 
     this.drawImage("banner", "tutorial.banner", 120, 110, 0.5, {
       rotation: swing,
     });
   }
 
-  private drawKen(): void {
-    const now = performance.now();
+  private drawKen(now: number): void {
     const breathe = Math.sin(now * 0.004) * 0.005;
     const swing = Math.sin(now * 0.0025) * 0.005;
-    const speech = this.getActiveKenSpeech();
+    const speech = this.masterKen.getActiveSpeech(now);
 
     this.drawModel("ken", "tutorial.ken", 230, 142, 128, {
       rotationZ: swing,
@@ -253,151 +220,6 @@ export class TutorialRenderer {
       lineHeight: 24,
       preserveNewlines: true,
     });
-  }
-
-  private updateKenReaction(): void {
-    const progress = this.getTutorialProgress();
-
-    if (progress.moved) {
-      this.markPlayerAction();
-    }
-
-    if (this.isTutorialComplete() && !this.tutorialCompleteAnnounced) {
-      this.markPlayerAction();
-      this.sayKenPhrase("kenFinalPhrase", "finish");
-      this.tutorialCompleteAnnounced = true;
-      return;
-    }
-
-    if (this.wasTutorialActive && !this.snapshot.tutorial.active && !this.tutorialCompleteAnnounced) {
-      this.sayKenPhrase("kenFinalPhrase", "finish");
-      this.tutorialCompleteAnnounced = true;
-      return;
-    }
-
-    if (progress.killedTarget) {
-      this.markPlayerAction();
-      this.sayKenPhrase("kenKillPhrase", "kill");
-      return;
-    }
-
-    if (progress.smashed) {
-      this.markPlayerAction();
-      this.sayKenPhrase("kenSmashPhrase", "smash");
-      return;
-    }
-
-    if (progress.jumped) {
-      this.markPlayerAction();
-      this.sayKenPhrase("kenJumpPhrase", "jump");
-      return;
-    }
-
-    this.updateKenIdleReaction();
-  }
-
-  private isTutorialComplete(): boolean {
-    return (
-      this.snapshot.tutorial.targetsRequired > 0 &&
-      this.snapshot.tutorial.targetsDestroyed >= this.snapshot.tutorial.targetsRequired
-    );
-  }
-
-  private updateKenIdleReaction(): void {
-    const now = performance.now();
-
-    if (now - this.lastActionAt < KEN_IDLE_TRIGGER_MS) {
-      return;
-    }
-
-    this.sayKenPhrase("kenIdlePhrase", "idle");
-    this.markPlayerAction();
-  }
-
-  private markPlayerAction(): void {
-    this.lastActionAt = performance.now();
-  }
-
-  private sayKenPhrase(key: string, priority: KenSpeechPriority): void {
-    const activeSpeech = this.getActiveKenSpeech();
-
-    if (activeSpeech !== undefined && KEN_SPEECH_PRIORITY[priority] <= KEN_SPEECH_PRIORITY[activeSpeech.priority]) {
-      return;
-    }
-
-    const duration = priority === "finish" ? KEN_FINAL_REACTION_DURATION_MS : KEN_REACTION_DURATION_MS;
-
-    this.kenSpeech = {
-      text: t(key),
-      until: performance.now() + duration,
-      priority,
-    };
-  }
-
-  private getActiveKenSpeech(): KenSpeech | undefined {
-    if (this.kenSpeech === undefined) {
-      return undefined;
-    }
-
-    if (performance.now() > this.kenSpeech.until) {
-      this.kenSpeech = undefined;
-      return undefined;
-    }
-
-    return this.kenSpeech;
-  }
-
-  private getTutorialProgress(): {
-    moved: boolean;
-    jumped: boolean;
-    smashed: boolean;
-    killedTarget: boolean;
-  } {
-    const player = this.snapshot.players[0];
-
-    if (player === undefined) {
-      return {
-        moved: false,
-        jumped: false,
-        smashed: false,
-        killedTarget: false,
-      };
-    }
-
-    const moved = this.previousPlayerX !== undefined && Math.abs(player.x - this.previousPlayerX) > 0.1;
-    const smashed = !this.wasSmashing && player.smashing;
-
-    if (!player.grounded && player.smashing) {
-      this.smashedDuringAir = true;
-    }
-
-    const landed = !this.wasOnGround && player.grounded;
-    const jumped = landed && !this.smashedDuringAir;
-
-    const killedTarget = this.snapshot.events.some((event) => {
-      if (this.handledEventIds.has(event.id)) {
-        return false;
-      }
-
-      this.handledEventIds.add(event.id);
-
-      return event.type === "enemyKilled";
-    });
-
-    if (landed) {
-      this.smashedDuringAir = false;
-    }
-
-    this.previousPlayerX = player.x;
-    this.wasOnGround = player.grounded;
-    this.wasSmashing = player.smashing;
-
-    return {
-      moved,
-      jumped,
-      smashed,
-      killedTarget,
-    };
   }
 
   private drawModel(

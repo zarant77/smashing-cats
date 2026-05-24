@@ -6,6 +6,7 @@ export const EMPTY_SNAPSHOT: GameSnapshot = {
   gamePaused: false,
   tutorial: {
     active: false,
+    completed: false,
     targetsDestroyed: 0,
     targetsRequired: 0,
   },

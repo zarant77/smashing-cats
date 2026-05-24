@@ -66,7 +66,7 @@ export class TutorialRenderer {
       return;
     }
 
-    if (snapshot.tutorial.active) {
+    if (snapshot.tutorial.active || snapshot.tutorial.completed) {
       this.campVisible = true;
     }
 
@@ -103,7 +103,8 @@ export class TutorialRenderer {
     const tickRestarted = this.lastTick !== undefined && snapshot.tick < this.lastTick;
 
     const tutorialRestarted =
-      snapshot.tutorial.active && (!this.wasTutorialActive || tickRestarted) && this.campFinished;
+      (tickRestarted && (snapshot.tutorial.active || snapshot.tutorial.completed)) ||
+      (this.campFinished && snapshot.tutorial.active && !this.wasTutorialActive);
 
     if (!tutorialRestarted) {
       return;

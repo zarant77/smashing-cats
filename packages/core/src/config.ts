@@ -30,6 +30,7 @@ export type TutorialConfig = {
   dummyStartX: number;
   dummySpacingX: number;
   gameStartDelaySeconds: number;
+  runStartDelaySeconds: number;
 };
 
 export type CharacterConfig = {

@@ -9,6 +9,7 @@ export type ViewSize = {
   height: number;
   styleWidth: number;
   styleHeight: number;
+  visibleWorldWidth: number;
 };
 
 export type RenderViewport = {
@@ -70,5 +71,6 @@ export function getViewSize(root: HTMLElement): ViewSize {
     height,
     styleWidth: rootWidth,
     styleHeight: rootHeight,
+    visibleWorldWidth: width / (height / BASE_CANVAS_HEIGHT),
   };
 }
