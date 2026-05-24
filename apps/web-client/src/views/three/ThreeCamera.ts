@@ -19,7 +19,7 @@ export class ThreeCamera {
 
     this.camera.aspect = width / height;
 
-    this.camera.position.set(centerX, centerY - 800, -3200);
+    this.camera.position.set(centerX, centerY - 100, -3200);
     this.camera.up.set(0, -1, 0);
 
     this.camera.lookAt(centerX, centerY - 200, 0);

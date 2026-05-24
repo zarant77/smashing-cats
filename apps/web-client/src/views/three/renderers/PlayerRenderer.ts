@@ -68,17 +68,19 @@ export class PlayerRenderer {
       object.model.position.x = Math.round(x);
       object.model.position.y = Math.round(y);
 
-      const fitScaleX = object.baseSize.x > 0 ? physicsWidth / object.baseSize.x : 1;
-      const fitScaleY = object.baseSize.y > 0 ? physicsHeight / object.baseSize.y : 1;
+      const fitScale = Math.min(
+        object.baseSize.x > 0 ? physicsWidth / object.baseSize.x : 1,
+        object.baseSize.y > 0 ? physicsHeight / object.baseSize.y : 1,
+      );
 
       this.animator.animate({
         model: object.model,
         snapshot: player,
         tick: snapshot.tick,
-        baseScale: fitScaleX,
-        baseScaleX: fitScaleX,
-        baseScaleY: fitScaleY,
-        baseScaleZ: -fitScaleX,
+        baseScale: fitScale,
+        baseScaleX: fitScale,
+        baseScaleY: fitScale,
+        baseScaleZ: -fitScale,
         baseRotationX: Math.PI,
       });
 

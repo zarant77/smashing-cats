@@ -16,6 +16,7 @@ type DrawImageOptions = {
   rotation?: number;
   offsetX?: number;
   offsetY?: number;
+  offsetZ?: number;
   scaleX?: number;
   scaleY?: number;
 };
@@ -26,6 +27,7 @@ type DrawModelOptions = {
   rotationZ?: number;
   offsetX?: number;
   offsetY?: number;
+  offsetZ?: number;
   scaleX?: number;
   scaleY?: number;
   scaleZ?: number;
@@ -151,12 +153,12 @@ export class TutorialRenderer {
   }
 
   private drawCamp(now: number): void {
-    this.drawModel("tower", "tutorial.tower", 50, 0, 400);
-    this.drawModel("bag", "tutorial.bag", 700, 0, 220, { flip: true });
+    this.drawModel("tower", "tutorial.tower", 40, 200, 400, { offsetZ: 100 });
+    this.drawModel("bag", "tutorial.bag", 800, 200, 220);
     this.drawKen(now);
 
-    this.drawModel("crates", "tutorial.crates", 180, 0, 150);
-    this.drawModel("signboard", "tutorial.signboard", 820, 0, 170);
+    this.drawModel("crates", "tutorial.crates", 180, 195, 150);
+    this.drawModel("signboard", "tutorial.signboard", 930, 200, 100, { rotationY: Math.PI + 0.5, flip: true });
 
     this.drawFlag(now);
     this.drawBanner(now);
@@ -164,23 +166,24 @@ export class TutorialRenderer {
   }
 
   private drawSchoolboard(): void {
-    this.drawModel("schoolboard", "tutorial.schoolboard", 350, 0, 180);
+    this.drawModel("schoolboard", "tutorial.schoolboard", 450, 200, 200, { rotationY: Math.PI + 0.1 });
 
-    this.drawText("schoolboard-text", t("tutorialText"), 480, 150, {
+    this.drawText("schoolboard-text", t("tutorialText"), 450, 340, {
       font: "500 14px 'Comic Sans MS', cursive",
       color: "#ffffff",
       align: "center",
-      maxWidth: 220,
+      maxWidth: 200,
       lineHeight: 20,
       preserveNewlines: true,
     });
   }
 
   private drawFlag(now: number): void {
-    const wave = Math.sin(now * 0.002) * 0.04;
+    const wave = Math.sin(now * 0.002) * 0.04 + 0.15;
 
-    this.drawImage("flag", "tutorial.flag", 177, 363, 0.5, {
+    this.drawImage("flag", "tutorial.flag", 55, 550, 1, {
       rotation: wave,
+      offsetZ: 20,
     });
   }
 
@@ -193,29 +196,25 @@ export class TutorialRenderer {
   }
 
   private drawKen(now: number): void {
-    const breathe = Math.sin(now * 0.004) * 0.005;
-    const swing = Math.sin(now * 0.0025) * 0.005;
     const speech = this.masterKen.getActiveSpeech(now);
 
-    this.drawModel("ken", "tutorial.ken", 230, 142, 128, {
-      rotationZ: swing,
-      scaleX: 1 + breathe,
-      scaleY: 1 - breathe,
+    this.drawModel("ken", "tutorial.ken", 140, 335, 120, {
+      scaleZ: -1,
     });
 
     if (speech !== undefined) {
-      this.drawSpeech(speech.text, 290, 210);
+      this.drawSpeech(speech.text, 170, 410);
     }
   }
 
-  private drawSpeech(text: string, worldX: number, y: number): void {
-    this.drawImage("speech-bubble", "common.speech_bubble", worldX, y, 0.25);
+  private drawSpeech(text: string, x: number, y: number): void {
+    this.drawImage("speech-bubble", "common.speech_bubble", x, y, 1);
 
-    this.drawText("speech-text", text, worldX + 200, y + 100, {
-      font: "700 18px Arial",
-      color: "#2a1b12",
+    this.drawText("speech-text", text, x + 210, y + 90, {
+      font: "700 20px Arial",
+      color: "#000000",
       align: "center",
-      rotation: -0.15,
+      rotation: -0.1,
       maxWidth: 180,
       lineHeight: 24,
       preserveNewlines: true,
@@ -256,7 +255,7 @@ export class TutorialRenderer {
 
     group.position.x += Math.round(x - center.x);
     group.position.y += Math.round(feetY - box.max.y);
-    group.position.z += Z - center.z;
+    group.position.z += Z - center.z + (options?.offsetZ ?? 0);
     group.updateMatrixWorld(true);
 
     this.visibleIds.add(id);
@@ -285,7 +284,7 @@ export class TutorialRenderer {
     const mesh = this.getImageMesh(id, key, source);
 
     mesh.visible = true;
-    mesh.position.set(Math.round(x + width / 2), Math.round(topY + height / 2), Z + 20);
+    mesh.position.set(Math.round(x + width / 2), Math.round(topY + height / 2), Z + 20 + (options?.offsetZ ?? 0));
     mesh.scale.set((options?.flip === true ? -1 : 1) * width * scaleX, -height * scaleY, 1);
     mesh.rotation.set(0, 0, options?.rotation ?? 0);
     mesh.material.opacity = 1;
@@ -312,9 +311,12 @@ export class TutorialRenderer {
     const drawY = this.groundY - y;
 
     state.mesh.visible = true;
-    state.mesh.position.set(Math.round(x), Math.round(drawY), Z + 21);
+    state.mesh.position.set(Math.round(x), Math.round(drawY), Z - 20);
     state.mesh.scale.set(state.canvas.width, -state.canvas.height, 1);
     state.mesh.rotation.set(0, 0, options?.rotation ?? 0);
+    state.mesh.material.depthTest = true;
+    state.mesh.material.depthWrite = false;
+    state.mesh.renderOrder = RENDER_ORDER;
 
     this.visibleIds.add(id);
   }

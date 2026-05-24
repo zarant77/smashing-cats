@@ -23,16 +23,16 @@ type LayerState = {
 };
 
 const LAYERS: ParallaxLayer[] = [
-  { key: "environment.sky", speed: 0, y: -200, height: 1 },
-  { key: "environment.mountains", speed: 0.05, y: 80, height: 0.22, mirror: true },
-  { key: "environment.clouds", speed: 0.1, y: -180, height: 0.6 },
+  { key: "environment.sky", speed: 0, y: -280, height: 1 },
+  { key: "environment.mountains", speed: 0.05, y: 20, height: 0.3, mirror: true },
+  { key: "environment.clouds", speed: 0.1, y: -200, height: 0.8 },
   { key: "environment.fog", speed: 0.3, y: 30, height: 0.4, mirror: true },
-  { key: "environment.forest", speed: 0.6, y: 65, height: 0.4 },
-  { key: "environment.forest_front", speed: 0.85, y: 220, height: 0.15 },
+  { key: "environment.forest", speed: 0.6, y: 10, height: 0.45 },
+  { key: "environment.forest_front", speed: 0.85, y: 175, height: 0.15 },
 ];
 
 const SKY_COLOR = 0x87ceeb;
-const BACKGROUND_Z = 300;
+const BACKGROUND_Z = 400;
 const RENDER_ORDER_BASE = -100;
 const TILE_START_PADDING = 2;
 

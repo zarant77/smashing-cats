@@ -82,6 +82,7 @@ export const MODELS = {
   "tutorial.schoolboard": "/tutorial/glb/schoolboard.glb",
   "tutorial.crates": "/tutorial/glb/crates.glb",
   "tutorial.ken": "/tutorial/glb/master_ken.glb",
+  // "tutorial.ken_idle": "/tutorial/glb/master_ken_idle.glb",
   "tutorial.signboard": "/tutorial/glb/signboard.glb",
   "tutorial.tower": "/tutorial/glb/tower.glb",
 

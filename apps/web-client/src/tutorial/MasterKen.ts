@@ -1,7 +1,7 @@
 import type { GameSnapshot } from "@smashing-cats/protocol";
 import { t } from "@smashing-cats/i18n";
 
-const KEN_REACTION_DURATION_MS = 2000;
+const KEN_REACTION_DURATION_MS = 3000;
 const KEN_FINAL_REACTION_DURATION_MS = 5000;
 const KEN_IDLE_TRIGGER_MS = 7000;
 const KEN_SAME_PRIORITY_COOLDOWN_MS = 3000;
