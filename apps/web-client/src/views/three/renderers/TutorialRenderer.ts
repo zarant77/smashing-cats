@@ -11,6 +11,7 @@ const Z = 240;
 const RENDER_ORDER = 0;
 
 const KEN_REACTION_DURATION_MS = 2000;
+const KEN_FINAL_REACTION_DURATION_MS = 5000;
 const KEN_IDLE_TRIGGER_MS = 7000;
 
 type KenSpeechPriority = "idle" | "jump" | "smash" | "kill" | "finish";
@@ -93,6 +94,7 @@ export class TutorialRenderer {
 
   private handledEventIds = new Set<string>();
   private kenSpeech: KenSpeech | undefined;
+  private tutorialCompleteAnnounced = false;
 
   private readonly textures = new Map<string, THREE.Texture>();
   private readonly images = new Map<string, THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>>();
@@ -177,6 +179,7 @@ export class TutorialRenderer {
     this.lastActionAt = performance.now();
     this.handledEventIds.clear();
     this.kenSpeech = undefined;
+    this.tutorialCompleteAnnounced = false;
   }
 
   private drawCamp(): void {
@@ -259,8 +262,16 @@ export class TutorialRenderer {
       this.markPlayerAction();
     }
 
-    if (this.wasTutorialActive && !this.snapshot.tutorial.active) {
+    if (this.isTutorialComplete() && !this.tutorialCompleteAnnounced) {
+      this.markPlayerAction();
       this.sayKenPhrase("kenFinalPhrase", "finish");
+      this.tutorialCompleteAnnounced = true;
+      return;
+    }
+
+    if (this.wasTutorialActive && !this.snapshot.tutorial.active && !this.tutorialCompleteAnnounced) {
+      this.sayKenPhrase("kenFinalPhrase", "finish");
+      this.tutorialCompleteAnnounced = true;
       return;
     }
 
@@ -285,6 +296,13 @@ export class TutorialRenderer {
     this.updateKenIdleReaction();
   }
 
+  private isTutorialComplete(): boolean {
+    return (
+      this.snapshot.tutorial.targetsRequired > 0 &&
+      this.snapshot.tutorial.targetsDestroyed >= this.snapshot.tutorial.targetsRequired
+    );
+  }
+
   private updateKenIdleReaction(): void {
     const now = performance.now();
 
@@ -307,9 +325,11 @@ export class TutorialRenderer {
       return;
     }
 
+    const duration = priority === "finish" ? KEN_FINAL_REACTION_DURATION_MS : KEN_REACTION_DURATION_MS;
+
     this.kenSpeech = {
       text: t(key),
-      until: performance.now() + KEN_REACTION_DURATION_MS,
+      until: performance.now() + duration,
       priority,
     };
   }

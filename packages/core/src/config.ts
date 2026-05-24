@@ -22,6 +22,14 @@ export type GameConfig = {
   unpauseInvulnerabilitySeconds: number;
   spawnDistanceMin: number;
   spawnDistanceMax: number;
+  tutorial: TutorialConfig;
+};
+
+export type TutorialConfig = {
+  targetsRequired: number;
+  dummyStartX: number;
+  dummySpacingX: number;
+  gameStartDelaySeconds: number;
 };
 
 export type CharacterConfig = {

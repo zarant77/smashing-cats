@@ -42,6 +42,7 @@ export class MasterKen {
   private readonly lastSpeechByPriority = new Map<KenSpeechPriority, number>();
 
   private speech: KenSpeech | undefined;
+  private tutorialCompleteAnnounced = false;
 
   public reset(now: number): void {
     this.wasTutorialActive = false;
@@ -53,6 +54,7 @@ export class MasterKen {
     this.handledEventIds.clear();
     this.lastSpeechByPriority.clear();
     this.speech = undefined;
+    this.tutorialCompleteAnnounced = false;
   }
 
   public update(snapshot: GameSnapshot, now: number): void {
@@ -66,15 +68,17 @@ export class MasterKen {
       this.markPlayerAction(now);
     }
 
-    if (progress.killedTarget && this.wasTutorialActive && !snapshot.tutorial.active) {
+    if (this.isTutorialComplete(snapshot) && !this.tutorialCompleteAnnounced) {
       this.markPlayerAction(now);
       this.say("kenFinalPhrase", "finish", now);
+      this.tutorialCompleteAnnounced = true;
       this.wasTutorialActive = snapshot.tutorial.active;
       return;
     }
 
-    if (this.wasTutorialActive && !snapshot.tutorial.active) {
+    if (this.wasTutorialActive && !snapshot.tutorial.active && !this.tutorialCompleteAnnounced) {
       this.say("kenFinalPhrase", "finish", now);
+      this.tutorialCompleteAnnounced = true;
       this.wasTutorialActive = snapshot.tutorial.active;
       return;
     }
@@ -160,6 +164,13 @@ export class MasterKen {
 
   private markPlayerAction(now: number): void {
     this.lastActionAt = now;
+  }
+
+  private isTutorialComplete(snapshot: GameSnapshot): boolean {
+    return (
+      snapshot.tutorial.targetsRequired > 0 &&
+      snapshot.tutorial.targetsDestroyed >= snapshot.tutorial.targetsRequired
+    );
   }
 
   private getTutorialProgress(snapshot: GameSnapshot): TutorialProgress {

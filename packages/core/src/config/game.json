@@ -8,5 +8,11 @@
   "hurtInvulnerabilitySeconds": 1,
   "unpauseInvulnerabilitySeconds": 2,
   "spawnDistanceMin": 280,
-  "spawnDistanceMax": 520
+  "spawnDistanceMax": 520,
+  "tutorial": {
+    "targetsRequired": 3,
+    "dummyStartX": 350,
+    "dummySpacingX": 140,
+    "gameStartDelaySeconds": 5
+  }
 }
