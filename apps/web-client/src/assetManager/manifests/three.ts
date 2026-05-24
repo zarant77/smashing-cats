@@ -14,15 +14,15 @@ export const IMAGES = {
   "common.speech_bubble": "/img/speech_bubble.png",
 
   // Tutorial
-  "tutorial.bag": "/tutorial/bag.png",
-  "tutorial.banner": "/tutorial/banner.png",
-  "tutorial.schoolboard": "/tutorial/schoolboard.png",
-  "tutorial.crates": "/tutorial/crates.png",
-  "tutorial.flag": "/tutorial/flag.png",
-  "tutorial.ken1": "/tutorial/master_ken_1.png",
-  "tutorial.ken2": "/tutorial/master_ken_2.png",
-  "tutorial.signboard": "/tutorial/signboard.png",
-  "tutorial.tower": "/tutorial/tower.png",
+  "tutorial.bag": "/tutorial/img/bag.png",
+  "tutorial.banner": "/tutorial/img/banner.png",
+  "tutorial.schoolboard": "/tutorial/img/schoolboard.png",
+  "tutorial.crates": "/tutorial/img/crates.png",
+  "tutorial.flag": "/tutorial/img/flag.png",
+  "tutorial.ken1": "/tutorial/img/master_ken_1.png",
+  "tutorial.ken2": "/tutorial/img/master_ken_2.png",
+  "tutorial.signboard": "/tutorial/img/signboard.png",
+  "tutorial.tower": "/tutorial/img/tower.png",
 
   // Environment
   "environment.sky": "/canvas/environments/sky.png",
@@ -77,6 +77,14 @@ export const IMAGES = {
 } as const;
 
 export const MODELS = {
+  // Tutorial
+  "tutorial.bag": "/tutorial/glb/bag.glb",
+  "tutorial.schoolboard": "/tutorial/glb/schoolboard.glb",
+  "tutorial.crates": "/tutorial/glb/crates.glb",
+  "tutorial.ken": "/tutorial/glb/master_ken.glb",
+  "tutorial.signboard": "/tutorial/glb/signboard.glb",
+  "tutorial.tower": "/tutorial/glb/tower.glb",
+
   // Civilians
   "civilian.baba": "/three/civilians/baba.glb",
   "civilian.dido": "/three/civilians/dido.glb",

@@ -3,6 +3,7 @@ import { t } from "@smashing-cats/i18n";
 
 const KEN_REACTION_DURATION_MS = 2000;
 const KEN_IDLE_TRIGGER_MS = 7000;
+const KEN_SAME_PRIORITY_COOLDOWN_MS = 3000;
 
 type KenSpeechPriority = "idle" | "jump" | "smash" | "kill" | "finish";
 
@@ -18,6 +19,7 @@ export type KenSpeech = {
   text: string;
   until: number;
   priority: KenSpeechPriority;
+  persistent: boolean;
 };
 
 type TutorialProgress = {
@@ -37,6 +39,7 @@ export class MasterKen {
   private lastActionAt = 0;
 
   private readonly handledEventIds = new Set<string>();
+  private readonly lastSpeechByPriority = new Map<KenSpeechPriority, number>();
 
   private speech: KenSpeech | undefined;
 
@@ -48,6 +51,7 @@ export class MasterKen {
     this.previousPlayerX = undefined;
     this.lastActionAt = now;
     this.handledEventIds.clear();
+    this.lastSpeechByPriority.clear();
     this.speech = undefined;
   }
 
@@ -56,14 +60,25 @@ export class MasterKen {
       this.lastActionAt = now;
     }
 
+    if (this.speech?.persistent === true) {
+      return;
+    }
+
     const progress = this.getTutorialProgress(snapshot);
 
     if (progress.moved) {
       this.markPlayerAction(now);
     }
 
+    if (progress.killedTarget && this.wasTutorialActive && !snapshot.tutorial.active) {
+      this.markPlayerAction(now);
+      this.say("kenFinalPhrase", "finish", now, true);
+      this.wasTutorialActive = snapshot.tutorial.active;
+      return;
+    }
+
     if (this.wasTutorialActive && !snapshot.tutorial.active) {
-      this.say("kenFinalPhrase", "finish", now);
+      this.say("kenFinalPhrase", "finish", now, true);
       this.wasTutorialActive = snapshot.tutorial.active;
       return;
     }
@@ -98,7 +113,7 @@ export class MasterKen {
       return undefined;
     }
 
-    if (now > this.speech.until) {
+    if (!this.speech.persistent && now > this.speech.until) {
       this.speech = undefined;
       return undefined;
     }
@@ -115,10 +130,14 @@ export class MasterKen {
     this.markPlayerAction(now);
   }
 
-  private say(key: string, priority: KenSpeechPriority, now: number): void {
+  private say(key: string, priority: KenSpeechPriority, now: number, persistent = false): void {
     const activeSpeech = this.getActiveSpeech(now);
 
     if (activeSpeech !== undefined && KEN_SPEECH_PRIORITY[priority] <= KEN_SPEECH_PRIORITY[activeSpeech.priority]) {
+      return;
+    }
+
+    if (!persistent && this.isPriorityOnCooldown(priority, now)) {
       return;
     }
 
@@ -126,7 +145,20 @@ export class MasterKen {
       text: t(key),
       until: now + KEN_REACTION_DURATION_MS,
       priority,
+      persistent,
     };
+
+    this.lastSpeechByPriority.set(priority, now);
+  }
+
+  private isPriorityOnCooldown(priority: KenSpeechPriority, now: number): boolean {
+    const lastSpeechAt = this.lastSpeechByPriority.get(priority);
+
+    if (lastSpeechAt === undefined) {
+      return false;
+    }
+
+    return now - lastSpeechAt < KEN_SAME_PRIORITY_COOLDOWN_MS;
   }
 
   private markPlayerAction(now: number): void {
@@ -146,7 +178,6 @@ export class MasterKen {
     }
 
     const moved = this.previousPlayerX !== undefined && Math.abs(player.x - this.previousPlayerX) > 0.1;
-
     const smashed = !this.wasSmashing && player.smashing;
 
     if (!player.grounded && player.smashing) {

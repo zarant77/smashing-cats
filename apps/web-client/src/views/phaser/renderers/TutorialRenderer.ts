@@ -215,9 +215,10 @@ export class TutorialRenderer {
       this.scene.textures.addImage(key, source);
     }
 
-    const height = source.naturalHeight * scale;
-    const x = worldX + (options?.offsetX ?? 0);
-    const topY = this.groundY - height - y + (options?.offsetY ?? 0);
+    const renderScale = scale * this.viewport.scale;
+    const height = source.naturalHeight * renderScale;
+    const x = this.worldObjectX(worldX) + (options?.offsetX ?? 0) * this.viewport.scale;
+    const topY = this.groundY - height - y * this.viewport.scale + (options?.offsetY ?? 0) * this.viewport.scale;
     const pivotX = options?.pivotX ?? source.naturalWidth * 0.5;
     const pivotY = options?.pivotY ?? source.naturalHeight;
     const scaleX = options?.scaleX ?? 1;
@@ -228,17 +229,20 @@ export class TutorialRenderer {
     image.setDepth(DEPTH);
     image.setTexture(key);
     image.setOrigin(pivotX / source.naturalWidth, pivotY / source.naturalHeight);
-    image.setPosition(Math.round(x + pivotX * scale), Math.round(topY + pivotY * scale));
-    image.setScale((options?.flip ? -1 : 1) * scale * scaleX, scale * scaleY);
+    image.setPosition(Math.round(x + pivotX * renderScale), Math.round(topY + pivotY * renderScale));
+    image.setScale((options?.flip ? -1 : 1) * renderScale * scaleX, renderScale * scaleY);
     image.setRotation(options?.rotation ?? 0);
     image.setFlipX(false);
     image.setAlpha(1);
     this.visibleIds.add(id);
   }
 
-  private drawText(id: string, text: string, x: number, y: number, options?: DrawTextOptions): void {
+  private drawText(id: string, text: string, worldX: number, y: number, options?: DrawTextOptions): void {
     const textObject = this.getText(id);
-    const drawY = this.groundY - y;
+    const x = this.worldObjectX(worldX);
+    const drawY = this.groundY - y * this.viewport.scale;
+    const fontSize = (options?.fontSize ?? 24) * this.viewport.scale;
+    const lineHeight = (options?.lineHeight ?? 28) * this.viewport.scale;
 
     textObject.setVisible(true);
     textObject.setDepth(DEPTH + 1);
@@ -249,15 +253,15 @@ export class TutorialRenderer {
     textObject.setStyle({
       color: options?.color ?? "#111111",
       fontFamily: options?.fontFamily ?? "Arial",
-      fontSize: `${options?.fontSize ?? 24}px`,
+      fontSize: `${fontSize}px`,
       fontStyle: options?.fontStyle ?? "700",
       align: options?.align ?? "left",
       wordWrap: {
-        width: options?.maxWidth ?? 180,
+        width: (options?.maxWidth ?? 180) * this.viewport.scale,
         useAdvancedWrap: true,
       },
     });
-    textObject.setLineSpacing((options?.lineHeight ?? 28) - (options?.fontSize ?? 24));
+    textObject.setLineSpacing(lineHeight - fontSize);
 
     this.visibleIds.add(id);
   }
