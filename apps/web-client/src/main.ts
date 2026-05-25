@@ -4,7 +4,7 @@ import { i18n } from "@smashing-cats/i18n";
 import "./uncrasher.js";
 import "./ui/debug.js";
 
-import { initCapacitor } from "./capacitor.js";
+import { capacitorBridge, isNativeApp } from "./capacitor.js";
 import { storage } from "./storage.js";
 import { audio, musicEvents, playSound, setupMusicUnlock } from "./audio/audio.js";
 import { deviceController } from "./device/DeviceController.js";
@@ -42,7 +42,7 @@ const VIEW_SHORTCUTS: Record<string, ViewKind> = {
 void bootstrap();
 
 async function bootstrap(): Promise<void> {
-  await initCapacitor();
+  await capacitorBridge.init();
 
   loadHeavyEffectsIfAllowed();
 
@@ -131,8 +131,6 @@ async function bootstrap(): Promise<void> {
       touchControls?.render(snapshot, playerId);
     },
   });
-
-  document.addEventListener("fullscreenchange", () => syncSettingsOverlay());
 
   gameOverPopup = new GameOverPopup(uiRoot, {
     onRestart: () => {
@@ -225,19 +223,32 @@ async function bootstrap(): Promise<void> {
     onSelectLanguage: (nextLocale: string) => i18n.changeLocale(nextLocale),
 
     onExit: () => {
-      runtime?.restart();
+      if (isNativeApp) {
+        capacitorBridge.exitApp();
+      } else {
+        runtime?.restart();
+      }
     },
   });
 
+  capacitorBridge.onAppStateChange((isActive) => audio.setPause(!isActive));
+  capacitorBridge.onBack(() => settingsOverlay.toggle());
+
+  document.addEventListener("fullscreenchange", () => syncSettingsOverlay());
+
   syncSettingsOverlay();
   renderCharacterSelect();
-  bindFullscreenGesture();
 
   if (rendererSwitchingEnabled) {
     bindViewShortcuts();
   }
 
-  setupMusicUnlock();
+  if (isNativeApp) {
+    musicEvents.gameplay();
+  } else {
+    setupMusicUnlock();
+    bindFullscreenGesture();
+  }
 
   // Run the game
   i18n.onLocaleChanged((newLocale) => {

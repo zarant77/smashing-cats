@@ -5,6 +5,17 @@ export const audio = new AudioManager(4);
 
 const GAMEPLAY_MUSIC_KEYS = ["music.gameplay1", "music.gameplay2"] as const;
 
+const UNLOCK_EVENTS = [
+  "pointerdown",
+  "pointerup",
+  "touchstart",
+  "touchend",
+  "mousedown",
+  "mouseup",
+  "click",
+  "keydown",
+] as const;
+
 type SoundAudioKey = `sound.${string}`;
 type MusicAudioKey = `music.${string}`;
 type AudioKey = SoundAudioKey | MusicAudioKey;
@@ -17,6 +28,10 @@ export function playSound(key: SoundAudioKey): void {
   }
 
   audio.playSound(path);
+}
+
+export function setPause(isPaused: boolean): void {
+  audio.setPause(isPaused);
 }
 
 export const musicEvents = {
@@ -47,23 +62,12 @@ export function setupMusicUnlock(): void {
 
     musicEvents.gameplay();
 
-    for (const event of EVENTS) {
+    for (const event of UNLOCK_EVENTS) {
       window.removeEventListener(event, unlock);
     }
   };
 
-  const EVENTS = [
-    "pointerdown",
-    "pointerup",
-    "touchstart",
-    "touchend",
-    "mousedown",
-    "mouseup",
-    "click",
-    "keydown",
-  ] as const;
-
-  for (const event of EVENTS) {
+  for (const event of UNLOCK_EVENTS) {
     window.addEventListener(event, unlock, {
       passive: true,
       once: true,

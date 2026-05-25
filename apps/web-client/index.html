@@ -120,11 +120,13 @@
 
     .loading-subtitle,
     .loading-progress {
-      font-size: 3.5vh;
+      font-size: 4vmin;
       font-weight: 600;
       letter-spacing: 0.08em;
       color: rgba(255, 255, 255, 0.75);
       animation: pulse 1.2s ease-in-out infinite;
+      text-align: center;
+      width: 80vmin;
     }
 
     .loading-progress {
@@ -266,7 +268,6 @@
         "Syncing cat brains...",
         "Opening tuna reserves...",
       ],
-
       uk: [
         "Будимо котів...",
         "Точимо кігті...",
@@ -289,9 +290,31 @@
         "Синхронізуємо котячі мізки...",
         "Відкриваємо стратегічний запас тунця...",
       ],
+      pl: [
+        "Budzenie kotów...",
+        "Ostrzenie pazurów...",
+        "Ładowanie ataku smash...",
+        "Wypuszczanie bojowych kotów...",
+        "Budzenie wściekłych kociąt...",
+        "Polerowanie kociej zbroi...",
+        "Przywoływanie Batcata...",
+        "Karmienie szefa kotów...",
+        "Rozgrzewanie kocich łap...",
+        "Przygotowywanie maksymalnego chaosu...",
+        "Szukanie podejrzanych szczurów...",
+        "Głaskanie kotów na szczęście...",
+        "Kalibrowanie miau-silników...",
+        "Uczenie kotów latania...",
+        "Tworzenie małego zniszczenia...",
+        "Ładowanie epickiego miauczenia...",
+        "Sprawdzanie bezpieczeństwa kaktusów...",
+        "Liczenie rozgniecionych wrogów...",
+        "Synchronizowanie kocich mózgów...",
+        "Otwieranie strategicznych zapasów tuńczyka...",
+      ],
     };
 
-    const MESSAGE_CHANGE_INTERVAL_MS = 4_000;
+    const MESSAGE_CHANGE_INTERVAL_MS = 5_000;
 
     const locale = localStorage.getItem("smashing-cats-locale");
 

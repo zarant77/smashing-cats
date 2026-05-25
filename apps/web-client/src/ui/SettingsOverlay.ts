@@ -80,8 +80,6 @@ export class SettingsOverlay {
     this.onSelectLanguage = options.onSelectLanguage;
     this.onExit = options.onExit;
 
-    window.addEventListener("android-back", () => this.toggle());
-
     this.element = document.createElement("div");
     this.element.className = "settings-overlay";
 

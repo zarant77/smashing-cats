@@ -12,6 +12,7 @@ export class AudioManager {
   private soundIndex = 0;
   private soundsEnabled = true;
   private musicEnabled = true;
+  private paused = false;
 
   public constructor(soundChannels = 4) {
     const channelCount = Math.max(1, soundChannels);
@@ -29,7 +30,7 @@ export class AudioManager {
   }
 
   public async playMusic(pathOrPaths: AudioPath, volume = 1): Promise<void> {
-    if (!this.musicEnabled || !navigator.userActivation.isActive) {
+    if (!this.musicEnabled || this.paused || !navigator.userActivation.isActive) {
       return;
     }
 
@@ -45,13 +46,31 @@ export class AudioManager {
 
     if (!sameTrack) {
       this.music.src = path;
+      this.music.currentTime = 0;
     }
 
-    this.music.currentTime = 0;
     this.music.volume = volume;
 
     this.music.play().catch((error: unknown) => {
       console.warn("Failed to play music", error);
+    });
+  }
+
+  public setPause(isPaused: boolean): void {
+    this.paused = isPaused;
+
+    if (isPaused) {
+      this.music.pause();
+      this.stopAllSounds();
+      return;
+    }
+
+    if (!this.musicEnabled || !navigator.userActivation.isActive || this.music.src === "") {
+      return;
+    }
+
+    this.music.play().catch((error: unknown) => {
+      console.warn("Failed to resume music", error);
     });
   }
 
@@ -65,7 +84,7 @@ export class AudioManager {
   }
 
   public playSound(pathOrPaths: AudioPath, options: SoundOptions = {}): void {
-    if (!this.soundsEnabled || !navigator.userActivation.isActive) {
+    if (!this.soundsEnabled || this.paused || !navigator.userActivation.isActive) {
       return;
     }
 
