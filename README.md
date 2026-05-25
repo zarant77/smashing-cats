@@ -1,34 +1,23 @@
 # Smash!ng Cats
 
-Server-authoritative multiplayer arcade runner with a deterministic core, client prediction, interpolation, lag compensation, and multi-client rendering architecture.
-
-## Vision
-
-Smash!ng Cats is a fast arcade runner where cats sprint through chaotic levels, dodge obstacles, smash enemies, and survive as long as possible.
-
-The project focuses on:
-
-- deterministic simulation
-- server-authoritative multiplayer
-- smooth networking
-- reusable game core
-- multiple rendering clients
-- simple but scalable architecture
+Server-authoritative multiplayer arcade runner built around a deterministic simulation core, client prediction, interpolation, and reusable multi-client architecture.
 
 ---
 
-## Architecture
+## Tech Overview
+
+### Architecture
 
 ```txt
 client input ─────▶ server authoritative core
 client ◀──── snapshots/deltas ───── server
 ```
 
-The server is always the source of truth.
+The server is the source of truth.
 
 Clients:
 
-- send only player input
+- send player input
 - predict local movement
 - interpolate remote entities
 - render the world
@@ -45,152 +34,55 @@ packages/
 ├── i18n               Shared localization
 
 apps/
+├── cli-client         CLI client
 ├── server             WebSocket authoritative server
-└── clients/
-    └── web-client     Canvas-based web client
+└── web-client         Vite web client
 ```
 
 ---
 
 ## Features
 
-### Multiplayer
+### Networking
 
-- server-authoritative gameplay
 - deterministic fixed-tick simulation
-- delta snapshots
+- server-authoritative multiplayer
+- delta snapshot replication
 - full snapshot recovery
 - client-side prediction
-- snapshot interpolation
+- interpolation
 - lag compensation
 - reconnect-safe architecture
 
 ### Gameplay
 
 - endless arcade runner
-- multiple playable cats
 - jump + smash mechanics
 - enemies, civilians, obstacles
 - HP and score system
 - pause support
 - touch controls
-- fullscreen mobile support
 
 ### Rendering
 
+- Canvas renderer
+- Phaser renderer
+- Three.js renderer
 - parallax environments
-- animated sprites
-- foreground/background layers
-- landing smash effects
 - particles
 - screen shake
-- death animations
 - HUD overlays
-- orientation overlay for mobile
+- mobile orientation overlay
 
-### Audio
+### Platform Support
 
-- sound effects
-- background music
-- mobile audio unlock
-- runtime audio toggles
+- Web
+- Android (Capacitor)
 
 ### Localization
 
-Currently supported:
-
 - English
 - Ukrainian
-
----
-
-## Networking Model
-
-```txt
-input → prediction → reconciliation → interpolation
-```
-
-### Client
-
-The client:
-
-- captures input
-- predicts local movement
-- smoothly interpolates remote entities
-- reconciles against authoritative snapshots
-
-### Server
-
-The server:
-
-- runs deterministic simulation
-- validates collisions
-- resolves combat
-- broadcasts snapshots
-- performs lag compensation
-
----
-
-## Controls
-
-### Keyboard
-
-| Action     | Keys                |
-| ---------- | ------------------- |
-| Move Left  | A / ArrowLeft       |
-| Move Right | D / ArrowRight      |
-| Jump       | Space / W / ArrowUp |
-| Smash      | Jump while airborne |
-
-### Mobile
-
-- drag left/right to move
-- swipe up to jump
-- swipe down mid-air to smash
-
----
-
-## Run Locally
-
-Install dependencies:
-
-```bash
-pnpm install
-```
-
-Start development mode:
-
-```bash
-pnpm dev
-```
-
-Open:
-
-```txt
-http://localhost:5173
-```
-
----
-
-## Production Build
-
-### Web Client
-
-```bash
-pnpm build:web
-```
-
-### Server
-
-```bash
-pnpm build:server
-```
-
-### Android Build
-
-```bash
-pnpm build:android
-```
 
 ---
 
@@ -211,49 +103,113 @@ pnpm build:android
 ### Client
 
 - Vite
-- Canvas 2D rendering
-- mobile touch controls
+- Canvas 2D
+- Phaser
+- Three.js
+
+### Mobile
+
+- Capacitor
+- Android Studio
 
 ---
 
-## Current Status
+## Development
 
-Implemented:
+Install dependencies:
 
-- deterministic multiplayer core
-- prediction/interpolation
-- delta snapshot sync
-- multiple enemy types
-- civilians and obstacles
-- parallax rendering
-- mobile controls
-- audio system
-- localization
-- Android packaging
+```bash
+pnpm install
+```
 
-Planned:
+Start development:
 
-- matchmaking/lobbies
-- more enemy behaviors
-- powerups
-- cosmetics
-- replay system
-- additional rendering clients
-- dedicated mobile UI polish
+```bash
+pnpm dev
+```
+
+Web client:
+
+```txt
+http://localhost:5173
+```
 
 ---
 
-## Philosophy
+## Build
 
-This project intentionally keeps gameplay simple.
+### Full Build
 
-The main goal is building a clean, scalable multiplayer architecture that can support:
+```bash
+pnpm build
+```
 
-- multiple clients
-- deterministic gameplay
-- responsive controls
-- smooth networking
-- future gameplay experiments
+### Web Client
+
+```bash
+pnpm build:web
+```
+
+### Server
+
+```bash
+pnpm build:server
+```
+
+### Android
+
+Build web assets and sync Capacitor:
+
+```bash
+pnpm build:android
+```
+
+Open Android Studio:
+
+```bash
+pnpm android:open
+```
+
+Run on device/emulator:
+
+```bash
+pnpm android:run
+```
+
+---
+
+## Android Notes
+
+Capacitor project files are stored in:
+
+```txt
+apps/clients/web-client/android
+```
+
+After changing frontend assets:
+
+```bash
+pnpm build:android
+```
+
+This rebuilds the web client and syncs assets into the Android project.
+
+---
+
+## Scripts
+
+### Root
+
+```bash
+pnpm dev
+pnpm build
+pnpm build:web
+pnpm build:server
+pnpm build:android
+pnpm android:sync
+pnpm android:open
+pnpm android:run
+```
 
 ---
 
