@@ -1,4 +1,5 @@
 import { getAudioAsset } from "../assetManager/assetManager.js";
+import { isNativeApp } from "../device/capacitor.js";
 import { AudioManager } from "./audioManager.js";
 
 export const audio = new AudioManager(4);
@@ -55,8 +56,13 @@ export const musicEvents = {
 } as const;
 
 export function setupMusicUnlock(): void {
+  if (isNativeApp) {
+    musicEvents.gameplay();
+    return;
+  }
+
   const unlock = (): void => {
-    if (!navigator.userActivation.isActive) {
+    if (navigator.userActivation?.isActive !== true) {
       return;
     }
 

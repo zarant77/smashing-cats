@@ -2,6 +2,7 @@ import { Capacitor } from "@capacitor/core";
 
 type BackListener = () => void;
 type AppStateListener = (isActive: boolean) => void;
+type ResumeListener = () => void;
 
 export const isNativeApp = Capacitor.isNativePlatform();
 export const platform = Capacitor.getPlatform();
@@ -9,6 +10,7 @@ export const platform = Capacitor.getPlatform();
 class CapacitorBridge {
   private readonly backListeners = new Set<BackListener>();
   private readonly appStateListeners = new Set<AppStateListener>();
+  private readonly resumeListeners = new Set<ResumeListener>();
 
   private initialized = false;
 
@@ -30,26 +32,36 @@ class CapacitorBridge {
 
       App.addListener("appStateChange", ({ isActive }) => {
         this.emitAppStateChange(isActive);
+
+        if (isActive) {
+          this.emitResume();
+        }
+      });
+
+      App.addListener("resume", () => {
+        this.emitResume();
       });
     } catch {
       // Ignore capacitor errors
     }
   }
 
-  public onBack(listener: BackListener): () => void {
+  public onBack(listener: BackListener): this {
     this.backListeners.add(listener);
 
-    return () => {
-      this.backListeners.delete(listener);
-    };
+    return this;
   }
 
-  public onAppStateChange(listener: AppStateListener): () => void {
+  public onAppStateChange(listener: AppStateListener): this {
     this.appStateListeners.add(listener);
 
-    return () => {
-      this.appStateListeners.delete(listener);
-    };
+    return this;
+  }
+
+  public onResume(listener: ResumeListener): this {
+    this.resumeListeners.add(listener);
+
+    return this;
   }
 
   public async exitApp(): Promise<void> {
@@ -75,6 +87,12 @@ class CapacitorBridge {
   private emitAppStateChange(isActive: boolean): void {
     for (const listener of this.appStateListeners) {
       listener(isActive);
+    }
+  }
+
+  private emitResume(): void {
+    for (const listener of this.resumeListeners) {
+      listener();
     }
   }
 }

@@ -1,3 +1,5 @@
+import { isNativeApp } from "../device/capacitor.js";
+
 type NavigatorWithDeviceMemory = Navigator & {
   deviceMemory?: number;
 };
@@ -13,6 +15,10 @@ function shouldLoadHeavyEffects(): boolean {
 
   if (prefersReducedMotion) {
     return false;
+  }
+
+  if (isNativeApp) {
+    return cores >= 4 && memory >= 3;
   }
 
   if (!isTouch) {

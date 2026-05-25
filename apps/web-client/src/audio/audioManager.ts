@@ -1,3 +1,5 @@
+import { isNativeApp } from "../device/capacitor.js";
+
 export type AudioPath = string | readonly string[];
 
 export type SoundOptions = {
@@ -30,7 +32,7 @@ export class AudioManager {
   }
 
   public async playMusic(pathOrPaths: AudioPath, volume = 1): Promise<void> {
-    if (!this.musicEnabled || this.paused || !navigator.userActivation.isActive) {
+    if (!this.musicEnabled || this.paused || !this.canUseAudio()) {
       return;
     }
 
@@ -65,7 +67,7 @@ export class AudioManager {
       return;
     }
 
-    if (!this.musicEnabled || !navigator.userActivation.isActive || this.music.src === "") {
+    if (!this.musicEnabled || !this.canUseAudio() || this.music.src === "") {
       return;
     }
 
@@ -84,7 +86,7 @@ export class AudioManager {
   }
 
   public playSound(pathOrPaths: AudioPath, options: SoundOptions = {}): void {
-    if (!this.soundsEnabled || this.paused || !navigator.userActivation.isActive) {
+    if (!this.soundsEnabled || this.paused || !this.canUseAudio()) {
       return;
     }
 
@@ -154,5 +156,9 @@ export class AudioManager {
     const index = Math.floor(Math.random() * pathOrPaths.length);
 
     return pathOrPaths[index] ?? null;
+  }
+
+  private canUseAudio(): boolean {
+    return isNativeApp || navigator.userActivation?.isActive === true;
   }
 }

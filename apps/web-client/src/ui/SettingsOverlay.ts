@@ -4,7 +4,7 @@ import type { ViewKind } from "../views/types.js";
 import { playSound } from "../audio/audio.js";
 import { deviceController } from "../device/DeviceController.js";
 import { storage } from "../storage.js";
-import { isNativeApp } from "../capacitor.js";
+import { isNativeApp } from "../device/capacitor.js";
 
 type EngineKind = "canvas" | "phaser" | "three";
 

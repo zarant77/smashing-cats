@@ -1,6 +1,7 @@
 .DS_Store
 apps/web-client/android
 apps/web-client/public
+apps/web-client/icons
 node_modules
 dist
 build

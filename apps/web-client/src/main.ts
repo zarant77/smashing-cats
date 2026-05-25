@@ -4,7 +4,7 @@ import { i18n } from "@smashing-cats/i18n";
 import "./uncrasher.js";
 import "./ui/debug.js";
 
-import { capacitorBridge, isNativeApp } from "./capacitor.js";
+import { capacitorBridge, isNativeApp } from "./device/capacitor.js";
 import { storage } from "./storage.js";
 import { audio, musicEvents, playSound, setupMusicUnlock } from "./audio/audio.js";
 import { deviceController } from "./device/DeviceController.js";
@@ -231,8 +231,19 @@ async function bootstrap(): Promise<void> {
     },
   });
 
-  capacitorBridge.onAppStateChange((isActive) => audio.setPause(!isActive));
-  capacitorBridge.onBack(() => settingsOverlay.toggle());
+  capacitorBridge
+    .onBack(() => settingsOverlay.toggle())
+    .onAppStateChange((isActive) => {
+      audio.setPause(!isActive);
+
+      if (isActive) {
+        musicEvents.gameplay();
+      }
+    })
+    .onResume(() => {
+      audio.setPause(false);
+      musicEvents.gameplay();
+    });
 
   document.addEventListener("fullscreenchange", () => syncSettingsOverlay());
 

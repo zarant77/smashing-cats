@@ -1,3 +1,5 @@
+import { isNativeApp } from "./capacitor.js";
+
 export type DeviceTilt = { x: number; y: number };
 
 type DeviceControllerEvents = { tilt: DeviceTilt };
@@ -59,13 +61,17 @@ export class DeviceController {
   }
 
   public vibrate(pattern: number | number[]): boolean {
-    if (!this.vibrationEnabled || !navigator.userActivation.isActive || !("vibrate" in navigator)) {
+    if (!this.vibrationEnabled || !this.vibrationSupported) {
+      return false;
+    }
+
+    if (!isNativeApp && navigator.userActivation?.isActive !== true) {
       return false;
     }
 
     try {
       return navigator.vibrate(pattern);
-    } catch (error) {
+    } catch {
       console.warn("Failed to vibrate");
       return false;
     }
@@ -86,7 +92,7 @@ export class DeviceController {
 
     const orientationEvent = DeviceOrientationEvent as DeviceOrientationWithPermission;
 
-    if (typeof orientationEvent.requestPermission === "function") {
+    if (!isNativeApp && typeof orientationEvent.requestPermission === "function") {
       const permission = await orientationEvent.requestPermission();
 
       if (permission !== "granted") {
@@ -113,8 +119,12 @@ export class DeviceController {
     return this;
   }
 
-  public get vibrationSupported() {
-    return window.matchMedia("(pointer: coarse)").matches && "vibrate" in navigator;
+  public get vibrationSupported(): boolean {
+    if (!("vibrate" in navigator)) {
+      return false;
+    }
+
+    return isNativeApp || window.matchMedia("(pointer: coarse)").matches;
   }
 
   private readonly syncOrientation = (): void => {
