@@ -1,11 +1,6 @@
-export type DeviceTilt = {
-  x: number;
-  y: number;
-};
+export type DeviceTilt = { x: number; y: number };
 
-type DeviceControllerEvents = {
-  tilt: DeviceTilt;
-};
+type DeviceControllerEvents = { tilt: DeviceTilt };
 
 type Listener<T> = (payload: T) => void;
 
@@ -13,34 +8,30 @@ type DeviceOrientationWithPermission = typeof DeviceOrientationEvent & {
   requestPermission?: () => Promise<PermissionState>;
 };
 
-const ORIENTATION_CLASSES = ["portrait-primary", "portrait-secondary", "landscape-primary", "landscape-secondary"] as const;
-
-export async function initDevice(): Promise<void> {
-  setupDeviceUnlock();
-}
+const ORIENTATION_CLASSES = [
+  "portrait-primary",
+  "portrait-secondary",
+  "landscape-primary",
+  "landscape-secondary",
+] as const;
 
 export class DeviceController {
   public static readonly instance = new DeviceController();
 
-  private readonly listeners = new Map<keyof DeviceControllerEvents, Set<Listener<DeviceControllerEvents[keyof DeviceControllerEvents]>>>();
-
-  public readonly isProbablyMobile = window.matchMedia("(pointer: coarse)").matches;
+  private readonly listeners = new Map<
+    keyof DeviceControllerEvents,
+    Set<Listener<DeviceControllerEvents[keyof DeviceControllerEvents]>>
+  >();
 
   private tiltEnabled = false;
-
   private tiltAllowed = true;
   private vibrationEnabled = true;
-  private vibrationSupported = false;
 
   private constructor() {
     window.addEventListener("resize", this.syncOrientation);
     window.addEventListener("orientationchange", this.syncOrientation);
 
     this.syncOrientation();
-  }
-
-  public get isVibrationSupported(): boolean {
-    return this.vibrationSupported;
   }
 
   public setVibrationEnabled(isEnabled: boolean): this {
@@ -68,11 +59,16 @@ export class DeviceController {
   }
 
   public vibrate(pattern: number | number[]): boolean {
-    if (!this.vibrationEnabled || !this.vibrationSupported) {
+    if (!this.vibrationEnabled || !navigator.userActivation.isActive || !("vibrate" in navigator)) {
       return false;
     }
 
-    return navigator.vibrate(pattern);
+    try {
+      return navigator.vibrate(pattern);
+    } catch (error) {
+      console.warn("Failed to vibrate");
+      return false;
+    }
   }
 
   public async enableTilt(): Promise<boolean> {
@@ -117,10 +113,8 @@ export class DeviceController {
     return this;
   }
 
-  public detectCapabilities(): this {
-    this.vibrationSupported = this.isProbablyMobile && "vibrate" in navigator;
-
-    return this;
+  public get vibrationSupported() {
+    return window.matchMedia("(pointer: coarse)").matches && "vibrate" in navigator;
   }
 
   private readonly syncOrientation = (): void => {
@@ -150,10 +144,7 @@ export class DeviceController {
       return;
     }
 
-    this.emit("tilt", {
-      x: event.beta ?? 0,
-      y: event.gamma ?? 0,
-    });
+    this.emit("tilt", { x: event.beta ?? 0, y: event.gamma ?? 0 });
   };
 
   private emit<K extends keyof DeviceControllerEvents>(event: K, payload: DeviceControllerEvents[K]): void {
@@ -178,43 +169,3 @@ export class DeviceController {
 }
 
 export const deviceController = DeviceController.instance;
-
-let deviceUnlocked = false;
-
-export function setupDeviceUnlock(): void {
-  const unlock = (): void => {
-    if (deviceUnlocked) {
-      return;
-    }
-
-    deviceUnlocked = true;
-
-    window.removeEventListener("pointerdown", unlock);
-
-    window.removeEventListener("keydown", unlock);
-
-    window.removeEventListener("touchstart", unlock);
-
-    deviceController.detectCapabilities();
-
-    setTimeout(() => {
-      void deviceController.enableTilt();
-
-      deviceController.vibrate(10);
-    }, 100);
-  };
-
-  window.addEventListener("pointerdown", unlock, {
-    passive: true,
-    once: true,
-  });
-
-  window.addEventListener("keydown", unlock, {
-    once: true,
-  });
-
-  window.addEventListener("touchstart", unlock, {
-    passive: true,
-    once: true,
-  });
-}

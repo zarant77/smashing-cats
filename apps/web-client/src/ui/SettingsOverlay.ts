@@ -194,7 +194,7 @@ export class SettingsOverlay {
     this.element.classList.remove("settings-overlay-closing");
 
     window.requestAnimationFrame(() => {
-      if (!this.isVisible()) {
+      if (!this.visible) {
         return;
       }
 
@@ -205,7 +205,7 @@ export class SettingsOverlay {
   }
 
   public hide(): void {
-    if (!this.isVisible()) {
+    if (!this.visible) {
       return;
     }
 
@@ -233,7 +233,7 @@ export class SettingsOverlay {
 
     this.onToggleMenu?.();
 
-    if (this.isVisible()) {
+    if (this.visible) {
       this.hide();
       return;
     }
@@ -241,7 +241,7 @@ export class SettingsOverlay {
     this.show();
   }
 
-  public isVisible(): boolean {
+  public get visible(): boolean {
     return !this.card.hidden;
   }
 
@@ -285,7 +285,7 @@ export class SettingsOverlay {
       .querySelector<HTMLButtonElement>(".vibration-button")
       ?.addEventListener("click", () => this.onToggleVibration?.());
     this.element.querySelector<HTMLButtonElement>(".tutorial-button")?.addEventListener("click", () => {
-      if (this.isTutorialEnabled()) {
+      if (this.tutorialEnabled) {
         storage.set(TUTORIAL_DONE_KEY, "true");
       } else {
         storage.remove(TUTORIAL_DONE_KEY);
@@ -344,7 +344,7 @@ export class SettingsOverlay {
   }
 
   private syncActiveButtons(): void {
-    this.setButtonActive(".menu-button", this.isVisible());
+    this.setButtonActive(".menu-button", this.visible);
     this.setButtonActive(".engine-canvas-button", this.state.currentEngine === "canvas");
     this.setButtonActive(".engine-phaser-button", this.state.currentEngine === "phaser");
     this.setButtonActive(".engine-three-button", this.state.currentEngine === "three");
@@ -354,11 +354,9 @@ export class SettingsOverlay {
     this.setButtonActive(".sound-button", this.state.soundEnabled);
     this.setButtonActive(".music-button", this.state.musicEnabled);
     this.setButtonActive(".vibration-button", this.state.vibrationEnabled);
-    this.setButtonActive(".tutorial-button", this.isTutorialEnabled());
-    this.setButtonDisabled(
-      ".vibration-button",
-      !(deviceController.isVibrationSupported && deviceController.isProbablyMobile),
-    );
+    this.setButtonActive(".tutorial-button", this.tutorialEnabled);
+    this.setButtonDisabled(".vibration-button", !deviceController.vibrationSupported);
+
     this.setButtonActive(".fullscreen-button", this.state.fullscreenEnabled);
 
     const pauseTitle = this.element.querySelector(".pause-title") as HTMLDivElement | null;
@@ -376,16 +374,16 @@ export class SettingsOverlay {
       return;
     }
 
-    if (paused && !this.isVisible()) {
+    if (paused && !this.visible) {
       this.show();
     }
 
-    if (!paused && this.isVisible()) {
+    if (!paused && this.visible) {
       this.hide();
     }
   }
 
-  private isTutorialEnabled(): boolean {
+  private get tutorialEnabled(): boolean {
     return !storage.get(TUTORIAL_DONE_KEY);
   }
 

@@ -5,8 +5,8 @@ import "./uncrasher.js";
 import "./ui/debug.js";
 
 import { storage } from "./storage.js";
-import { audio, musicEvents, playSound, setupAudioUnlock } from "./audio/audio.js";
-import { deviceController, setupDeviceUnlock } from "./device/DeviceController.js";
+import { audio, musicEvents, playSound, setupMusicUnlock } from "./audio/audio.js";
+import { deviceController } from "./device/DeviceController.js";
 import { loadHeavyEffectsIfAllowed } from "./device/loadHeavyEffectsIfAllowed.js";
 import { GameStateController } from "./game/GameStateController.js";
 import { GameRuntime } from "./game/GameRuntime.js";
@@ -48,8 +48,6 @@ const VIEW_SHORTCUTS: Record<string, ViewKind> = {
 void bootstrap();
 
 async function bootstrap(): Promise<void> {
-  setupAudioUnlock();
-  setupDeviceUnlock();
   loadHeavyEffectsIfAllowed();
 
   const root = getRequiredElement<HTMLElement>("#game-root", "Game root");
@@ -248,6 +246,7 @@ async function bootstrap(): Promise<void> {
   renderCharacterSelect();
   bindFullscreenGesture();
   bindViewShortcuts();
+  setupMusicUnlock();
 
   // Run the game
   i18n.onLocaleChanged((newLocale) => {
@@ -308,28 +307,28 @@ async function bootstrap(): Promise<void> {
       void switchView(nextViewKind);
     });
   }
-}
 
-function bindFullscreenGesture(): void {
-  if (!TouchControls.isTouchDevice()) {
-    return;
+  function bindFullscreenGesture(): void {
+    if (!TouchControls.isTouchDevice()) {
+      return;
+    }
+
+    window.addEventListener("pointerup", requestFullscreenFromUserGesture, {
+      once: true,
+      capture: true,
+    });
   }
 
-  window.addEventListener("pointerup", requestFullscreenFromUserGesture, {
-    once: true,
-    capture: true,
-  });
-}
+  function isEditableTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) {
+      return false;
+    }
 
-function isEditableTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) {
-    return false;
+    return (
+      target.isContentEditable ||
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target instanceof HTMLSelectElement
+    );
   }
-
-  return (
-    target.isContentEditable ||
-    target instanceof HTMLInputElement ||
-    target instanceof HTMLTextAreaElement ||
-    target instanceof HTMLSelectElement
-  );
 }

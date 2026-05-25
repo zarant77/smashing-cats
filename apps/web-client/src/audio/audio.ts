@@ -39,6 +39,38 @@ export const musicEvents = {
   },
 } as const;
 
+export function setupMusicUnlock(): void {
+  const unlock = (): void => {
+    if (!navigator.userActivation.isActive) {
+      return;
+    }
+
+    musicEvents.gameplay();
+
+    for (const event of EVENTS) {
+      window.removeEventListener(event, unlock);
+    }
+  };
+
+  const EVENTS = [
+    "pointerdown",
+    "pointerup",
+    "touchstart",
+    "touchend",
+    "mousedown",
+    "mouseup",
+    "click",
+    "keydown",
+  ] as const;
+
+  for (const event of EVENTS) {
+    window.addEventListener(event, unlock, {
+      passive: true,
+      once: true,
+    });
+  }
+}
+
 function getAudioPath(key: AudioKey): string | undefined {
   try {
     return getAudioAsset(key);
@@ -54,30 +86,4 @@ function getAudioPaths(keys: readonly AudioKey[]): string[] {
 
     return path === undefined ? [] : [path];
   });
-}
-
-let audioUnlocked = false;
-
-export function setupAudioUnlock(): void {
-  const unlock = (): void => {
-    if (audioUnlocked) {
-      return;
-    }
-
-    try {
-      setTimeout(() => musicEvents.gameplay(), 100);
-    } catch (error) {
-      console.warn("Audio assets are not ready yet.", error);
-      return;
-    }
-
-    audioUnlocked = true;
-    window.removeEventListener("pointerdown", unlock);
-    window.removeEventListener("keydown", unlock);
-    window.removeEventListener("touchstart", unlock);
-  };
-
-  window.addEventListener("pointerdown", unlock, { passive: true });
-  window.addEventListener("keydown", unlock);
-  window.addEventListener("touchstart", unlock, { passive: true });
 }

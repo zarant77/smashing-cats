@@ -7,11 +7,9 @@ export type SoundOptions = {
 
 export class AudioManager {
   private readonly music = new Audio();
-
   private readonly soundPool: HTMLAudioElement[] = [];
 
   private soundIndex = 0;
-
   private soundsEnabled = true;
   private musicEnabled = true;
 
@@ -31,7 +29,7 @@ export class AudioManager {
   }
 
   public async playMusic(pathOrPaths: AudioPath, volume = 1): Promise<void> {
-    if (!this.musicEnabled) {
+    if (!this.musicEnabled || !navigator.userActivation.isActive) {
       return;
     }
 
@@ -52,11 +50,9 @@ export class AudioManager {
     this.music.currentTime = 0;
     this.music.volume = volume;
 
-    try {
-      await this.music.play();
-    } catch (error) {
-      console.error("Failed to play music", error);
-    }
+    this.music.play().catch((error: unknown) => {
+      console.warn("Failed to play music", error);
+    });
   }
 
   public stopMusic(): void {
@@ -69,7 +65,7 @@ export class AudioManager {
   }
 
   public playSound(pathOrPaths: AudioPath, options: SoundOptions = {}): void {
-    if (!this.soundsEnabled) {
+    if (!this.soundsEnabled || !navigator.userActivation.isActive) {
       return;
     }
 
@@ -91,7 +87,9 @@ export class AudioManager {
     audio.volume = options.volume ?? 1;
     audio.playbackRate = options.playbackRate ?? 1;
 
-    void audio.play();
+    audio.play().catch((error: unknown) => {
+      console.warn("Failed to play sound", error);
+    });
   }
 
   public stopAllSounds(): void {
