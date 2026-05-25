@@ -4,6 +4,7 @@ import type { ViewKind } from "../views/types.js";
 import { playSound } from "../audio/audio.js";
 import { deviceController } from "../device/DeviceController.js";
 import { storage } from "../storage.js";
+import { isNativeApp } from "../capacitor.js";
 
 type EngineKind = "canvas" | "phaser" | "three";
 
@@ -33,7 +34,6 @@ type SettingsOverlayState = {
 };
 
 const MENU_ANIMATION_MS = 220;
-const TUTORIAL_DONE_KEY = "tutorial-done";
 
 export class SettingsOverlay {
   private readonly element: HTMLDivElement;
@@ -80,6 +80,8 @@ export class SettingsOverlay {
     this.onSelectLanguage = options.onSelectLanguage;
     this.onExit = options.onExit;
 
+    window.addEventListener("android-back", () => this.toggle());
+
     this.element = document.createElement("div");
     this.element.className = "settings-overlay";
 
@@ -91,9 +93,7 @@ export class SettingsOverlay {
           <span class="icon icon-help"></span>
         </button>
 
-        <button class="fullscreen-button toolbar-fullscreen-button" type="button" data-i18n-title="fullscreen" title="${t("fullscreen")}" aria-label="${t("fullscreen")}">
-          <span class="icon icon-fullscreen"></span>
-        </button>
+        ${this.renderFullscreenButton()}
 
         <button class="menu-button" type="button" data-i18n-title="pause" title="${t("pause")}" aria-label="${t("pause")}">
           <span class="icon icon-menu"></span>
@@ -369,29 +369,41 @@ export class SettingsOverlay {
     }
   }
 
+  private renderFullscreenButton(): string {
+    if (isNativeApp) {
+      return "";
+    }
+
+    return `
+      <button class="fullscreen-button toolbar-fullscreen-button" type="button" data-i18n-title="fullscreen" title="${t("fullscreen")}" aria-label="${t("fullscreen")}">
+        <span class="icon icon-fullscreen"></span>
+      </button>
+    `;
+  }
+
   private renderEngineSelector(): string {
     if (!this.showEngineSelector) {
       return "";
     }
 
     return `
-        <section class="settings-section">
-          <h3 data-i18n="engine">${t("engine")}</h3>
+      <section class="settings-section">
+        <h3 data-i18n="engine">${t("engine")}</h3>
 
-          <div class="settings-row">
-            <button class="engine-canvas-button" type="button" data-i18n-title="engineCanvas" title="${t("engineCanvas")}" aria-label="${t("engineCanvas")}">
-              <span class="icon icon-canvas"></span>
-            </button>
+        <div class="settings-row">
+          <button class="engine-canvas-button" type="button" data-i18n-title="engineCanvas" title="${t("engineCanvas")}" aria-label="${t("engineCanvas")}">
+            <span class="icon icon-canvas"></span>
+          </button>
 
-            <button class="engine-phaser-button" type="button" data-i18n-title="enginePhaser" title="${t("enginePhaser")}" aria-label="${t("enginePhaser")}">
-              <span class="icon icon-phaser"></span>
-            </button>
+          <button class="engine-phaser-button" type="button" data-i18n-title="enginePhaser" title="${t("enginePhaser")}" aria-label="${t("enginePhaser")}">
+            <span class="icon icon-phaser"></span>
+          </button>
 
-            <button class="engine-three-button" type="button" data-i18n-title="engineThree" title="${t("engineThree")}" aria-label="${t("engineThree")}">
-              <span class="icon icon-three"></span>
-            </button>
-          </div>
-        </section>
+          <button class="engine-three-button" type="button" data-i18n-title="engineThree" title="${t("engineThree")}" aria-label="${t("engineThree")}">
+            <span class="icon icon-three"></span>
+          </button>
+        </div>
+      </section>
     `;
   }
 

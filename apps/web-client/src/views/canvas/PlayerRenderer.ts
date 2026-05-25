@@ -27,7 +27,6 @@ const DEATH_GRAVITY = 1400;
 const DEATH_DRIFT_X = 120;
 const DEATH_ROTATION_SPEED = -7;
 
-const SMASH_EFFECT_KEY = "effect.smash";
 const SMASH_EFFECT_DURATION_MS = 200;
 
 const SMASH_EFFECT_OFFSET_X = 20;
@@ -147,7 +146,7 @@ export class PlayerRenderer {
 
     if (justLanded && state.wasSmashing) {
       effects.add({
-        imageKey: SMASH_EFFECT_KEY,
+        imageKey: "effect.smash",
         x: screenX + width / 2 + SMASH_EFFECT_OFFSET_X * scale,
         y: (screenY + SMASH_EFFECT_OFFSET_Y) * scale,
         startedAt: performance.now(),

@@ -12,7 +12,6 @@ const RENDER_ORDER = 5;
 export class GroundRenderer {
   private readonly tiles: THREE.Group[] = [];
   private destroyed = false;
-
   private modelWidth = 1;
 
   public constructor(

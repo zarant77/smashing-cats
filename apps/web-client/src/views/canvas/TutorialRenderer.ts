@@ -11,12 +11,9 @@ const CAMP_RIGHT_WORLD_X = 1050;
 export class TutorialRenderer {
   private ctx!: CanvasRenderingContext2D;
   private snapshot!: GameSnapshot;
-
   private groundY = 0;
-
   private campVisible = false;
   private campFinished = false;
-
   private lastTick: number | undefined;
   private wasTutorialActive = false;
 
@@ -98,7 +95,7 @@ export class TutorialRenderer {
     this.helpers.img(this.ctx, "tutorial.schoolboard", 350, 0, 1);
 
     this.helpers.text(this.ctx, t("tutorialText"), 480, 150, {
-      font: "500 14px 'Comic Sans MS', cursive",
+      font: "500 16px 'Comic Sans MS', cursive",
       color: "#ffffff",
       align: "center",
       maxWidth: 220,

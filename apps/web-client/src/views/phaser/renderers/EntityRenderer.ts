@@ -42,7 +42,6 @@ const FLY_TO_SCREEN_SPINS = 1.25;
 const FLY_TO_SCREEN_DEPTH = 450;
 
 const SCREEN_CRACK_DELAY_MS = 120;
-const SCREEN_CRACK_KEY = "effect.screen_crack";
 const SCREEN_CRACK_DEPTH = 500;
 const SCREEN_CRACK_MS = 900;
 const SCREEN_CRACK_SCALE = 0.72;
@@ -221,17 +220,7 @@ export class EntityRenderer {
   }
 
   private spawnScreenCrack(x: number, y: number): void {
-    const source = images.getLoaded(getImageAsset(SCREEN_CRACK_KEY));
-
-    if (!source.complete || source.naturalWidth <= 0 || source.naturalHeight <= 0) {
-      return;
-    }
-
-    if (!this.scene.textures.exists(SCREEN_CRACK_KEY)) {
-      this.scene.textures.addImage(SCREEN_CRACK_KEY, source);
-    }
-
-    const crack = this.scene.add.image(x, y, SCREEN_CRACK_KEY);
+    const crack = this.scene.add.image(x, y, "effect.screen_crack");
 
     crack.setOrigin(0.5);
     crack.setDepth(SCREEN_CRACK_DEPTH);

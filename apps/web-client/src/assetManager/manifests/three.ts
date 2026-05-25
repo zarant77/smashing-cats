@@ -11,54 +11,47 @@ export const IMAGES = {
   "ui.joy_smash": "/ui/joy_smash.png",
 
   // Common
-  "common.speech_bubble": "/img/speech_bubble.png",
+  "common.speech_bubble": "/sprites/speech_bubble.png",
 
   // Tutorial
-  "tutorial.bag": "/tutorial/img/bag.png",
-  "tutorial.banner": "/tutorial/img/banner.png",
-  "tutorial.schoolboard": "/tutorial/img/schoolboard.png",
-  "tutorial.crates": "/tutorial/img/crates.png",
-  "tutorial.flag": "/tutorial/img/flag.png",
-  "tutorial.ken1": "/tutorial/img/master_ken_1.png",
-  "tutorial.ken2": "/tutorial/img/master_ken_2.png",
-  "tutorial.signboard": "/tutorial/img/signboard.png",
-  "tutorial.tower": "/tutorial/img/tower.png",
+  "tutorial.banner": "/sprites/tutorial/banner.png",
+  "tutorial.flag": "/sprites/tutorial/flag.png",
 
   // Environment
-  "environment.sky": "/canvas/environments/sky.png",
-  "environment.clouds": "/canvas/environments/clouds.png",
-  "environment.mountains": "/canvas/environments/mountains.png",
-  "environment.fog": "/canvas/environments/fog.png",
-  "environment.forest": "/canvas/environments/forest.png",
-  "environment.forest_front": "/canvas/environments/forest_front.png",
+  "environment.sky": "/sprites/environments/sky.png",
+  "environment.clouds": "/sprites/environments/clouds.png",
+  "environment.mountains": "/sprites/environments/mountains.png",
+  "environment.fog": "/sprites/environments/fog.png",
+  "environment.forest": "/sprites/environments/forest.png",
+  "environment.forest_front": "/sprites/environments/forest_front.png",
 
   // Foreground
-  "environment.fg_fence1": "/canvas/environments/fg_fence1.png",
+  "environment.fg_fence1": "/sprites/environments/fg_fence1.png",
 
-  "environment.fg_pumpkin1": "/canvas/environments/fg_pumpkin1.png",
-  "environment.fg_pumpkin2": "/canvas/environments/fg_pumpkin2.png",
+  "environment.fg_pumpkin1": "/sprites/environments/fg_pumpkin1.png",
+  "environment.fg_pumpkin2": "/sprites/environments/fg_pumpkin2.png",
 
-  "environment.fg_stump1": "/canvas/environments/fg_stump1.png",
-  "environment.fg_stump2": "/canvas/environments/fg_stump2.png",
-  "environment.fg_stump3": "/canvas/environments/fg_stump3.png",
-  "environment.fg_stump4": "/canvas/environments/fg_stump4.png",
-  "environment.fg_stump5": "/canvas/environments/fg_stump5.png",
+  "environment.fg_stump1": "/sprites/environments/fg_stump1.png",
+  "environment.fg_stump2": "/sprites/environments/fg_stump2.png",
+  "environment.fg_stump3": "/sprites/environments/fg_stump3.png",
+  "environment.fg_stump4": "/sprites/environments/fg_stump4.png",
+  "environment.fg_stump5": "/sprites/environments/fg_stump5.png",
 
-  "environment.fg_tree1": "/canvas/environments/fg_tree1.png",
-  "environment.fg_tree2": "/canvas/environments/fg_tree2.png",
-  "environment.fg_tree3": "/canvas/environments/fg_tree3.png",
+  "environment.fg_tree1": "/sprites/environments/fg_tree1.png",
+  "environment.fg_tree2": "/sprites/environments/fg_tree2.png",
+  "environment.fg_tree3": "/sprites/environments/fg_tree3.png",
 
   // Leaves
-  "environment.leaf1": "/canvas/environments/leaf1.png",
-  "environment.leaf2": "/canvas/environments/leaf2.png",
-  "environment.leaf3": "/canvas/environments/leaf3.png",
-  "environment.leaf4": "/canvas/environments/leaf4.png",
-  "environment.leaf5": "/canvas/environments/leaf5.png",
-  "environment.leaf6": "/canvas/environments/leaf6.png",
+  "environment.leaf1": "/sprites/environments/leaf1.png",
+  "environment.leaf2": "/sprites/environments/leaf2.png",
+  "environment.leaf3": "/sprites/environments/leaf3.png",
+  "environment.leaf4": "/sprites/environments/leaf4.png",
+  "environment.leaf5": "/sprites/environments/leaf5.png",
+  "environment.leaf6": "/sprites/environments/leaf6.png",
 
   // Effects
-  "effect.screen_crack": "/canvas/effects/screen-crack.png",
-  "effect.smash": "/canvas/effects/smash.png",
+  "effect.screen_crack": "/sprites/effects/screen-crack.png",
+  "effect.smash": "/sprites/effects/smash.png",
 
   // Player's portraits
   "playerPortrait.batcat": "/portraits/batcat.png",
@@ -78,50 +71,50 @@ export const IMAGES = {
 
 export const MODELS = {
   // Tutorial
-  "tutorial.bag": "/tutorial/glb/bag.glb",
-  "tutorial.schoolboard": "/tutorial/glb/schoolboard.glb",
-  "tutorial.crates": "/tutorial/glb/crates.glb",
-  "tutorial.ken": "/tutorial/glb/master_ken.glb",
-  // "tutorial.ken_idle": "/tutorial/glb/master_ken_idle.glb",
-  "tutorial.signboard": "/tutorial/glb/signboard.glb",
-  "tutorial.tower": "/tutorial/glb/tower.glb",
+  "tutorial.bag": "/models/tutorial/bag.glb",
+  "tutorial.schoolboard": "/models/tutorial/schoolboard.glb",
+  "tutorial.crates": "/models/tutorial/crates.glb",
+  "tutorial.ken": "/models/tutorial/master_ken.glb",
+  // "tutorial.ken_idle": "/models/tutorial/master_ken_idle.glb",
+  "tutorial.signboard": "/models/tutorial/signboard.glb",
+  "tutorial.tower": "/models/tutorial/tower.glb",
 
   // Civilians
-  "civilian.baba": "/three/civilians/baba.glb",
-  "civilian.dido": "/three/civilians/dido.glb",
+  "civilian.baba": "/models/civilians/baba.glb",
+  "civilian.dido": "/models/civilians/dido.glb",
 
   // Enemies
-  "enemy.dummy": "/three/enemies/dummy.glb",
-  "enemy.boar": "/three/enemies/boar.glb",
-  "enemy.crow": "/three/enemies/crow.glb",
-  "enemy.orc": "/three/enemies/orc.glb",
-  "enemy.rat": "/three/enemies/rat.glb",
+  "enemy.dummy": "/models/enemies/dummy.glb",
+  "enemy.boar": "/models/enemies/boar.glb",
+  "enemy.crow": "/models/enemies/crow.glb",
+  "enemy.orc": "/models/enemies/orc.glb",
+  "enemy.rat": "/models/enemies/rat.glb",
 
   // Environment
-  "environment.fence1": "/three/environments/fence1.glb",
-  "environment.ground": "/three/environments/ground.glb",
-  "environment.pumpkin1": "/three/environments/pumpkin1.glb",
-  "environment.pumpkin2": "/three/environments/pumpkin2.glb",
+  "environment.fence1": "/models/environments/fence1.glb",
+  "environment.ground": "/models/environments/ground.glb",
+  "environment.pumpkin1": "/models/environments/pumpkin1.glb",
+  "environment.pumpkin2": "/models/environments/pumpkin2.glb",
 
   // Obstacles
-  "obstacle.bush": "/three/obstacles/bush.glb",
-  "obstacle.rock": "/three/obstacles/rock.glb",
-  "obstacle.stump": "/three/obstacles/stump.glb",
+  "obstacle.bush": "/models/obstacles/bush.glb",
+  "obstacle.rock": "/models/obstacles/rock.glb",
+  "obstacle.stump": "/models/obstacles/stump.glb",
 
   // Players
-  "player.batcat": "/three/players/batcat.glb",
-  "player.carrambacat": "/three/players/carrambacat.glb",
-  "player.commandocat": "/three/players/commandocat.glb",
-  "player.cybercat": "/three/players/cybercat.glb",
-  "player.darkcat": "/three/players/darkcat.glb",
-  "player.ghostcat": "/three/players/ghostcat.glb",
-  "player.ironcat": "/three/players/ironcat.glb",
-  "player.punishcat": "/three/players/punishcat.glb",
-  "player.robocat": "/three/players/robocat.glb",
-  "player.samurcat": "/three/players/samurcat.glb",
-  "player.termicator": "/three/players/termicator.glb",
-  "player.zombocat": "/three/players/zombocat.glb",
-  "player.kotan": "/three/players/kotan.glb",
+  "player.batcat": "/models/players/batcat.glb",
+  "player.carrambacat": "/models/players/carrambacat.glb",
+  "player.commandocat": "/models/players/commandocat.glb",
+  "player.cybercat": "/models/players/cybercat.glb",
+  "player.darkcat": "/models/players/darkcat.glb",
+  "player.ghostcat": "/models/players/ghostcat.glb",
+  "player.ironcat": "/models/players/ironcat.glb",
+  "player.punishcat": "/models/players/punishcat.glb",
+  "player.robocat": "/models/players/robocat.glb",
+  "player.samurcat": "/models/players/samurcat.glb",
+  "player.termicator": "/models/players/termicator.glb",
+  "player.zombocat": "/models/players/zombocat.glb",
+  "player.kotan": "/models/players/kotan.glb",
 } as const;
 
 export const AUDIO = {

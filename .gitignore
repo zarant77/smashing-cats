@@ -1,5 +1,6 @@
 .DS_Store
 apps/web-client/android
+apps/web-client/public
 node_modules
 dist
 build

@@ -211,12 +211,12 @@ export class TutorialRenderer {
     this.drawImage("speech-bubble", "common.speech_bubble", x, y, 1);
 
     this.drawText("speech-text", text, x + 210, y + 90, {
-      font: "700 20px Arial",
+      font: "700 22px Arial",
       color: "#000000",
       align: "center",
       rotation: -0.1,
-      maxWidth: 180,
-      lineHeight: 24,
+      maxWidth: 220,
+      lineHeight: 28,
       preserveNewlines: true,
     });
   }
@@ -269,11 +269,8 @@ export class TutorialRenderer {
     scale: number,
     options?: DrawImageOptions,
   ): void {
-    const source = images.getLoaded(getImageAsset(key));
-
-    if (!source.complete || source.naturalWidth <= 0 || source.naturalHeight <= 0) {
-      return;
-    }
+    const path = getImageAsset(key);
+    const source = images.getLoaded(path);
 
     const width = source.naturalWidth * scale;
     const height = source.naturalHeight * scale;

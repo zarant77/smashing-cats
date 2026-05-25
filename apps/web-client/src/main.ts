@@ -4,6 +4,7 @@ import { i18n } from "@smashing-cats/i18n";
 import "./uncrasher.js";
 import "./ui/debug.js";
 
+import { initCapacitor } from "./capacitor.js";
 import { storage } from "./storage.js";
 import { audio, musicEvents, playSound, setupMusicUnlock } from "./audio/audio.js";
 import { deviceController } from "./device/DeviceController.js";
@@ -41,6 +42,8 @@ const VIEW_SHORTCUTS: Record<string, ViewKind> = {
 void bootstrap();
 
 async function bootstrap(): Promise<void> {
+  await initCapacitor();
+
   loadHeavyEffectsIfAllowed();
 
   const root = getRequiredElement<HTMLElement>("#game-root", "Game root");
@@ -51,7 +54,7 @@ async function bootstrap(): Promise<void> {
   const multiplayer = matchCode !== undefined;
   const rendererSwitchingEnabled = hasMultipleViewKinds();
 
-  let viewKind = parseViewKind(params.get("view") ?? storage.locale);
+  let viewKind = parseViewKind(storage.view);
 
   let view: GameView = await createView(viewKind, root);
   let characterSelect: CharacterSelect | undefined;

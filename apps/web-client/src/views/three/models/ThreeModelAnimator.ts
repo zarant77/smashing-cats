@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { EntitySnapshot, PlayerSnapshot } from "@smashing-cats/protocol";
+import { getImageAsset } from "../../../assetManager/assetManager.js";
 
 type AnimatedSnapshot = PlayerSnapshot | EntitySnapshot;
 
@@ -35,13 +36,11 @@ const SCREEN_CRACK_TICKS = 45;
 const SCREEN_CRACK_SCALE = 260;
 
 const FLY_TO_SCREEN_PLANE_POSITION = new THREE.Vector3(0, 0, -1500);
-const SCREEN_CRACK_TEXTURE_PATH = "/canvas/effects/screen-crack.png";
 
 export class ThreeModelAnimator {
   private readonly flyToScreenStates = new Map<string, FlyToScreenState>();
   private readonly screenCracks: ScreenCrack[] = [];
-
-  private readonly screenCrackTexture = new THREE.TextureLoader().load(SCREEN_CRACK_TEXTURE_PATH);
+  private readonly screenCrackTexture;
 
   private readonly flyToScreenPlane = new THREE.Mesh(
     new THREE.PlaneGeometry(1, 1),
@@ -58,6 +57,8 @@ export class ThreeModelAnimator {
     private readonly scene: THREE.Scene,
     camera: THREE.PerspectiveCamera,
   ) {
+    this.screenCrackTexture = new THREE.Texture(getImageAsset("effect.screen_crack"));
+
     this.flyToScreenPlane.position.copy(FLY_TO_SCREEN_PLANE_POSITION);
     this.flyToScreenPlane.renderOrder = 9999;
     this.flyToScreenPlane.visible = false;
@@ -100,7 +101,10 @@ export class ThreeModelAnimator {
 
     const flyProgress = Math.min(1, (input.tick - state.startedTick) / FLY_TO_SCREEN_FLY_TICKS);
 
-    const fallProgress = Math.min(1, Math.max(0, input.tick - state.startedTick - FLY_TO_SCREEN_FLY_TICKS) / FLY_TO_SCREEN_FALL_TICKS);
+    const fallProgress = Math.min(
+      1,
+      Math.max(0, input.tick - state.startedTick - FLY_TO_SCREEN_FLY_TICKS) / FLY_TO_SCREEN_FALL_TICKS,
+    );
 
     const flyEased = this.easeOutCubic(flyProgress);
     const fallEased = this.easeInCubic(fallProgress);
@@ -108,7 +112,11 @@ export class ThreeModelAnimator {
     input.model.position.lerpVectors(state.startPosition, state.targetPosition, flyEased);
     input.model.position.y += FLY_TO_SCREEN_FALL_DISTANCE * fallEased;
 
-    input.model.scale.set(input.baseScaleX ?? input.baseScale, input.baseScaleY ?? input.baseScale, input.baseScaleZ ?? input.baseScale);
+    input.model.scale.set(
+      input.baseScaleX ?? input.baseScale,
+      input.baseScaleY ?? input.baseScale,
+      input.baseScaleZ ?? input.baseScale,
+    );
 
     input.model.rotation.x = input.baseRotationX ?? 0;
 

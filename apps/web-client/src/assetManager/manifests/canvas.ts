@@ -13,69 +13,69 @@ export const IMAGES = {
   "ui.joy_smash": "/ui/joy_smash.png",
 
   // Common
-  "common.speech_bubble": "/img/speech_bubble.png",
+  "common.speech_bubble": "/sprites/speech_bubble.png",
 
   // Tutorial
-  "tutorial.bag": "/tutorial/img/bag.png",
-  "tutorial.banner": "/tutorial/img/banner.png",
-  "tutorial.schoolboard": "/tutorial/img/schoolboard.png",
-  "tutorial.crates": "/tutorial/img/crates.png",
-  "tutorial.flag": "/tutorial/img/flag.png",
-  "tutorial.ken1": "/tutorial/img/master_ken_1.png",
-  "tutorial.ken2": "/tutorial/img/master_ken_2.png",
-  "tutorial.signboard": "/tutorial/img/signboard.png",
-  "tutorial.tower": "/tutorial/img/tower.png",
+  "tutorial.bag": "/sprites/tutorial/bag.png",
+  "tutorial.banner": "/sprites/tutorial/banner.png",
+  "tutorial.schoolboard": "/sprites/tutorial/schoolboard.png",
+  "tutorial.crates": "/sprites/tutorial/crates.png",
+  "tutorial.flag": "/sprites/tutorial/flag.png",
+  "tutorial.ken1": "/sprites/tutorial/master_ken_1.png",
+  "tutorial.ken2": "/sprites/tutorial/master_ken_2.png",
+  "tutorial.signboard": "/sprites/tutorial/signboard.png",
+  "tutorial.tower": "/sprites/tutorial/tower.png",
 
-  "enemy.dummy": "/canvas/enemies/dummy.png",
-  "enemy.dummy_dead": "/canvas/enemies/dummy-dead.png",
+  "enemy.dummy": "/sprites/enemies/dummy.png",
+  "enemy.dummy_dead": "/sprites/enemies/dummy-dead.png",
 
   // Environment
-  "environment.sky": "/canvas/environments/sky.png",
-  "environment.clouds": "/canvas/environments/clouds.png",
-  "environment.mountains": "/canvas/environments/mountains.png",
-  "environment.fog": "/canvas/environments/fog.png",
-  "environment.forest": "/canvas/environments/forest.png",
-  "environment.forest_front": "/canvas/environments/forest_front.png",
-  "environment.ground": "/canvas/environments/ground.png",
+  "environment.sky": "/sprites/environments/sky.png",
+  "environment.clouds": "/sprites/environments/clouds.png",
+  "environment.mountains": "/sprites/environments/mountains.png",
+  "environment.fog": "/sprites/environments/fog.png",
+  "environment.forest": "/sprites/environments/forest.png",
+  "environment.forest_front": "/sprites/environments/forest_front.png",
+  "environment.ground": "/sprites/environments/ground.png",
 
   // Foreground
-  "environment.fg_fence1": "/canvas/environments/fg_fence1.png",
+  "environment.fg_fence1": "/sprites/environments/fg_fence1.png",
 
-  "environment.fg_pumpkin1": "/canvas/environments/fg_pumpkin1.png",
-  "environment.fg_pumpkin2": "/canvas/environments/fg_pumpkin2.png",
+  "environment.fg_pumpkin1": "/sprites/environments/fg_pumpkin1.png",
+  "environment.fg_pumpkin2": "/sprites/environments/fg_pumpkin2.png",
 
-  "environment.fg_stump1": "/canvas/environments/fg_stump1.png",
-  "environment.fg_stump2": "/canvas/environments/fg_stump2.png",
-  "environment.fg_stump3": "/canvas/environments/fg_stump3.png",
-  "environment.fg_stump4": "/canvas/environments/fg_stump4.png",
-  "environment.fg_stump5": "/canvas/environments/fg_stump5.png",
+  "environment.fg_stump1": "/sprites/environments/fg_stump1.png",
+  "environment.fg_stump2": "/sprites/environments/fg_stump2.png",
+  "environment.fg_stump3": "/sprites/environments/fg_stump3.png",
+  "environment.fg_stump4": "/sprites/environments/fg_stump4.png",
+  "environment.fg_stump5": "/sprites/environments/fg_stump5.png",
 
-  "environment.fg_tree1": "/canvas/environments/fg_tree1.png",
-  "environment.fg_tree2": "/canvas/environments/fg_tree2.png",
-  "environment.fg_tree3": "/canvas/environments/fg_tree3.png",
+  "environment.fg_tree1": "/sprites/environments/fg_tree1.png",
+  "environment.fg_tree2": "/sprites/environments/fg_tree2.png",
+  "environment.fg_tree3": "/sprites/environments/fg_tree3.png",
 
   // Leaves
-  "environment.leaf1": "/canvas/environments/leaf1.png",
-  "environment.leaf2": "/canvas/environments/leaf2.png",
-  "environment.leaf3": "/canvas/environments/leaf3.png",
-  "environment.leaf4": "/canvas/environments/leaf4.png",
-  "environment.leaf5": "/canvas/environments/leaf5.png",
-  "environment.leaf6": "/canvas/environments/leaf6.png",
+  "environment.leaf1": "/sprites/environments/leaf1.png",
+  "environment.leaf2": "/sprites/environments/leaf2.png",
+  "environment.leaf3": "/sprites/environments/leaf3.png",
+  "environment.leaf4": "/sprites/environments/leaf4.png",
+  "environment.leaf5": "/sprites/environments/leaf5.png",
+  "environment.leaf6": "/sprites/environments/leaf6.png",
 
   // Players
-  "player.batcat": "/canvas/players/batcat.png",
-  "player.carrambacat": "/canvas/players/carrambacat.png",
-  "player.commandocat": "/canvas/players/commandocat.png",
-  "player.cybercat": "/canvas/players/cybercat.png",
-  "player.darkcat": "/canvas/players/darkcat.png",
-  "player.ghostcat": "/canvas/players/ghostcat.png",
-  "player.ironcat": "/canvas/players/ironcat.png",
-  "player.punishcat": "/canvas/players/punishcat.png",
-  "player.robocat": "/canvas/players/robocat.png",
-  "player.samurcat": "/canvas/players/samurcat.png",
-  "player.termicator": "/canvas/players/termicator.png",
-  "player.zombocat": "/canvas/players/zombocat.png",
-  "player.kotan": "/canvas/players/kotan.png",
+  "player.batcat": "/sprites/players/batcat.png",
+  "player.carrambacat": "/sprites/players/carrambacat.png",
+  "player.commandocat": "/sprites/players/commandocat.png",
+  "player.cybercat": "/sprites/players/cybercat.png",
+  "player.darkcat": "/sprites/players/darkcat.png",
+  "player.ghostcat": "/sprites/players/ghostcat.png",
+  "player.ironcat": "/sprites/players/ironcat.png",
+  "player.punishcat": "/sprites/players/punishcat.png",
+  "player.robocat": "/sprites/players/robocat.png",
+  "player.samurcat": "/sprites/players/samurcat.png",
+  "player.termicator": "/sprites/players/termicator.png",
+  "player.zombocat": "/sprites/players/zombocat.png",
+  "player.kotan": "/sprites/players/kotan.png",
 
   // Player's portraits
   "playerPortrait.batcat": "/portraits/batcat.png",
@@ -93,34 +93,34 @@ export const IMAGES = {
   "playerPortrait.kotan": "/portraits/kotan.png",
 
   // Enemies
-  "enemy.crow": "/canvas/enemies/crow.png",
-  "enemy.crow_dead": "/canvas/enemies/crow-dead.png",
+  "enemy.crow": "/sprites/enemies/crow.png",
+  "enemy.crow_dead": "/sprites/enemies/crow-dead.png",
 
-  "enemy.boar": "/canvas/enemies/boar.png",
-  "enemy.boar_dead": "/canvas/enemies/boar-dead.png",
+  "enemy.boar": "/sprites/enemies/boar.png",
+  "enemy.boar_dead": "/sprites/enemies/boar-dead.png",
 
-  "enemy.rat": "/canvas/enemies/rat.png",
-  "enemy.rat_dead": "/canvas/enemies/rat-dead.png",
+  "enemy.rat": "/sprites/enemies/rat.png",
+  "enemy.rat_dead": "/sprites/enemies/rat-dead.png",
 
-  "enemy.orc": "/canvas/enemies/orc.png",
-  "enemy.orc_dead": "/canvas/enemies/orc-dead.png",
+  "enemy.orc": "/sprites/enemies/orc.png",
+  "enemy.orc_dead": "/sprites/enemies/orc-dead.png",
 
   // Civilians
-  "civilian.baba": "/canvas/civilians/baba.png",
-  "civilian.baba_dead": "/canvas/civilians/baba-dead.png",
+  "civilian.baba": "/sprites/civilians/baba.png",
+  "civilian.baba_dead": "/sprites/civilians/baba-dead.png",
 
-  "civilian.dido": "/canvas/civilians/dido.png",
-  "civilian.dido_dead": "/canvas/civilians/dido-dead.png",
+  "civilian.dido": "/sprites/civilians/dido.png",
+  "civilian.dido_dead": "/sprites/civilians/dido-dead.png",
 
   // Obstacles
-  "obstacle.cactus": "/canvas/obstacles/cactus.png",
-  "obstacle.rock": "/canvas/obstacles/rock.png",
-  "obstacle.stump": "/canvas/obstacles/stump.png",
-  "obstacle.bush": "/canvas/obstacles/bush.png",
+  "obstacle.cactus": "/sprites/obstacles/cactus.png",
+  "obstacle.rock": "/sprites/obstacles/rock.png",
+  "obstacle.stump": "/sprites/obstacles/stump.png",
+  "obstacle.bush": "/sprites/obstacles/bush.png",
 
   // Effects
-  "effect.screen_crack": "/canvas/effects/screen-crack.png",
-  "effect.smash": "/canvas/effects/smash.png",
+  "effect.screen_crack": "/sprites/effects/screen-crack.png",
+  "effect.smash": "/sprites/effects/smash.png",
 } as const;
 
 export const AUDIO = {

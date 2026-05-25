@@ -99,13 +99,13 @@ export class RenderHelper {
   public speech(ctx: CanvasRenderingContext2D, text: string, worldX: number, y: number): void {
     this.img(ctx, "common.speech_bubble", worldX, y, 1);
 
-    this.text(ctx, text, worldX + 200, y + 100, {
-      font: "700 18px Arial",
+    this.text(ctx, text, worldX + 200, y + 95, {
+      font: "700 22px Arial",
       color: "#2a1b12",
       align: "center",
-      rotation: -0.15,
-      maxWidth: 180,
-      lineHeight: 24,
+      rotation: -0.1,
+      maxWidth: 220,
+      lineHeight: 28,
       preserveNewlines: true,
     });
   }

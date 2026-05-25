@@ -3,7 +3,6 @@ import type { GameSnapshot } from "@smashing-cats/protocol";
 import type { RenderViewport } from "../../viewport.js";
 import { getImageAsset, images } from "../../../assetManager/assetManager.js";
 
-const TILE_KEY = "environment.ground";
 const DESIGN_TILE_WIDTH = 800;
 const GROUND_OFFSET_Y = -55;
 
@@ -13,15 +12,7 @@ export class GroundRenderer {
   public constructor(private readonly scene: Phaser.Scene) {}
 
   public draw(snapshot: GameSnapshot, viewport: RenderViewport): void {
-    const image = images.getLoaded(getImageAsset(TILE_KEY));
-
-    if (!image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
-      return;
-    }
-
-    if (!this.scene.textures.exists(TILE_KEY)) {
-      this.scene.textures.addImage(TILE_KEY, image);
-    }
+    const image = images.getLoaded(getImageAsset("environment.ground"));
 
     const tileWidth = viewport.worldToScreenSize(DESIGN_TILE_WIDTH);
     const tileHeight = image.naturalHeight * (tileWidth / image.naturalWidth);
@@ -57,7 +48,7 @@ export class GroundRenderer {
 
   private ensureTiles(count: number): void {
     while (this.tiles.length < count) {
-      const tile = this.scene.add.image(0, 0, TILE_KEY);
+      const tile = this.scene.add.image(0, 0, "environment.ground");
       tile.setDepth(10);
       this.tiles.push(tile);
     }

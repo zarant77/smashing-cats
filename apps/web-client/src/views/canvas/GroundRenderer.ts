@@ -2,8 +2,6 @@ import type { GameSnapshot } from "@smashing-cats/protocol";
 import { getImageAsset, images } from "../../assetManager/assetManager.js";
 import type { RenderViewport } from "../viewport.js";
 
-const TILE_KEY = "environment.ground";
-
 const DESIGN_TILE_WIDTH = 800;
 const GROUND_OFFSET_Y = -55;
 
@@ -14,7 +12,7 @@ export class GroundRenderer {
     snapshot: GameSnapshot,
     viewport: RenderViewport,
   ): void {
-    const image = images.getLoaded(getImageAsset(TILE_KEY));
+    const image = images.getLoaded(getImageAsset("environment.ground"));
 
     const tileWidth = viewport.worldToScreenSize(DESIGN_TILE_WIDTH);
     const groundY = viewport.worldToScreenY(snapshot.world.groundY + GROUND_OFFSET_Y);

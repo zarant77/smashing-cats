@@ -18,7 +18,6 @@ import type { TouchControls } from "../ui/TouchControls.js";
 import { createLocalGame } from "./localGame.js";
 
 const LOCAL_PLAYER_ID = "p1";
-const TUTORIAL_DONE_KEY = "tutorial-done";
 const VIEWPORT_RIGHT_PADDING = 48;
 
 type GameRuntimeOptions = {
