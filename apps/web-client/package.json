@@ -11,7 +11,7 @@
     "dev:lite": "pnpm prepare-assets:lite && VITE_RENDERER_BUNDLE=canvas vite --host 0.0.0.0",
     "dev:phaser": "pnpm prepare-assets:phaser && VITE_RENDERER_BUNDLE=phaser vite --host 0.0.0.0",
     "dev:experimental": "pnpm prepare-assets:experimental && VITE_RENDERER_BUNDLE=all vite --host 0.0.0.0",
-    "build": "vite build",
+    "build": "pnpm prepare-assets:lite && VITE_RENDERER_BUNDLE=canvas vite build",
     "build:lite": "pnpm prepare-assets:lite && VITE_RENDERER_BUNDLE=canvas vite build",
     "build:phaser": "pnpm prepare-assets:phaser && VITE_RENDERER_BUNDLE=phaser vite build",
     "build:experimental": "pnpm prepare-assets:experimental && VITE_RENDERER_BUNDLE=all vite build",
