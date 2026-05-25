@@ -1,11 +1,12 @@
 import { GAME_CONFIG, Game } from "@smashing-cats/core";
 
 type CreateLocalGameOptions = {
+  seed?: number;
   tutorialEnabled?: boolean;
 };
 
 export function createLocalGame(options: CreateLocalGameOptions = {}): Game {
-  const game = new Game(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
+  const game = new Game(options.seed ?? createLocalGameSeed());
 
   game.startTutorial({
     ...GAME_CONFIG.tutorial,
@@ -13,4 +14,8 @@ export function createLocalGame(options: CreateLocalGameOptions = {}): Game {
   });
 
   return game;
+}
+
+export function createLocalGameSeed(): number {
+  return Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
 }

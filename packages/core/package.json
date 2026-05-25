@@ -7,7 +7,14 @@
     ".": "./src/index.ts",
     "./config/characters.json": "./src/config/characters.json"
   },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
   "dependencies": {
     "@smashing-cats/protocol": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.7"
   }
 }

@@ -5,6 +5,7 @@ import {
   SNAPSHOT_INTERVAL_TICKS,
   TICK_RATE,
   createDeltaSnapshot,
+  verifyGameReplay,
 } from "@smashing-cats/core";
 import {
   normalizeMessage,
@@ -13,9 +14,11 @@ import {
   type DeltaSnapshot,
   type GameEvent,
   type GameSnapshot,
+  type LeaderboardMode,
   type ServerToClientMessage,
 } from "@smashing-cats/protocol";
 import type { WebSocket } from "ws";
+import { leaderboardStore } from "./leaderboard.js";
 
 type Client = {
   socket: WebSocket;
@@ -26,11 +29,18 @@ type Match = {
   code: string;
   game: Game;
   playerIds: Set<string>;
+  leaderboardProcessedPlayerIds: Set<string>;
   lastFullSnapshot: GameSnapshot | undefined;
   lastNetworkSnapshot: GameSnapshot | undefined;
   pendingEvents: GameEvent[];
   ticksSinceFullSnapshot: number;
   cleanupTimeout: NodeJS.Timeout | undefined;
+};
+
+type PendingLeaderboardSubmission = {
+  mode: LeaderboardMode;
+  characterKind: string;
+  score: number;
 };
 
 type RoomOptions = {
@@ -39,11 +49,14 @@ type RoomOptions = {
 
 const FULL_SNAPSHOT_INTERVAL_TICKS = TICK_RATE * 60;
 const EMPTY_MATCH_CLEANUP_MS = 10_000;
+const REPLAY_VERIFICATION_COOLDOWN_MS = 5_000;
 
 export class Room {
   private readonly clients = new Map<string, Client>();
   private readonly matches = new Map<string, Match>();
   private readonly playerMatchCodes = new Map<string, string>();
+  private readonly pendingLeaderboardSubmissions = new Map<string, PendingLeaderboardSubmission>();
+  private readonly lastReplayVerificationSubmitAt = new Map<string, number>();
   private readonly onEmpty: () => void;
 
   private interval: NodeJS.Timeout | undefined;
@@ -155,6 +168,7 @@ export class Room {
     match.ticksSinceFullSnapshot += 1;
 
     const snapshot = match.game.createSnapshot();
+    this.processLeaderboardEligibility(match, snapshot);
     match.pendingEvents.push(...snapshot.events);
 
     if (snapshot.tick % SNAPSHOT_INTERVAL_TICKS !== 0) {
@@ -202,6 +216,7 @@ export class Room {
     console.log(`[room] removing client ${playerId}`);
 
     this.clients.delete(playerId);
+    this.lastReplayVerificationSubmitAt.delete(playerId);
     this.removePlayerFromMatch(playerId);
 
     if (this.clients.size > 0) {
@@ -234,6 +249,18 @@ export class Room {
       case "pause":
         this.handlePause(playerId, message.paused);
         return;
+
+      case "getLeaderboard":
+        this.sendLeaderboard(playerId, message.mode);
+        return;
+
+      case "submitLeaderboardEntry":
+        this.submitLeaderboardEntry(playerId, message.playerName);
+        return;
+
+      case "submitReplayForVerification":
+        this.submitReplayForVerification(playerId, message.replay);
+        return;
     }
   }
 
@@ -250,7 +277,9 @@ export class Room {
     const match = this.getOrCreateMatch(normalizedMatchCode);
 
     match.playerIds.add(playerId);
+    match.leaderboardProcessedPlayerIds.delete(playerId);
     this.playerMatchCodes.set(playerId, match.code);
+    this.pendingLeaderboardSubmissions.delete(playerId);
 
     match.game.addPlayer(playerId, characterKind);
 
@@ -298,6 +327,106 @@ export class Room {
     match.game.setPaused(playerId, paused);
   }
 
+  private sendLeaderboard(playerId: string, mode: LeaderboardMode): void {
+    const client = this.clients.get(playerId);
+
+    if (client === undefined) {
+      return;
+    }
+
+    this.send(client.socket, {
+      type: "leaderboard",
+      mode,
+      entries: leaderboardStore.getTop(mode),
+    });
+  }
+
+  private submitLeaderboardEntry(playerId: string, playerName: string): void {
+    const client = this.clients.get(playerId);
+    const pending = this.pendingLeaderboardSubmissions.get(playerId);
+
+    if (client === undefined || pending === undefined) {
+      return;
+    }
+
+    this.pendingLeaderboardSubmissions.delete(playerId);
+
+    const entry = leaderboardStore.insertEntry({
+      mode: pending.mode,
+      playerName,
+      characterKind: pending.characterKind,
+      score: pending.score,
+    });
+
+    this.send(client.socket, {
+      type: "leaderboardSubmitted",
+      mode: pending.mode,
+      entry,
+      entries: leaderboardStore.getTop(pending.mode),
+    });
+  }
+
+  private submitReplayForVerification(
+    playerId: string,
+    replay: Extract<ClientToServerMessage, { type: "submitReplayForVerification" }>["replay"],
+  ): void {
+    const client = this.clients.get(playerId);
+
+    if (client === undefined) {
+      return;
+    }
+
+    const now = Date.now();
+    const lastSubmitAt = this.lastReplayVerificationSubmitAt.get(playerId) ?? 0;
+
+    if (now - lastSubmitAt < REPLAY_VERIFICATION_COOLDOWN_MS) {
+      this.send(client.socket, {
+        type: "replayVerificationRejected",
+        reason: "Replay verification is on cooldown",
+      });
+      return;
+    }
+
+    this.lastReplayVerificationSubmitAt.set(playerId, now);
+
+    const result = verifyGameReplay(replay);
+
+    if (!result.valid) {
+      this.pendingLeaderboardSubmissions.delete(playerId);
+      this.send(client.socket, {
+        type: "replayVerificationRejected",
+        reason: result.reason ?? "Replay verification failed",
+      });
+      return;
+    }
+
+    const mode: LeaderboardMode = "single";
+    const place = leaderboardStore.getEligiblePlace(mode, result.actualScore);
+
+    if (place === undefined) {
+      this.pendingLeaderboardSubmissions.delete(playerId);
+      this.send(client.socket, {
+        type: "replayVerificationRejected",
+        reason: "Score did not reach leaderboard",
+      });
+      return;
+    }
+
+    this.pendingLeaderboardSubmissions.delete(playerId);
+    this.pendingLeaderboardSubmissions.set(playerId, {
+      mode,
+      characterKind: replay.playerKind,
+      score: result.actualScore,
+    });
+
+    this.send(client.socket, {
+      type: "replayVerificationAccepted",
+      mode,
+      score: result.actualScore,
+      place,
+    });
+  }
+
   private getOrCreateMatch(code: string): Match {
     const existingMatch = this.matches.get(code);
 
@@ -310,6 +439,7 @@ export class Room {
       code,
       game: new Game(1337),
       playerIds: new Set<string>(),
+      leaderboardProcessedPlayerIds: new Set<string>(),
       lastFullSnapshot: undefined,
       lastNetworkSnapshot: undefined,
       pendingEvents: [],
@@ -344,6 +474,7 @@ export class Room {
     match.playerIds.delete(playerId);
     match.game.removePlayer(playerId);
     this.playerMatchCodes.delete(playerId);
+    this.pendingLeaderboardSubmissions.delete(playerId);
 
     if (match.playerIds.size === 0) {
       this.scheduleMatchCleanup(match);
@@ -379,6 +510,40 @@ export class Room {
 
   private isSingleplayerMatch(match: Match): boolean {
     return match.playerIds.size === 1;
+  }
+
+  private processLeaderboardEligibility(match: Match, snapshot: GameSnapshot): void {
+    const mode: LeaderboardMode = this.isSingleplayerMatch(match) ? "single" : "multi";
+
+    for (const player of snapshot.players) {
+      if (player.alive || match.leaderboardProcessedPlayerIds.has(player.playerId)) {
+        continue;
+      }
+
+      match.leaderboardProcessedPlayerIds.add(player.playerId);
+
+      if (!leaderboardStore.isEligible(mode, player.score)) {
+        continue;
+      }
+
+      this.pendingLeaderboardSubmissions.set(player.playerId, {
+        mode,
+        characterKind: player.kind,
+        score: player.score,
+      });
+
+      const client = this.clients.get(player.playerId);
+
+      if (client === undefined) {
+        continue;
+      }
+
+      this.send(client.socket, {
+        type: "leaderboardEligible",
+        mode,
+        score: player.score,
+      });
+    }
   }
 
   private broadcastFullSnapshot(match: Match): void {

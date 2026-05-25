@@ -17,6 +17,8 @@ const ORIENTATION_CLASSES = [
   "landscape-secondary",
 ] as const;
 
+const unlockEvents = ["pointerdown", "touchstart", "mousedown", "keydown"] as const;
+
 export class DeviceController {
   public static readonly instance = new DeviceController();
 
@@ -25,8 +27,8 @@ export class DeviceController {
     Set<Listener<DeviceControllerEvents[keyof DeviceControllerEvents]>>
   >();
 
+  private unlockSetup = false;
   private tiltEnabled = false;
-  private tiltAllowed = true;
   private vibrationEnabled = true;
 
   private constructor() {
@@ -38,12 +40,6 @@ export class DeviceController {
 
   public setVibrationEnabled(isEnabled: boolean): this {
     this.vibrationEnabled = isEnabled;
-
-    return this;
-  }
-
-  public setTiltEnabled(isEnabled: boolean): this {
-    this.tiltAllowed = isEnabled;
 
     return this;
   }
@@ -78,10 +74,6 @@ export class DeviceController {
   }
 
   public async enableTilt(): Promise<boolean> {
-    if (!this.tiltAllowed) {
-      return false;
-    }
-
     if (this.tiltEnabled) {
       return true;
     }
@@ -127,6 +119,30 @@ export class DeviceController {
     return isNativeApp || window.matchMedia("(pointer: coarse)").matches;
   }
 
+  public setupUnlock(): this {
+    if (this.unlockSetup || this.tiltEnabled) {
+      return this;
+    }
+
+    this.unlockSetup = true;
+
+    const unlock = (): void => {
+      void this.enableTilt();
+
+      for (const eventName of unlockEvents) {
+        window.removeEventListener(eventName, unlock);
+      }
+
+      this.unlockSetup = false;
+    };
+
+    for (const eventName of unlockEvents) {
+      window.addEventListener(eventName, unlock, { once: true, passive: true });
+    }
+
+    return this;
+  }
+
   private readonly syncOrientation = (): void => {
     document.body.classList.remove(...ORIENTATION_CLASSES);
 
@@ -150,10 +166,6 @@ export class DeviceController {
   }
 
   private readonly handleDeviceOrientation = (event: DeviceOrientationEvent): void => {
-    if (!this.tiltAllowed) {
-      return;
-    }
-
     this.emit("tilt", { x: event.beta ?? 0, y: event.gamma ?? 0 });
   };
 

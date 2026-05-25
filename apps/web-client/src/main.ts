@@ -117,6 +117,23 @@ async function bootstrap(): Promise<void> {
     matchCode,
     touchControls,
     onCharacterStateChange: renderCharacterSelect,
+    onLeaderboard: (entries) => {
+      gameOverPopup?.setLeaderboard(entries);
+    },
+    onLeaderboardEligible: ({ score }) => {
+      gameOverPopup?.setLeaderboardEligible(score);
+    },
+    onLeaderboardSubmitted: ({ entries }) => {
+      gameOverPopup?.setLeaderboardSubmitted(entries);
+    },
+    onReplayVerificationAccepted: ({ score }) => {
+      gameOverPopup?.setReplayVerificationAccepted(score);
+    },
+    onReplayVerificationRejected: ({ reason }) => {
+      console.warn("Replay verification rejected", reason);
+      gameOverPopup?.setReplayVerificationRejected();
+      runtime?.requestLeaderboard();
+    },
     getVisibleWorldWidth: () => getViewSize(root).visibleWorldWidth,
     render: (snapshot, playerId) => {
       lastSnapshot = snapshot;
@@ -137,6 +154,13 @@ async function bootstrap(): Promise<void> {
       playSound("sound.ui_click");
       runtime?.restart();
     },
+    onLeaderboardRequest: () => {
+      runtime?.requestLeaderboard();
+    },
+    onLeaderboardSubmit: (playerName) => {
+      runtime?.submitLeaderboardEntry(playerName);
+    },
+    verifyReplay: !multiplayer,
   });
 
   characterSelect = new CharacterSelect(uiRoot, {
@@ -254,11 +278,17 @@ async function bootstrap(): Promise<void> {
     bindViewShortcuts();
   }
 
+  deviceController.setVibrationEnabled(storage.vibration);
+
   if (isNativeApp) {
     musicEvents.gameplay();
+
+    void deviceController.enableTilt();
   } else {
     setupMusicUnlock();
     bindFullscreenGesture();
+
+    deviceController.setupUnlock();
   }
 
   // Run the game

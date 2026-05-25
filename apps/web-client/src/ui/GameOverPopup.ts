@@ -1,29 +1,48 @@
-import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
+import type { GameSnapshot, LeaderboardEntry, PlayerId } from "@smashing-cats/protocol";
+import { TICK_RATE } from "@smashing-cats/core";
 import { getDeathPhrase, i18n, t } from "@smashing-cats/i18n";
 
 type GameOverPopupOptions = {
   onRestart: () => void;
+  onLeaderboardRequest: () => void;
+  onLeaderboardSubmit: (playerName: string) => void;
+  verifyReplay?: boolean;
 };
 
 const SHOW_DELAY_MS = 2000;
 const SPEECH_DELAY_MS = 1000;
 
+type ReplayVerificationStatus = "idle" | "pending" | "accepted" | "rejected";
+
 export class GameOverPopup {
   private readonly element: HTMLDivElement;
   private readonly onRestart: () => void;
+  private readonly onLeaderboardRequest: () => void;
+  private readonly onLeaderboardSubmit: (playerName: string) => void;
+  private readonly verifyReplay: boolean;
 
   private visible = false;
   private speechVisible = false;
+  private leaderboardRequested = false;
+  private leaderboardEligible = false;
+  private leaderboardSubmitted = false;
+  private replayVerificationStatus: ReplayVerificationStatus = "idle";
 
   private deadAt: number | undefined;
   private shownForPlayerId: PlayerId | undefined;
 
   private kind: string | undefined;
   private score = 0;
+  private elapsedSeconds = 0;
+  private eligibleScore = 0;
+  private leaderboardEntries: LeaderboardEntry[] = [];
   private speechPhrase = "";
 
   public constructor(root: HTMLElement, options: GameOverPopupOptions) {
     this.onRestart = options.onRestart;
+    this.onLeaderboardRequest = options.onLeaderboardRequest;
+    this.onLeaderboardSubmit = options.onLeaderboardSubmit;
+    this.verifyReplay = options.verifyReplay === true;
 
     this.element = document.createElement("div");
     this.element.className = "game-over-popup";
@@ -43,12 +62,7 @@ export class GameOverPopup {
     const player = snapshot?.players.find((item) => item.playerId === localPlayerId);
 
     if (player === undefined || player.alive) {
-      this.deadAt = undefined;
-      this.shownForPlayerId = undefined;
-      this.kind = undefined;
-      this.score = 0;
-      this.speechPhrase = "";
-
+      this.reset();
       this.hide();
       return;
     }
@@ -58,6 +72,7 @@ export class GameOverPopup {
       this.deadAt = performance.now();
       this.kind = player.kind;
       this.score = player.score;
+      this.elapsedSeconds = Math.max(0, Math.floor((snapshot?.tick ?? 0) / TICK_RATE));
       this.speechPhrase = getDeathPhrase(player.kind);
     }
 
@@ -78,6 +93,35 @@ export class GameOverPopup {
     }
   }
 
+  public setLeaderboard(entries: LeaderboardEntry[]): void {
+    this.leaderboardEntries = entries;
+    this.rerender();
+  }
+
+  public setLeaderboardEligible(score: number): void {
+    this.leaderboardEligible = true;
+    this.eligibleScore = score;
+    this.rerender();
+  }
+
+  public setReplayVerificationAccepted(score: number): void {
+    this.replayVerificationStatus = "accepted";
+    this.setLeaderboardEligible(score);
+  }
+
+  public setReplayVerificationRejected(): void {
+    this.replayVerificationStatus = "rejected";
+    this.leaderboardEligible = false;
+    this.rerender();
+  }
+
+  public setLeaderboardSubmitted(entries: LeaderboardEntry[]): void {
+    this.leaderboardSubmitted = true;
+    this.leaderboardEligible = false;
+    this.leaderboardEntries = entries;
+    this.rerender();
+  }
+
   private show(kind: string, score: number): void {
     this.kind = kind;
     this.score = score;
@@ -90,46 +134,203 @@ export class GameOverPopup {
     this.speechVisible = false;
     this.element.hidden = false;
 
+    if (this.verifyReplay && this.replayVerificationStatus === "idle") {
+      this.replayVerificationStatus = "pending";
+    }
+
+    if (!this.leaderboardEligible && !this.leaderboardRequested) {
+      this.leaderboardRequested = true;
+      this.onLeaderboardRequest();
+    }
+
     this.renderContent(kind, score);
   }
 
   private renderContent(kind: string, score: number): void {
-    const speechHidden = this.speechVisible ? "" : "hidden";
-
     this.element.innerHTML = `
-      <div class="card">
-        <h2>${t("gameOverTitle")}</h2>
-
-        <div class="character-preview">
-          <div class="game-over-speech" ${speechHidden}>
-            ${this.speechPhrase}
-          </div>
-
-          <img
-            class="platform"
-            src="/ui/character_platform.png"
-            alt="${kind}"
-          />
-          <img
-            class="portrait"
-            src="/portraits/${kind}.png"
-            alt="${kind}"
-          />
-        </div>
-
-        <div class="score">
-          ${t("score")}: <strong>${score}</strong>
-        </div>
-
-        <button class="button restart" type="button">
-          ${t("restart")}
-        </button>
+      <div class="game-over-card">
+        ${this.renderHeader()}
+        ${this.renderMain(kind, score)}
+        ${this.renderFooter()}
       </div>
     `;
 
-    this.element.querySelector<HTMLButtonElement>(".restart")?.addEventListener("click", () => {
+    this.bindEvents();
+  }
+
+  private renderHeader(): string {
+    return `
+      <header class="game-over-header">
+        <h2 class="game-over-title">${t("gameOverTitle")}</h2>
+      </header>
+    `;
+  }
+
+  private renderMain(kind: string, score: number): string {
+    return `
+      <main class="game-over-main">
+        ${this.renderHero(kind, score)}
+        ${this.renderLeaderboard()}
+      </main>
+    `;
+  }
+
+  private renderHero(kind: string, score: number): string {
+    const speechHidden = this.speechVisible ? "" : "hidden";
+
+    return `
+      <section class="game-over-hero" aria-label="${t("gameOverCharacter")}">
+        <div class="game-over-character">
+          <div class="game-over-speech" ${speechHidden}>
+            ${escapeHtml(this.speechPhrase)}
+          </div>
+
+          <img
+            class="game-over-platform"
+            src="/ui/character_platform.png"
+            alt=""
+          />
+
+          <img
+            class="game-over-portrait"
+            src="/portraits/${escapeHtml(kind)}.png"
+            alt="${escapeHtml(kind)}"
+          />
+        </div>
+
+        <dl class="game-over-stats">
+          <div class="game-over-stat">
+            <dt>${t("score")}</dt>
+            <dd>${score}</dd>
+          </div>
+
+          <div class="game-over-stat">
+            <dt>${t("time")}</dt>
+            <dd>${this.renderElapsedTime()}</dd>
+          </div>
+        </dl>
+      </section>
+    `;
+  }
+
+  private renderLeaderboard(): string {
+    return `
+      <section class="game-over-leaderboard" aria-label="${t("leaderboard")}">
+        <header class="game-over-leaderboard-header">
+          <h3 class="game-over-leaderboard-title">${t("leaderboard")}</h3>
+        </header>
+
+        <div class="game-over-leaderboard-body">
+          ${this.renderReplayVerificationStatus()}
+          ${this.renderLeaderboardStatus()}
+          ${this.renderLeaderboardRows()}
+        </div>
+      </section>
+    `;
+  }
+
+  private renderReplayVerificationStatus(): string {
+    if (!this.verifyReplay || this.leaderboardSubmitted) {
+      return "";
+    }
+
+    if (this.replayVerificationStatus === "pending") {
+      return `<p class="game-over-leaderboard-status replay-pending">${t("verifyingRun")}</p>`;
+    }
+
+    if (this.replayVerificationStatus === "accepted") {
+      return `<p class="game-over-leaderboard-status replay-accepted">${t("runVerified")}</p>`;
+    }
+
+    if (this.replayVerificationStatus === "rejected") {
+      return `<p class="game-over-leaderboard-status replay-rejected">${t("runVerificationFailed")}</p>`;
+    }
+
+    return "";
+  }
+
+  private renderLeaderboardStatus(): string {
+    if (this.leaderboardEligible) {
+      return `
+        <form class="game-over-leaderboard-form">
+          <label class="game-over-leaderboard-label">
+            <span>${t("top10Score")}: ${this.eligibleScore}</span>
+            <input
+              class="game-over-leaderboard-name"
+              name="playerName"
+              maxlength="16"
+              autocomplete="off"
+              value="${t("playerNameDefault")}"
+            />
+          </label>
+
+          <button class="button game-over-leaderboard-submit" type="submit">
+            ${t("submit")}
+          </button>
+        </form>
+      `;
+    }
+
+    if (this.leaderboardSubmitted) {
+      return `<p class="game-over-leaderboard-status">${t("submitted")}</p>`;
+    }
+
+    if (this.leaderboardRequested && this.leaderboardEntries.length === 0) {
+      return `<p class="game-over-leaderboard-status">${t("noScoresYet")}</p>`;
+    }
+
+    return "";
+  }
+
+  private renderLeaderboardRows(): string {
+    if (this.leaderboardEntries.length === 0) {
+      return "";
+    }
+
+    return `
+      <ol class="game-over-leaderboard-list">
+        ${this.leaderboardEntries
+          .map(
+            (entry) => `
+              <li class="game-over-leaderboard-row">
+                <span class="game-over-leaderboard-name-text">${escapeHtml(entry.playerName)}</span>
+                <strong class="game-over-leaderboard-score">${entry.score}</strong>
+              </li>
+            `,
+          )
+          .join("")}
+      </ol>
+    `;
+  }
+
+  private renderFooter(): string {
+    return `
+      <footer class="game-over-footer">
+        <button class="button game-over-restart" type="button">
+          ${t("restart")}
+        </button>
+      </footer>
+    `;
+  }
+
+  private bindEvents(): void {
+    this.element.querySelector<HTMLButtonElement>(".game-over-restart")?.addEventListener("click", () => {
       this.onRestart();
     });
+
+    this.element.querySelector<HTMLFormElement>(".game-over-leaderboard-form")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      const input = this.element.querySelector<HTMLInputElement>(".game-over-leaderboard-name");
+      this.onLeaderboardSubmit(input?.value ?? "");
+    });
+  }
+
+  private renderElapsedTime(): string {
+    const minutes = Math.floor(this.elapsedSeconds / 60);
+    const seconds = this.elapsedSeconds % 60;
+
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   }
 
   private showSpeech(): void {
@@ -143,6 +344,29 @@ export class GameOverPopup {
     speech?.removeAttribute("hidden");
   }
 
+  private rerender(): void {
+    if (this.visible && this.kind !== undefined) {
+      this.renderContent(this.kind, this.score);
+    }
+  }
+
+  private reset(): void {
+    this.deadAt = undefined;
+    this.shownForPlayerId = undefined;
+
+    this.kind = undefined;
+    this.score = 0;
+    this.elapsedSeconds = 0;
+    this.eligibleScore = 0;
+    this.leaderboardEntries = [];
+    this.speechPhrase = "";
+
+    this.leaderboardRequested = false;
+    this.leaderboardEligible = false;
+    this.leaderboardSubmitted = false;
+    this.replayVerificationStatus = "idle";
+  }
+
   private hide(): void {
     if (!this.visible) {
       return;
@@ -154,4 +378,23 @@ export class GameOverPopup {
     this.element.hidden = true;
     this.element.replaceChildren();
   }
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (character) => {
+    switch (character) {
+      case "&":
+        return "&amp;";
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      case '"':
+        return "&quot;";
+      case "'":
+        return "&#39;";
+      default:
+        return character;
+    }
+  });
 }

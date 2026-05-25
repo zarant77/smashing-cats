@@ -39,7 +39,8 @@
     "typecheck": "pnpm -r typecheck",
     "typecheck:server": "pnpm --filter @smashing-cats/server typecheck",
     "typecheck:web": "pnpm --filter @smashing-cats/web-client typecheck",
-    "typecheck:cli": "pnpm --filter @smashing-cats/cli-client typecheck"
+    "typecheck:cli": "pnpm --filter @smashing-cats/cli-client typecheck",
+    "test": "pnpm -r --if-present test"
   },
   "devDependencies": {
     "@inquirer/prompts": "^8.4.3",

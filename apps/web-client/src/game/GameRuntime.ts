@@ -4,7 +4,15 @@ import type {
   CharacterDefinition,
   EntitySnapshot,
   GameSnapshot,
+  GameReplay,
   InputMessage,
+  ClientToServerMessage,
+  LeaderboardEntry,
+  LeaderboardEligibleMessage,
+  LeaderboardMode,
+  ReplayVerificationAcceptedMessage,
+  ReplayVerificationRejectedMessage,
+  LeaderboardSubmittedMessage,
   PlayerId,
   PlayerInput,
   PlayerSnapshot,
@@ -15,7 +23,8 @@ import { storage } from "../storage.js";
 import { consumePauseToggle, isPaused, setPaused as setInputPaused, togglePause, readInput } from "../input.js";
 import { createSocket, parseServerMessage, sendClientMessage } from "../network/clientConnection.js";
 import type { TouchControls } from "../ui/TouchControls.js";
-import { createLocalGame } from "./localGame.js";
+import { createLocalGame, createLocalGameSeed } from "./localGame.js";
+import { ReplayRecorder } from "./ReplayRecorder.js";
 
 const LOCAL_PLAYER_ID = "p1";
 const VIEWPORT_RIGHT_PADDING = 48;
@@ -25,6 +34,11 @@ type GameRuntimeOptions = {
   matchCode: string | undefined;
   touchControls: TouchControls | undefined;
   onCharacterStateChange(): void;
+  onLeaderboard(entries: LeaderboardEntry[]): void;
+  onLeaderboardEligible(message: LeaderboardEligibleMessage): void;
+  onLeaderboardSubmitted(message: LeaderboardSubmittedMessage): void;
+  onReplayVerificationAccepted(message: ReplayVerificationAcceptedMessage): void;
+  onReplayVerificationRejected(message: ReplayVerificationRejectedMessage): void;
   getVisibleWorldWidth(): number;
   render(snapshot: GameSnapshot | undefined, playerId: PlayerId | undefined): void;
 };
@@ -34,6 +48,11 @@ export class GameRuntime {
   private readonly matchCode: string | undefined;
   private readonly touchControls: TouchControls | undefined;
   private readonly onCharacterStateChange: () => void;
+  private readonly onLeaderboard: (entries: LeaderboardEntry[]) => void;
+  private readonly onLeaderboardEligible: (message: LeaderboardEligibleMessage) => void;
+  private readonly onLeaderboardSubmitted: (message: LeaderboardSubmittedMessage) => void;
+  private readonly onReplayVerificationAccepted: (message: ReplayVerificationAcceptedMessage) => void;
+  private readonly onReplayVerificationRejected: (message: ReplayVerificationRejectedMessage) => void;
   private readonly getVisibleWorldWidth: () => number;
   private readonly renderFrame: (snapshot: GameSnapshot | undefined, playerId: PlayerId | undefined) => void;
 
@@ -48,6 +67,9 @@ export class GameRuntime {
   private predictor = new LocalPlayerPredictor();
   private socket: WebSocket | undefined;
   private localGame: Game | undefined;
+  private replayRecorder: ReplayRecorder | undefined;
+  private completedReplay: GameReplay | undefined;
+  private pendingClientMessages: ClientToServerMessage[] = [];
   private previousLocalSnapshot: GameSnapshot | undefined;
   private localSnapshot: GameSnapshot | undefined;
   private lastLocalUpdateAt = performance.now();
@@ -58,12 +80,17 @@ export class GameRuntime {
     this.matchCode = options.matchCode;
     this.touchControls = options.touchControls;
     this.onCharacterStateChange = options.onCharacterStateChange;
+    this.onLeaderboard = options.onLeaderboard;
+    this.onLeaderboardEligible = options.onLeaderboardEligible;
+    this.onLeaderboardSubmitted = options.onLeaderboardSubmitted;
+    this.onReplayVerificationAccepted = options.onReplayVerificationAccepted;
+    this.onReplayVerificationRejected = options.onReplayVerificationRejected;
     this.getVisibleWorldWidth = options.getVisibleWorldWidth;
     this.renderFrame = options.render;
 
     this.charactersValue = this.multiplayer ? [] : [...CHARACTERS];
     this.playerId = this.multiplayer ? undefined : LOCAL_PLAYER_ID;
-    this.socket = this.multiplayer ? createSocket() : undefined;
+    this.socket = createSocket();
     this.localGame = this.multiplayer ? undefined : createLocalGame({ tutorialEnabled: !storage.tutorialDone });
 
     this.bindSocketEvents();
@@ -89,6 +116,9 @@ export class GameRuntime {
     this.interpolator = new SnapshotInterpolator();
     this.snapshotStore = new SnapshotStore();
     this.predictor = new LocalPlayerPredictor();
+    this.replayRecorder = undefined;
+    this.completedReplay = undefined;
+    this.pendingClientMessages = [];
     this.previousLocalSnapshot = undefined;
     this.localSnapshot = undefined;
     this.lastLocalUpdateAt = performance.now();
@@ -125,7 +155,7 @@ export class GameRuntime {
         return false;
       }
 
-      sendClientMessage(this.socket, {
+      this.sendClientMessage({
         type: "selectCharacter",
         characterKind,
         matchCode,
@@ -134,16 +164,54 @@ export class GameRuntime {
     }
 
     this.playerId = LOCAL_PLAYER_ID;
-    this.localGame = createLocalGame({ tutorialEnabled: !storage.tutorialDone });
+    const seed = createLocalGameSeed();
+
+    this.localGame = createLocalGame({ seed, tutorialEnabled: !storage.tutorialDone });
     this.localGame.addPlayer(this.playerId, characterKind);
     this.localSnapshot = this.localGame.createSnapshot();
     this.previousLocalSnapshot = this.localSnapshot;
+    this.completedReplay = undefined;
+    this.replayRecorder = new ReplayRecorder({
+      gameVersion: __ASSET_VERSION__,
+      seed,
+      playerKind: characterKind,
+    });
 
     return true;
   }
 
   public start(): void {
     this.frame();
+  }
+
+  public requestLeaderboard(): void {
+    this.sendClientMessage({
+      type: "getLeaderboard",
+      mode: this.getLeaderboardMode(),
+    });
+  }
+
+  public submitLeaderboardEntry(playerName: string): void {
+    this.sendClientMessage({
+      type: "submitLeaderboardEntry",
+      playerName,
+    });
+  }
+
+  public submitReplayForVerification(replay: GameReplay): void {
+    this.sendClientMessage({
+      type: "submitReplayForVerification",
+      replay,
+    });
+  }
+
+  public getCompletedReplay(): GameReplay | undefined {
+    return this.completedReplay === undefined
+      ? undefined
+      : {
+          ...this.completedReplay,
+          inputs: this.completedReplay.inputs.map((input) => ({ ...input })),
+        };
   }
 
   public setPaused(paused: boolean): void {
@@ -154,7 +222,7 @@ export class GameRuntime {
     setInputPaused(paused);
 
     if (this.multiplayer) {
-      sendClientMessage(this.socket, {
+      this.sendClientMessage({
         type: "pause",
         paused,
       });
@@ -204,7 +272,11 @@ export class GameRuntime {
     }
 
     this.socket.addEventListener("open", () => {
-      sendClientMessage(this.socket, { type: "join" });
+      if (this.multiplayer) {
+        sendClientMessage(this.socket, { type: "join" });
+      }
+
+      this.flushPendingClientMessages();
     });
 
     this.socket.addEventListener("message", (event) => {
@@ -218,6 +290,10 @@ export class GameRuntime {
 
   private handleServerMessage(message: ServerToClientMessage): void {
     if (message.type === "welcome") {
+      if (!this.multiplayer) {
+        return;
+      }
+
       this.playerId = message.playerId;
       this.charactersValue = message.characters;
       this.onCharacterStateChange();
@@ -236,7 +312,58 @@ export class GameRuntime {
       if (snapshot !== undefined) {
         this.interpolator.add(snapshot);
       }
+
+      return;
     }
+
+    if (message.type === "leaderboard") {
+      this.onLeaderboard(message.entries);
+      return;
+    }
+
+    if (message.type === "leaderboardEligible") {
+      this.onLeaderboardEligible(message);
+      return;
+    }
+
+    if (message.type === "leaderboardSubmitted") {
+      this.onLeaderboardSubmitted(message);
+      return;
+    }
+
+    if (message.type === "replayVerificationAccepted") {
+      this.onReplayVerificationAccepted(message);
+      return;
+    }
+
+    if (message.type === "replayVerificationRejected") {
+      this.onReplayVerificationRejected(message);
+    }
+  }
+
+  private sendClientMessage(message: ClientToServerMessage): void {
+    if (this.socket?.readyState === WebSocket.OPEN) {
+      sendClientMessage(this.socket, message);
+      return;
+    }
+
+    if (this.socket?.readyState === WebSocket.CONNECTING) {
+      this.pendingClientMessages.push(message);
+    }
+  }
+
+  private flushPendingClientMessages(): void {
+    const messages = this.pendingClientMessages;
+
+    this.pendingClientMessages = [];
+
+    for (const message of messages) {
+      this.sendClientMessage(message);
+    }
+  }
+
+  private getLeaderboardMode(): LeaderboardMode {
+    return this.multiplayer ? "multi" : "single";
   }
 
   private frame(): void {
@@ -370,9 +497,26 @@ export class GameRuntime {
       this.previousLocalSnapshot = this.localSnapshot;
       this.localGame.update(FIXED_DT);
       this.localSnapshot = this.localGame.createSnapshot();
+      this.replayRecorder?.recordInput(this.localSnapshot.tick, input);
+      this.completeLocalReplay(this.localSnapshot, currentPlayerId);
       saveTutorialDoneIfFinished(this.previousLocalSnapshot, this.localSnapshot);
       this.localUpdateAccumulator -= FIXED_DT;
     }
+  }
+
+  private completeLocalReplay(snapshot: GameSnapshot, playerId: PlayerId): void {
+    if (this.completedReplay !== undefined) {
+      return;
+    }
+
+    const replay = this.replayRecorder?.complete(snapshot, playerId);
+
+    if (replay === undefined) {
+      return;
+    }
+
+    this.completedReplay = replay;
+    this.submitReplayForVerification(replay);
   }
 
   private getRenderSnapshot(currentInputSeq: number, input: PlayerInput): GameSnapshot | undefined {

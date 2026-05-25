@@ -4,4 +4,5 @@ export * from "./geometry.js";
 export * from "./input.js";
 export * from "./messages.js";
 export * from "./mini.js";
+export * from "./replay.js";
 export * from "./snapshot.js";
