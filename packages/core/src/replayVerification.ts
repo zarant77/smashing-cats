@@ -112,13 +112,65 @@ export function verifyGameReplay(replay: GameReplay): ReplayVerificationResult {
     };
   }
 
-  const game = new Game(seed);
-  const inputsByTick = createInputsByTick(replay.inputs);
+  const primarySimulation = simulateReplay({ replay, seed, tutorialCompleted: false });
+  const completedTutorialSimulation =
+    primarySimulation.actualScore === replay.finalScore && primarySimulation.actualFinalTick === replay.finalTick
+      ? primarySimulation
+      : simulateReplay({ replay, seed, tutorialCompleted: true });
+  const simulation =
+    completedTutorialSimulation.actualScore === replay.finalScore &&
+    completedTutorialSimulation.actualFinalTick === replay.finalTick
+      ? completedTutorialSimulation
+      : primarySimulation;
 
-  game.startTutorial(GAME_CONFIG.tutorial);
-  game.addPlayer(PLAYER_ID, replay.playerKind);
+  if (simulation.actualFinalTick !== replay.finalTick) {
+    return {
+      valid: false,
+      expectedScore: replay.finalScore,
+      actualScore: simulation.actualScore,
+      expectedFinalTick: replay.finalTick,
+      actualFinalTick: simulation.actualFinalTick,
+      reason: "Final tick mismatch",
+    };
+  }
 
-  for (let tick = 1; tick <= replay.finalTick; tick += 1) {
+  if (simulation.actualScore !== replay.finalScore) {
+    return {
+      valid: false,
+      expectedScore: replay.finalScore,
+      actualScore: simulation.actualScore,
+      expectedFinalTick: replay.finalTick,
+      actualFinalTick: simulation.actualFinalTick,
+      reason: "Final score mismatch",
+    };
+  }
+
+  return {
+    valid: true,
+    expectedScore: replay.finalScore,
+    actualScore: simulation.actualScore,
+    expectedFinalTick: replay.finalTick,
+    actualFinalTick: simulation.actualFinalTick,
+  };
+}
+
+type SimulateReplayOptions = {
+  replay: GameReplay;
+  seed: number;
+  tutorialCompleted: boolean;
+};
+
+function simulateReplay(options: SimulateReplayOptions): Pick<ReplayVerificationResult, "actualScore" | "actualFinalTick"> {
+  const game = new Game(options.seed);
+  const inputsByTick = createInputsByTick(options.replay.inputs);
+
+  game.startTutorial({
+    ...GAME_CONFIG.tutorial,
+    completed: options.tutorialCompleted,
+  });
+  game.addPlayer(PLAYER_ID, options.replay.playerKind);
+
+  for (let tick = 1; tick <= options.replay.finalTick; tick += 1) {
     const input = inputsByTick.get(tick) ?? EMPTY_INPUT;
 
     game.setInput(PLAYER_ID, input, undefined, tick);
@@ -127,37 +179,10 @@ export function verifyGameReplay(replay: GameReplay): ReplayVerificationResult {
 
   const snapshot = game.createSnapshot();
   const player = snapshot.players.find((item) => item.playerId === PLAYER_ID);
-  const actualScore = player?.score ?? 0;
-  const actualFinalTick = snapshot.tick;
-
-  if (actualFinalTick !== replay.finalTick) {
-    return {
-      valid: false,
-      expectedScore: replay.finalScore,
-      actualScore,
-      expectedFinalTick: replay.finalTick,
-      actualFinalTick,
-      reason: "Final tick mismatch",
-    };
-  }
-
-  if (actualScore !== replay.finalScore) {
-    return {
-      valid: false,
-      expectedScore: replay.finalScore,
-      actualScore,
-      expectedFinalTick: replay.finalTick,
-      actualFinalTick,
-      reason: "Final score mismatch",
-    };
-  }
 
   return {
-    valid: true,
-    expectedScore: replay.finalScore,
-    actualScore,
-    expectedFinalTick: replay.finalTick,
-    actualFinalTick,
+    actualScore: player?.score ?? 0,
+    actualFinalTick: snapshot.tick,
   };
 }
 

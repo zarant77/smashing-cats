@@ -66,7 +66,7 @@ export class LeaderboardStore {
   }
 
   public isEligible(mode: LeaderboardMode, score: number): boolean {
-    if (!Number.isInteger(score) || score < 0) {
+    if (!Number.isInteger(score) || score <= 0) {
       return false;
     }
 

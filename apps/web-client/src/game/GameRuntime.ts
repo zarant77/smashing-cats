@@ -199,6 +199,14 @@ export class GameRuntime {
   }
 
   public submitReplayForVerification(replay: GameReplay): void {
+    console.debug("[leaderboard] submitting replay for verification", {
+      finalScore: replay.finalScore,
+      finalTick: replay.finalTick,
+      inputFrames: replay.inputs.length,
+      mode: replay.mode,
+      seed: replay.seed,
+    });
+
     this.sendClientMessage({
       type: "submitReplayForVerification",
       replay,
@@ -317,26 +325,47 @@ export class GameRuntime {
     }
 
     if (message.type === "leaderboard") {
+      console.debug("[leaderboard] received leaderboard", {
+        mode: message.mode,
+        entries: message.entries.length,
+      });
       this.onLeaderboard(message.entries);
       return;
     }
 
     if (message.type === "leaderboardEligible") {
+      console.debug("[leaderboard] received leaderboardEligible", {
+        mode: message.mode,
+        score: message.score,
+      });
       this.onLeaderboardEligible(message);
       return;
     }
 
     if (message.type === "leaderboardSubmitted") {
+      console.debug("[leaderboard] received leaderboardSubmitted", {
+        mode: message.mode,
+        score: message.entry.score,
+        entries: message.entries.length,
+      });
       this.onLeaderboardSubmitted(message);
       return;
     }
 
     if (message.type === "replayVerificationAccepted") {
+      console.debug("[leaderboard] received replayVerificationAccepted", {
+        mode: message.mode,
+        score: message.score,
+        place: message.place,
+      });
       this.onReplayVerificationAccepted(message);
       return;
     }
 
     if (message.type === "replayVerificationRejected") {
+      console.debug("[leaderboard] received replayVerificationRejected", {
+        reason: message.reason,
+      });
       this.onReplayVerificationRejected(message);
     }
   }

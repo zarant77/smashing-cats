@@ -346,6 +346,7 @@ export class Room {
     const pending = this.pendingLeaderboardSubmissions.get(playerId);
 
     if (client === undefined || pending === undefined) {
+      console.log(`[leaderboard] submitLeaderboardEntry ignored player=${playerId} pending=${pending !== undefined}`);
       return;
     }
 
@@ -357,6 +358,10 @@ export class Room {
       characterKind: pending.characterKind,
       score: pending.score,
     });
+
+    console.log(
+      `[leaderboard] inserted row player=${playerId} mode=${pending.mode} score=${entry.score} name=${entry.playerName}`,
+    );
 
     this.send(client.socket, {
       type: "leaderboardSubmitted",
@@ -376,10 +381,15 @@ export class Room {
       return;
     }
 
+    console.log(
+      `[leaderboard] replay verification starts player=${playerId} finalScore=${replay.finalScore} finalTick=${replay.finalTick} inputs=${replay.inputs.length}`,
+    );
+
     const now = Date.now();
     const lastSubmitAt = this.lastReplayVerificationSubmitAt.get(playerId) ?? 0;
 
     if (now - lastSubmitAt < REPLAY_VERIFICATION_COOLDOWN_MS) {
+      console.log(`[leaderboard] replay verification rejected player=${playerId} reason=cooldown`);
       this.send(client.socket, {
         type: "replayVerificationRejected",
         reason: "Replay verification is on cooldown",
@@ -392,6 +402,9 @@ export class Room {
     const result = verifyGameReplay(replay);
 
     if (!result.valid) {
+      console.log(
+        `[leaderboard] replay verification rejected player=${playerId} reason=${result.reason ?? "unknown"} actualScore=${result.actualScore}`,
+      );
       this.pendingLeaderboardSubmissions.delete(playerId);
       this.send(client.socket, {
         type: "replayVerificationRejected",
@@ -402,8 +415,16 @@ export class Room {
 
     const mode: LeaderboardMode = "single";
     const place = leaderboardStore.getEligiblePlace(mode, result.actualScore);
+    const eligible = place !== undefined;
+
+    console.log(
+      `[leaderboard] replay verification valid player=${playerId} actualScore=${result.actualScore} place=${place ?? "none"} eligible=${eligible}`,
+    );
 
     if (place === undefined) {
+      console.log(
+        `[leaderboard] replay verification rejected player=${playerId} reason=score-not-eligible actualScore=${result.actualScore}`,
+      );
       this.pendingLeaderboardSubmissions.delete(playerId);
       this.send(client.socket, {
         type: "replayVerificationRejected",
@@ -418,6 +439,13 @@ export class Room {
       characterKind: replay.playerKind,
       score: result.actualScore,
     });
+
+    console.log(
+      `[leaderboard] replay verification accepted player=${playerId} actualScore=${result.actualScore} place=${place} eligible=${eligible}`,
+    );
+    console.log(
+      `[leaderboard] pending submission created player=${playerId} mode=${mode} score=${result.actualScore} character=${replay.playerKind}`,
+    );
 
     this.send(client.socket, {
       type: "replayVerificationAccepted",

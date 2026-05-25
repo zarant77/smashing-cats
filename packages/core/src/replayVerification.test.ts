@@ -29,6 +29,15 @@ describe("verifyGameReplay", () => {
     });
   });
 
+  test("verifies a replay generated after tutorial is already completed", () => {
+    const replay = createReplay(1337, createSeedSensitiveInputs(), { tutorialCompleted: true });
+    const result = verifyGameReplay(replay);
+
+    expect(replay.finalScore).toBeGreaterThan(0);
+    expect(result.valid).toBe(true);
+    expect(result.actualScore).toBe(replay.finalScore);
+  });
+
   test("fails when finalScore is tampered", () => {
     const replay = createReplay(1337, INPUTS);
     const result = verifyGameReplay({
@@ -148,10 +157,17 @@ describe("verifyGameReplay", () => {
   });
 });
 
-function createReplay(seed: number, inputs: readonly PlayerInput[]): GameReplay {
+type CreateReplayOptions = {
+  tutorialCompleted?: boolean;
+};
+
+function createReplay(seed: number, inputs: readonly PlayerInput[], options: CreateReplayOptions = {}): GameReplay {
   const game = new Game(seed);
 
-  game.startTutorial(GAME_CONFIG.tutorial);
+  game.startTutorial({
+    ...GAME_CONFIG.tutorial,
+    completed: options.tutorialCompleted === true,
+  });
   game.addPlayer(PLAYER_ID, PLAYER_KIND);
 
   for (let index = 0; index < inputs.length; index += 1) {
