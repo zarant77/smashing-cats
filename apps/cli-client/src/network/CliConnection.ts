@@ -3,7 +3,6 @@ import {
   normalizeMessage,
   minifyMessage,
   type CharacterDefinition,
-  type EntityKind,
   type GameSnapshot,
   type InputMessage,
   type PlayerId,
@@ -20,7 +19,7 @@ export type PlayerInput = {
 
 type CliConnectionOptions = {
   serverUrl: string;
-  characterKind: EntityKind;
+  characterKind: string;
   matchCode: string;
 
   onWelcome: (playerId: PlayerId, characters: CharacterDefinition[]) => void;

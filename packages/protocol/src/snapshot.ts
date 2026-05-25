@@ -1,4 +1,4 @@
-import type { EntityId, EntityKind, EntityType, PlayerId } from "./entity.js";
+import type { EntityId, EntityType, PlayerId } from "./entity.js";
 import { HurtCircle, Size, SmashBox } from "./geometry.js";
 
 export type AnimationSet = {
@@ -11,7 +11,7 @@ export type AnimationSet = {
 export type EntitySnapshot = {
   id: EntityId;
   type: EntityType;
-  kind: EntityKind;
+  kind: string;
   dummy?: boolean;
   x: number;
   y: number;
@@ -47,7 +47,7 @@ export type GameEvent = {
   playerId?: PlayerId;
   entityId: EntityId;
   entityType: EntityType;
-  entityKind: EntityKind;
+  entityKind: string;
   x: number;
   y: number;
   damage: number;

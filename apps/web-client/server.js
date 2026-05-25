@@ -77,7 +77,7 @@ const NOT_FOUND_HTML = `
   </div>
 
   <script>
-    const locale = localStorage.getItem("smashing-cats-locale");
+    const locale = localStorage.getItem("smashing-cats-locale") || navigator.language.split('-')[0];
 
     const messages = {
       en: [

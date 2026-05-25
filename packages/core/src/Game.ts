@@ -1,4 +1,4 @@
-import type { DeltaSnapshot, EntityKind, GameEvent, GameSnapshot, PlayerId, PlayerInput } from "@smashing-cats/protocol";
+import type { DeltaSnapshot, GameEvent, GameSnapshot, PlayerId, PlayerInput } from "@smashing-cats/protocol";
 import type { Entity, Player, TutorialState } from "./types.js";
 import { type CharacterConfig, ENEMIES, GAME_CONFIG, TICK_RATE, getCharacterConfig } from "./config.js";
 import { Random } from "./Random.js";
@@ -50,7 +50,7 @@ export class Game {
     this.rng = new Random(seed);
   }
 
-  public addPlayer(playerId: PlayerId, characterKind: EntityKind = "batcat"): void {
+  public addPlayer(playerId: PlayerId, characterKind: string = "batcat"): void {
     if (this.players.has(playerId)) {
       return;
     }
@@ -80,7 +80,12 @@ export class Game {
     this.players.delete(playerId);
   }
 
-  public setInput(playerId: PlayerId, input: PlayerInput, snapshotTick: number | undefined, inputSeq: number | undefined): void {
+  public setInput(
+    playerId: PlayerId,
+    input: PlayerInput,
+    snapshotTick: number | undefined,
+    inputSeq: number | undefined,
+  ): void {
     const player = this.players.get(playerId);
 
     if (player === undefined || !player.alive || player.paused) {
@@ -393,7 +398,13 @@ export class Game {
     this.tutorialFinishTick = undefined;
   }
 
-  private addEvent(type: GameEvent["type"], player: Player | undefined, entity: Entity, damage: number, scoreDelta: number): void {
+  private addEvent(
+    type: GameEvent["type"],
+    player: Player | undefined,
+    entity: Entity,
+    damage: number,
+    scoreDelta: number,
+  ): void {
     this.events.push(
       createGameEvent({
         id: `event-${this.tick}-${this.nextEventIndex++}`,

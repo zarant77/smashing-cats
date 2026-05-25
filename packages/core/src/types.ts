@@ -1,7 +1,6 @@
 import type {
   AnimationSet,
   EntityId,
-  EntityKind,
   EntityType,
   HurtCircle,
   PlayerId,
@@ -18,7 +17,7 @@ export type Vec2 = {
 export type Entity = {
   id: string;
   type: EntityType;
-  kind: EntityKind;
+  kind: string;
   dummy?: boolean;
 
   x: number;

@@ -2,7 +2,6 @@ import { CHARACTERS, FIXED_DT, Game, SnapshotStore } from "@smashing-cats/core";
 import { LocalPlayerPredictor, SnapshotInterpolator } from "@smashing-cats/client-netcode";
 import type {
   CharacterDefinition,
-  EntityKind,
   EntitySnapshot,
   GameSnapshot,
   InputMessage,
@@ -66,9 +65,7 @@ export class GameRuntime {
     this.charactersValue = this.multiplayer ? [] : [...CHARACTERS];
     this.playerId = this.multiplayer ? undefined : LOCAL_PLAYER_ID;
     this.socket = this.multiplayer ? createSocket() : undefined;
-    this.localGame = this.multiplayer
-      ? undefined
-      : createLocalGame({ tutorialEnabled: !storage.get(TUTORIAL_DONE_KEY) });
+    this.localGame = this.multiplayer ? undefined : createLocalGame({ tutorialEnabled: !storage.tutorialDone });
 
     this.bindSocketEvents();
   }
@@ -103,14 +100,14 @@ export class GameRuntime {
       this.socket = createSocket();
       this.bindSocketEvents();
     } else {
-      this.localGame = createLocalGame({ tutorialEnabled: !storage.get(TUTORIAL_DONE_KEY) });
+      this.localGame = createLocalGame({ tutorialEnabled: !storage.tutorialDone });
     }
 
     this.onCharacterStateChange();
     this.renderFrame(undefined, undefined);
   }
 
-  public selectCharacter(characterKind: EntityKind): boolean {
+  public selectCharacter(characterKind: string): boolean {
     if (
       this.multiplayer &&
       (this.socket?.readyState !== WebSocket.OPEN || this.playerId === undefined || this.matchCode === undefined)
@@ -138,7 +135,7 @@ export class GameRuntime {
     }
 
     this.playerId = LOCAL_PLAYER_ID;
-    this.localGame = createLocalGame({ tutorialEnabled: !storage.get(TUTORIAL_DONE_KEY) });
+    this.localGame = createLocalGame({ tutorialEnabled: !storage.tutorialDone });
     this.localGame.addPlayer(this.playerId, characterKind);
     this.localSnapshot = this.localGame.createSnapshot();
     this.previousLocalSnapshot = this.localSnapshot;
@@ -479,7 +476,7 @@ function saveTutorialDoneIfFinished(previous: GameSnapshot | undefined, current:
     (previous?.tutorial.completed !== true && current?.tutorial.completed === true) ||
     (previous?.tutorial.active === true && current?.tutorial.active === false)
   ) {
-    storage.set(TUTORIAL_DONE_KEY, true);
+    storage.tutorialDone = true;
   }
 }
 

@@ -1,5 +1,5 @@
 import type { CharacterDefinition } from "./character.js";
-import type { EntityKind, PlayerId } from "./entity.js";
+import type { PlayerId } from "./entity.js";
 import type { PlayerInput } from "./input.js";
 import type { DeltaSnapshot, GameSnapshot } from "./snapshot.js";
 
@@ -16,7 +16,7 @@ export type JoinMessage = {
 
 export type SelectCharacterMessage = {
   type: "selectCharacter";
-  characterKind: EntityKind;
+  characterKind: string;
   matchCode: string;
 };
 

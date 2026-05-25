@@ -9,6 +9,7 @@ type EngineKind = "canvas" | "phaser" | "three";
 
 type SettingsOverlayOptions = {
   isGameRunning?: () => boolean;
+  showEngineSelector?: boolean;
   onClose?: () => void;
   onHelp?: () => void;
   onToggleMenu?: () => void;
@@ -38,6 +39,7 @@ export class SettingsOverlay {
   private readonly element: HTMLDivElement;
 
   private readonly isGameRunning: () => boolean;
+  private readonly showEngineSelector: boolean;
   private readonly onClose?: () => void;
   private readonly onHelp?: () => void;
   private readonly onToggleMenu?: () => void;
@@ -65,6 +67,7 @@ export class SettingsOverlay {
 
   public constructor(root: HTMLElement, options: SettingsOverlayOptions = {}) {
     this.isGameRunning = options.isGameRunning ?? (() => false);
+    this.showEngineSelector = options.showEngineSelector ?? true;
     this.onClose = options.onClose;
     this.onHelp = options.onHelp;
     this.onToggleMenu = options.onToggleMenu;
@@ -100,23 +103,7 @@ export class SettingsOverlay {
       <div class="card" hidden>
         <h2 data-i18n="settings">${t("settings")}</h2>
 
-        <section class="settings-section">
-          <h3 data-i18n="engine">${t("engine")}</h3>
-
-          <div class="settings-row">
-            <button class="engine-canvas-button" type="button" data-i18n-title="engineCanvas" title="${t("engineCanvas")}" aria-label="${t("engineCanvas")}">
-              <span class="icon icon-canvas"></span>
-            </button>
-
-            <button class="engine-phaser-button" type="button" data-i18n-title="enginePhaser" title="${t("enginePhaser")}" aria-label="${t("enginePhaser")}">
-              <span class="icon icon-phaser"></span>
-            </button>
-
-            <button class="engine-three-button" type="button" data-i18n-title="engineThree" title="${t("engineThree")}" aria-label="${t("engineThree")}">
-              <span class="icon icon-three"></span>
-            </button>
-          </div>
-        </section>
+        ${this.renderEngineSelector()}
 
         <section class="settings-section">
           <h3 data-i18n="language">${t("language")}</h3>
@@ -285,12 +272,7 @@ export class SettingsOverlay {
       .querySelector<HTMLButtonElement>(".vibration-button")
       ?.addEventListener("click", () => this.onToggleVibration?.());
     this.element.querySelector<HTMLButtonElement>(".tutorial-button")?.addEventListener("click", () => {
-      if (this.tutorialEnabled) {
-        storage.set(TUTORIAL_DONE_KEY, "true");
-      } else {
-        storage.remove(TUTORIAL_DONE_KEY);
-      }
-
+      storage.tutorialDone = !storage.tutorialDone;
       this.syncActiveButtons();
     });
     this.element
@@ -345,16 +327,20 @@ export class SettingsOverlay {
 
   private syncActiveButtons(): void {
     this.setButtonActive(".menu-button", this.visible);
-    this.setButtonActive(".engine-canvas-button", this.state.currentEngine === "canvas");
-    this.setButtonActive(".engine-phaser-button", this.state.currentEngine === "phaser");
-    this.setButtonActive(".engine-three-button", this.state.currentEngine === "three");
+
+    if (this.showEngineSelector) {
+      this.setButtonActive(".engine-canvas-button", this.state.currentEngine === "canvas");
+      this.setButtonActive(".engine-phaser-button", this.state.currentEngine === "phaser");
+      this.setButtonActive(".engine-three-button", this.state.currentEngine === "three");
+    }
+
     this.setButtonActive(".language-en-button", this.state.currentLanguage === "en");
     this.setButtonActive(".language-ua-button", this.state.currentLanguage === "uk");
     this.setButtonActive(".language-pl-button", this.state.currentLanguage === "pl");
     this.setButtonActive(".sound-button", this.state.soundEnabled);
     this.setButtonActive(".music-button", this.state.musicEnabled);
     this.setButtonActive(".vibration-button", this.state.vibrationEnabled);
-    this.setButtonActive(".tutorial-button", this.tutorialEnabled);
+    this.setButtonActive(".tutorial-button", !storage.tutorialDone);
     this.setButtonDisabled(".vibration-button", !deviceController.vibrationSupported);
 
     this.setButtonActive(".fullscreen-button", this.state.fullscreenEnabled);
@@ -383,8 +369,30 @@ export class SettingsOverlay {
     }
   }
 
-  private get tutorialEnabled(): boolean {
-    return !storage.get(TUTORIAL_DONE_KEY);
+  private renderEngineSelector(): string {
+    if (!this.showEngineSelector) {
+      return "";
+    }
+
+    return `
+        <section class="settings-section">
+          <h3 data-i18n="engine">${t("engine")}</h3>
+
+          <div class="settings-row">
+            <button class="engine-canvas-button" type="button" data-i18n-title="engineCanvas" title="${t("engineCanvas")}" aria-label="${t("engineCanvas")}">
+              <span class="icon icon-canvas"></span>
+            </button>
+
+            <button class="engine-phaser-button" type="button" data-i18n-title="enginePhaser" title="${t("enginePhaser")}" aria-label="${t("enginePhaser")}">
+              <span class="icon icon-phaser"></span>
+            </button>
+
+            <button class="engine-three-button" type="button" data-i18n-title="engineThree" title="${t("engineThree")}" aria-label="${t("engineThree")}">
+              <span class="icon icon-three"></span>
+            </button>
+          </div>
+        </section>
+    `;
   }
 
   private setButtonActive(selector: string, active: boolean): void {

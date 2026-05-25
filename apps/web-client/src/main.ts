@@ -1,4 +1,4 @@
-import { GameSnapshot, PlayerId, type EntityKind } from "@smashing-cats/protocol";
+import { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
 import { i18n } from "@smashing-cats/i18n";
 
 import "./uncrasher.js";
@@ -23,18 +23,11 @@ import { TouchControls } from "./ui/TouchControls.js";
 import { GameOverPopup } from "./ui/GameOverPopup.js";
 import { HelpPopup } from "./ui/HelpPopup.js";
 import { Hud } from "./ui/Hud.js";
-import { createView, parseViewKind } from "./views/createView.js";
+import { createView, hasMultipleViewKinds, parseViewKind } from "./views/createView.js";
 import { getViewSize } from "./views/viewport.js";
 import type { GameView, ViewKind } from "./views/types.js";
 
 import "./styles/index.css";
-
-const SOUNDS_ENABLED_KEY = "sounds-enabled";
-const MUSIC_ENABLED_KEY = "music-enabled";
-const VIBRATION_ENABLED_KEY = "vibration-enabled";
-const LOCALE_KEY = "locale";
-const VIEW_KEY = "view";
-const CHARACTER_KEY = "character";
 
 const VIEW_SHORTCUTS: Record<string, ViewKind> = {
   Digit1: "canvas",
@@ -56,13 +49,9 @@ async function bootstrap(): Promise<void> {
   const params = new URLSearchParams(window.location.search);
   const matchCode = getMatchCode(params);
   const multiplayer = matchCode !== undefined;
+  const rendererSwitchingEnabled = hasMultipleViewKinds();
 
-  let soundEnabled = !!storage.get(SOUNDS_ENABLED_KEY);
-  let musicEnabled = !!storage.get(MUSIC_ENABLED_KEY);
-  let vibrationEnabled = !!storage.get(VIBRATION_ENABLED_KEY);
-
-  let viewKind = parseViewKind(params.get("view") ?? storage.get(VIEW_KEY));
-  let selectedCharacterKind = storage.get(CHARACTER_KEY) as EntityKind | null;
+  let viewKind = parseViewKind(params.get("view") ?? storage.locale);
 
   let view: GameView = await createView(viewKind, root);
   let characterSelect: CharacterSelect | undefined;
@@ -73,8 +62,8 @@ async function bootstrap(): Promise<void> {
   let lastSnapshot: GameSnapshot | undefined;
   let lastPlayerId: PlayerId | undefined;
 
-  audio.setSoundsEnabled(soundEnabled);
-  audio.setMusicEnabled(musicEnabled);
+  audio.setSoundsEnabled(storage.sounds);
+  audio.setMusicEnabled(storage.music);
 
   const hud = new Hud(uiRoot);
   const touchControls = TouchControls.isTouchDevice() ? new TouchControls() : undefined;
@@ -86,7 +75,7 @@ async function bootstrap(): Promise<void> {
         setTimeout(() => deviceController.vibrate(100), 500);
       }
     })
-    .on("localPlayerHurt", (enemy) => {
+    .on("localPlayerHurt", () => {
       deviceController.vibrate([50]);
     })
     .on("localPlayerDied", () => {
@@ -113,9 +102,9 @@ async function bootstrap(): Promise<void> {
     settingsOverlay?.setState({
       currentLanguage: i18n.getLocale(),
       currentEngine: viewKind,
-      soundEnabled,
-      musicEnabled,
-      vibrationEnabled,
+      soundEnabled: storage.sounds,
+      musicEnabled: storage.music,
+      vibrationEnabled: storage.vibration,
       fullscreenEnabled: document.fullscreenElement !== null,
     });
   };
@@ -150,16 +139,15 @@ async function bootstrap(): Promise<void> {
   });
 
   characterSelect = new CharacterSelect(uiRoot, {
-    initialCharacterKind: selectedCharacterKind ?? undefined,
-    onSelect: (characterKind: EntityKind) => {
+    initialCharacterKind: storage.character,
+    onSelect: (characterKind: string) => {
       if (runtime === undefined || !runtime.selectCharacter(characterKind)) {
         return;
       }
 
       playSound("sound.ui_click");
 
-      selectedCharacterKind = characterKind;
-      storage.set(CHARACTER_KEY, characterKind);
+      storage.character = characterKind;
 
       characterSelect?.setPreferredCharacter(characterKind);
     },
@@ -167,6 +155,7 @@ async function bootstrap(): Promise<void> {
 
   settingsOverlay = new SettingsOverlay(uiRoot, {
     isGameRunning: () => runtime?.isGameRunning() === true,
+    showEngineSelector: rendererSwitchingEnabled,
 
     onToggleMenu: () => {
       playSound("sound.ui_click");
@@ -189,12 +178,11 @@ async function bootstrap(): Promise<void> {
     },
 
     onToggleSound: () => {
-      soundEnabled = !soundEnabled;
+      storage.sounds = !storage.sounds;
 
-      storage.set(SOUNDS_ENABLED_KEY, !!soundEnabled);
-      audio.setSoundsEnabled(soundEnabled);
+      audio.setSoundsEnabled(storage.sounds);
 
-      if (soundEnabled) {
+      if (storage.sounds) {
         playSound("sound.ui_click");
       }
 
@@ -202,10 +190,8 @@ async function bootstrap(): Promise<void> {
     },
 
     onToggleMusic: () => {
-      musicEnabled = !musicEnabled;
-
-      storage.set(MUSIC_ENABLED_KEY, !!musicEnabled);
-      audio.setMusicEnabled(musicEnabled);
+      storage.music = !storage.music;
+      audio.setMusicEnabled(storage.music);
 
       playSound("sound.ui_click");
       musicEvents.gameplay();
@@ -214,10 +200,8 @@ async function bootstrap(): Promise<void> {
     },
 
     onToggleVibration: () => {
-      vibrationEnabled = !vibrationEnabled;
-
-      storage.set(VIBRATION_ENABLED_KEY, !!vibrationEnabled);
-      deviceController.setVibrationEnabled(vibrationEnabled);
+      storage.vibration = !storage.vibration;
+      deviceController.setVibrationEnabled(storage.vibration);
 
       playSound("sound.ui_click");
 
@@ -233,7 +217,7 @@ async function bootstrap(): Promise<void> {
       })();
     },
 
-    onSelectView: (view: ViewKind) => switchView(view),
+    onSelectView: rendererSwitchingEnabled ? (view: ViewKind) => switchView(view) : undefined,
 
     onSelectLanguage: (nextLocale: string) => i18n.changeLocale(nextLocale),
 
@@ -245,23 +229,32 @@ async function bootstrap(): Promise<void> {
   syncSettingsOverlay();
   renderCharacterSelect();
   bindFullscreenGesture();
-  bindViewShortcuts();
+
+  if (rendererSwitchingEnabled) {
+    bindViewShortcuts();
+  }
+
   setupMusicUnlock();
 
   // Run the game
   i18n.onLocaleChanged((newLocale) => {
-    storage.set(LOCALE_KEY, newLocale);
+    storage.locale = newLocale;
     document.title = `${i18n.t("title")} v${__ASSET_VERSION__}`;
     applyStaticTranslations();
     renderCharacterSelect();
     syncSettingsOverlay();
   });
-  i18n.changeLocale(params.get("locale") ?? storage.get(LOCALE_KEY) ?? "en");
+  i18n.changeLocale(params.get("locale") ?? storage.locale);
 
   runtime.start();
 
   async function switchView(nextViewKind: ViewKind): Promise<void> {
     playSound("sound.ui_click");
+
+    if (!rendererSwitchingEnabled && nextViewKind !== "canvas") {
+      syncSettingsOverlay();
+      return;
+    }
 
     if (nextViewKind === viewKind) {
       syncSettingsOverlay();
@@ -277,7 +270,7 @@ async function bootstrap(): Promise<void> {
 
       const nextView = await createView(nextViewKind, root);
 
-      storage.set(VIEW_KEY, nextViewKind);
+      storage.view = nextViewKind;
 
       nextView.render(snapshot, playerId);
 

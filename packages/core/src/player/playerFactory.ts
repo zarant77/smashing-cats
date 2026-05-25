@@ -1,4 +1,4 @@
-import type { EntityKind, PlayerId, PlayerInput } from "@smashing-cats/protocol";
+import type { PlayerId, PlayerInput } from "@smashing-cats/protocol";
 
 import type { CharacterConfig, GameConfig } from "../config.js";
 import type { Player } from "../types.js";
@@ -45,7 +45,7 @@ export function createPlayer({
     id: `${characterConfig.kind}-${playerId}`,
     playerId,
     type: "player",
-    kind: characterConfig.kind as EntityKind,
+    kind: characterConfig.kind as string,
 
     x,
     y,

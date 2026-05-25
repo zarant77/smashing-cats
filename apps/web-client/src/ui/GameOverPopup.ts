@@ -1,4 +1,4 @@
-import type { EntityKind, GameSnapshot, PlayerId } from "@smashing-cats/protocol";
+import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
 import { getDeathPhrase, i18n, t } from "@smashing-cats/i18n";
 
 type GameOverPopupOptions = {
@@ -18,7 +18,7 @@ export class GameOverPopup {
   private deadAt: number | undefined;
   private shownForPlayerId: PlayerId | undefined;
 
-  private kind: EntityKind | undefined;
+  private kind: string | undefined;
   private score = 0;
   private speechPhrase = "";
 
@@ -78,7 +78,7 @@ export class GameOverPopup {
     }
   }
 
-  private show(kind: EntityKind, score: number): void {
+  private show(kind: string, score: number): void {
     this.kind = kind;
     this.score = score;
 
@@ -93,7 +93,7 @@ export class GameOverPopup {
     this.renderContent(kind, score);
   }
 
-  private renderContent(kind: EntityKind, score: number): void {
+  private renderContent(kind: string, score: number): void {
     const speechHidden = this.speechVisible ? "" : "hidden";
 
     this.element.innerHTML = `

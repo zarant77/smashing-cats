@@ -1,4 +1,4 @@
-import type { CharacterDefinition, EntityKind } from "@smashing-cats/protocol";
+import type { CharacterDefinition } from "@smashing-cats/protocol";
 import { t } from "@smashing-cats/i18n";
 
 import { playSound } from "../audio/audio.js";
@@ -18,16 +18,16 @@ import {
 } from "./helpers.js";
 
 type CharacterSelectOptions = {
-  initialCharacterKind: EntityKind | undefined;
-  onSelect: (characterKind: EntityKind) => void;
+  initialCharacterKind: string | undefined;
+  onSelect: (characterKind: string) => void;
 };
 
 export class CharacterSelect {
   private readonly element: HTMLDivElement;
-  private readonly onSelect: (characterKind: EntityKind) => void;
+  private readonly onSelect: (characterKind: string) => void;
 
   private currentIndex = 0;
-  private preferredCharacterKind: EntityKind | undefined;
+  private preferredCharacterKind: string | undefined;
   private lastCharacters: CharacterDefinition[] = [];
 
   private exitTimeoutId: number | undefined;
@@ -48,7 +48,7 @@ export class CharacterSelect {
     window.addEventListener("keydown", this.handleKeyDown);
   }
 
-  public setPreferredCharacter(characterKind: EntityKind): void {
+  public setPreferredCharacter(characterKind: string): void {
     this.preferredCharacterKind = characterKind;
   }
 
@@ -247,7 +247,9 @@ export class CharacterSelect {
 
   private getCurrentIndex(characters: CharacterDefinition[]): number {
     const preferredIndex =
-      this.preferredCharacterKind === undefined ? -1 : characters.findIndex((character) => character.kind === this.preferredCharacterKind);
+      this.preferredCharacterKind === undefined
+        ? -1
+        : characters.findIndex((character) => character.kind === this.preferredCharacterKind);
 
     if (preferredIndex >= 0) {
       this.preferredCharacterKind = undefined;

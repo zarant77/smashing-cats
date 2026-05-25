@@ -1,8 +1,7 @@
-import type { EntityKind } from "./entity.js";
 import { HurtCircle, Size, SmashBox } from "./geometry.js";
 
 export type CharacterDefinition = {
-  kind: EntityKind;
+  kind: string;
 
   name: Record<"en" | "uk", string>;
 

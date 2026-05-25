@@ -1,6 +1,5 @@
 import blessed from "blessed";
 import { t } from "@smashing-cats/i18n";
-import type { EntityKind } from "@smashing-cats/protocol";
 import { CharacterListView } from "../ui/CharacterListView.js";
 import { CharacterStatsView } from "../ui/CharacterStatsView.js";
 import { terminalBell } from "../audio/TerminalBell.js";
@@ -12,7 +11,7 @@ type StartScreenOptions = {
 };
 
 export type StartGameOptions = {
-  characterKind: EntityKind;
+  characterKind: string;
   matchCode: string;
 };
 

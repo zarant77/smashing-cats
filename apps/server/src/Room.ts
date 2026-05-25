@@ -1,4 +1,11 @@
-import { CHARACTERS, FIXED_DT, Game, SNAPSHOT_INTERVAL_TICKS, TICK_RATE, createDeltaSnapshot } from "@smashing-cats/core";
+import {
+  CHARACTERS,
+  FIXED_DT,
+  Game,
+  SNAPSHOT_INTERVAL_TICKS,
+  TICK_RATE,
+  createDeltaSnapshot,
+} from "@smashing-cats/core";
 import {
   normalizeMessage,
   minifyMessage,
@@ -7,7 +14,6 @@ import {
   type GameEvent,
   type GameSnapshot,
   type ServerToClientMessage,
-  EntityKind,
 } from "@smashing-cats/protocol";
 import type { WebSocket } from "ws";
 
@@ -231,7 +237,7 @@ export class Room {
     }
   }
 
-  private selectCharacter(playerId: string, matchCode: string, characterKind: EntityKind): void {
+  private selectCharacter(playerId: string, matchCode: string, characterKind: string): void {
     const client = this.clients.get(playerId);
 
     if (client === undefined) {

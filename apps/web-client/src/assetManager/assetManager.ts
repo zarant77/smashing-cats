@@ -2,10 +2,6 @@ import { AudioCache } from "./AudioCache.js";
 import { ImageCache } from "./ImageCache.js";
 import { ModelCache } from "./ModelCache.js";
 
-import { IMAGES as canvasImages, AUDIO as canvasAudio, MODELS as canvasModels } from "./manifests/canvas.js";
-import { IMAGES as phaserImages, AUDIO as phaserAudio, MODELS as phaserModels } from "./manifests/phaser.js";
-import { IMAGES as threeImages, AUDIO as threeAudio, MODELS as threeModels } from "./manifests/three.js";
-
 import type { ViewKind } from "../views/types.js";
 
 export type AssetMap = Record<string, string>;
@@ -33,25 +29,7 @@ type AssetEntry = {
   path: string;
 };
 
-const manifestList = {
-  canvas: {
-    images: canvasImages,
-    audio: canvasAudio,
-    models: canvasModels,
-  },
-
-  phaser: {
-    images: phaserImages,
-    audio: phaserAudio,
-    models: phaserModels,
-  },
-
-  three: {
-    images: threeImages,
-    audio: threeAudio,
-    models: threeModels,
-  },
-} satisfies Record<ViewKind, AssetManifest>;
+type LoadedManifests = Partial<Record<ViewKind, AssetManifest>>;
 
 export const images = new ImageCache();
 export const audio = new AudioCache();
@@ -60,10 +38,11 @@ export const models = new ModelCache();
 const DEFAULT_IMAGE_KEY = "default";
 
 let currentManifest: AssetManifest | undefined;
+const loadedManifests: LoadedManifests = {};
 const missingAssetWarnings = new Set<string>();
 
 export async function preloadAssets(engine: ViewKind, options: PreloadAssetsOptions = {}): Promise<void> {
-  const manifest = manifestList[engine];
+  const manifest = await loadManifest(engine);
 
   currentManifest = manifest;
 
@@ -143,6 +122,53 @@ export function getModelAsset(key: string): string {
   return asset;
 }
 
+async function loadManifest(engine: ViewKind): Promise<AssetManifest> {
+  const loadedManifest = loadedManifests[engine];
+
+  if (loadedManifest !== undefined) {
+    return loadedManifest;
+  }
+
+  const manifest = await importManifest(engine);
+  loadedManifests[engine] = manifest;
+
+  return manifest;
+}
+
+async function importManifest(engine: ViewKind): Promise<AssetManifest> {
+  switch (engine) {
+    case "canvas": {
+      const { IMAGES, AUDIO, MODELS } = await import("./manifests/canvas.js");
+
+      return {
+        images: IMAGES,
+        audio: AUDIO,
+        models: MODELS,
+      };
+    }
+
+    case "phaser": {
+      const { IMAGES, AUDIO, MODELS } = await import("./manifests/phaser.js");
+
+      return {
+        images: IMAGES,
+        audio: AUDIO,
+        models: MODELS,
+      };
+    }
+
+    case "three": {
+      const { IMAGES, AUDIO, MODELS } = await import("./manifests/three.js");
+
+      return {
+        images: IMAGES,
+        audio: AUDIO,
+        models: MODELS,
+      };
+    }
+  }
+}
+
 function getAsset(group: keyof AssetManifest, key: string): string | undefined {
   const manifest = currentManifest;
 
@@ -153,16 +179,10 @@ function getAsset(group: keyof AssetManifest, key: string): string | undefined {
   const assets = manifest[group] as Readonly<AssetMap> | undefined;
 
   if (assets === undefined) {
-    return findAssetInAnyManifest(group, key);
+    return undefined;
   }
 
-  const asset = assets[key];
-
-  if (asset !== undefined) {
-    return asset;
-  }
-
-  return findAssetInAnyManifest(group, key);
+  return assets[key];
 }
 
 function getAssetEntries(group: keyof AssetManifest, assets: AssetMap | undefined): AssetEntry[] {
@@ -190,19 +210,6 @@ function preloadSingleAsset(entry: AssetEntry): Promise<void> {
   }
 
   return Promise.resolve();
-}
-
-function findAssetInAnyManifest(group: keyof AssetManifest, key: string): string | undefined {
-  for (const manifest of Object.values(manifestList)) {
-    const assets = manifest[group] as Readonly<AssetMap> | undefined;
-    const asset = assets?.[key];
-
-    if (asset !== undefined) {
-      return asset;
-    }
-  }
-
-  return undefined;
 }
 
 function warnMissingAsset(group: keyof AssetManifest, key: string, fallbackKey: string): void {

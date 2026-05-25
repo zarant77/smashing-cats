@@ -5,17 +5,12 @@ type Settings = {
   boundings?: boolean;
 };
 
-const STORAGE_KEY = "debug";
-
 class Debug {
   private readonly fpsElement: HTMLDivElement;
 
   private fpsEnabled = false;
-
   private boundingsEnabled = false;
-
   private frames = 0;
-
   private lastTime = 0;
 
   public constructor() {
@@ -39,7 +34,7 @@ class Debug {
 
     document.body.append(this.fpsElement);
 
-    this.applySettings((storage.get(STORAGE_KEY) || {}) as Settings);
+    this.applySettings(storage.debug as Settings);
 
     requestAnimationFrame(this.loop);
   }
@@ -100,12 +95,10 @@ class Debug {
   };
 
   private saveSettings(): void {
-    const settings: Settings = {
+    storage.debug = {
       showFPS: this.showFPS,
       boundings: this.boundings,
     };
-
-    storage.set(STORAGE_KEY, settings);
   }
 }
 

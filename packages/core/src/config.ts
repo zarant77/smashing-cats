@@ -1,4 +1,4 @@
-import type { AnimationSet, EntityKind, HurtCircle, Size, SmashBox } from "@smashing-cats/protocol";
+import type { AnimationSet, HurtCircle, Size, SmashBox } from "@smashing-cats/protocol";
 
 import charactersData from "./config/characters.json" with { type: "json" };
 import civiliansData from "./config/civilians.json" with { type: "json" };
@@ -34,7 +34,7 @@ export type TutorialConfig = {
 };
 
 export type CharacterConfig = {
-  kind: EntityKind;
+  kind: string;
   name: LocalizedText;
   size: Size;
   hurt: HurtCircle;
@@ -50,13 +50,7 @@ export type CharacterConfig = {
 
 type CharacterCommonConfig = Pick<
   CharacterConfig,
-  | "size"
-  | "hurt"
-  | "smash"
-  | "smashSpeed"
-  | "bounceSpeed"
-  | "smashMinJumpProgress"
-  | "animations"
+  "size" | "hurt" | "smash" | "smashSpeed" | "bounceSpeed" | "smashMinJumpProgress" | "animations"
 >;
 
 type CharacterSpecificConfig = Pick<CharacterConfig, "kind" | "name" | "hp" | "moveSpeed" | "jumpForce">;
@@ -67,7 +61,7 @@ type CharactersConfigFile = {
 };
 
 type EntityBaseConfig = {
-  kind: EntityKind;
+  kind: string;
   dummy?: boolean;
   size: Size;
   hurt: HurtCircle;
@@ -105,14 +99,18 @@ export const CIVILIANS = fromJson<CivilianConfig[]>(civiliansData);
 export const ENEMIES = fromJson<EnemyConfig[]>(enemiesData);
 export const OBSTACLES = fromJson<ObstacleConfig[]>(obstaclesData);
 
-export const SPAWNABLES = [...OBSTACLES, ...ENEMIES.filter((config) => config.dummy !== true), ...CIVILIANS] satisfies SpawnableConfig[];
+export const SPAWNABLES = [
+  ...OBSTACLES,
+  ...ENEMIES.filter((config) => config.dummy !== true),
+  ...CIVILIANS,
+] satisfies SpawnableConfig[];
 
 export const TICK_RATE = 60;
 export const SNAPSHOT_RATE = 15;
 export const SNAPSHOT_INTERVAL_TICKS = TICK_RATE / SNAPSHOT_RATE;
 export const FIXED_DT = 1 / TICK_RATE;
 
-export function getCharacterConfig(kind: EntityKind): CharacterConfig {
+export function getCharacterConfig(kind: string): CharacterConfig {
   const config = CHARACTERS.find((character) => character.kind === kind);
 
   if (config === undefined) {

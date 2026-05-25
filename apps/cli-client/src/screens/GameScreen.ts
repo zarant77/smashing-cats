@@ -1,7 +1,7 @@
 import blessed from "blessed";
 import clipboard from "clipboardy";
 import { t } from "@smashing-cats/i18n";
-import type { CharacterDefinition, EntityKind, GameSnapshot, PlayerId, PlayerSnapshot } from "@smashing-cats/protocol";
+import type { CharacterDefinition, GameSnapshot, PlayerId, PlayerSnapshot } from "@smashing-cats/protocol";
 import { LocalPlayerPredictor, SnapshotInterpolator } from "@smashing-cats/client-netcode";
 import { CliConnection, type PlayerInput } from "../network/CliConnection.js";
 import { GameAsciiRenderer } from "../render/GameAsciiRenderer.js";
@@ -13,7 +13,7 @@ import type { Screen } from "./Screen.js";
 type GameScreenOptions = {
   screen: blessed.Widgets.Screen;
   serverUrl: string;
-  characterKind: EntityKind;
+  characterKind: string;
   matchCode: string;
   onExit: () => void;
   onRestart: () => void;

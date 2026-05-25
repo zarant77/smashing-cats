@@ -2,15 +2,21 @@ import { preloadAssets } from "../assetManager/assetManager.js";
 import { Uncrasher } from "../uncrasher.js";
 import type { GameView, ViewKind } from "./types.js";
 
+type RendererBundle = "canvas" | "all";
+
+const rendererBundle = getRendererBundle();
+
 export async function createView(kind: ViewKind, root: HTMLElement): Promise<GameView> {
+  const safeKind = getAvailableViewKind(kind);
+
   updateSplash(true);
 
   try {
-    await preloadAssets(kind, {
+    await preloadAssets(safeKind, {
       onProgress: ({ percent }) => updateSplash(true, percent),
     });
 
-    return await createLoadedView(kind, root);
+    return await createLoadedView(safeKind, root);
   } catch (error) {
     Uncrasher.show(error);
     throw error;
@@ -20,6 +26,10 @@ export async function createView(kind: ViewKind, root: HTMLElement): Promise<Gam
 }
 
 async function createLoadedView(kind: ViewKind, root: HTMLElement): Promise<GameView> {
+  if (!isViewKindAvailable(kind)) {
+    throw new Error(`View is not available in this build: ${kind}`);
+  }
+
   switch (kind) {
     case "canvas": {
       const { CanvasView } = await import("./canvas/CanvasView.js");
@@ -39,14 +49,35 @@ async function createLoadedView(kind: ViewKind, root: HTMLElement): Promise<Game
 }
 
 export function parseViewKind(value: string | null): ViewKind {
-  switch (value) {
-    case "phaser":
-    case "three":
-      return value;
+  const kind: ViewKind = value === "phaser" || value === "three" ? value : "canvas";
 
-    default:
-      return "canvas";
+  return getAvailableViewKind(kind);
+}
+
+export function isViewKindAvailable(kind: ViewKind): boolean {
+  if (rendererBundle === "all") {
+    return true;
   }
+
+  return kind === "canvas";
+}
+
+export function hasMultipleViewKinds(): boolean {
+  return rendererBundle === "all";
+}
+
+function getAvailableViewKind(kind: ViewKind): ViewKind {
+  if (isViewKindAvailable(kind)) {
+    return kind;
+  }
+
+  return "canvas";
+}
+
+function getRendererBundle(): RendererBundle {
+  const value = import.meta.env.VITE_RENDERER_BUNDLE;
+
+  return value === "all" ? "all" : "canvas";
 }
 
 let splash: HTMLDivElement | null = null;
