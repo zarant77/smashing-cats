@@ -35,10 +35,9 @@ export function resolvePlayerEntityCollisions(context: CollisionContext): void {
 
     const playerHurtCircle = getPlayerCircle(player, context.scrollX);
     const smashTargets = getSmashTargets(context, player);
-    let shouldStopSmash = false;
 
     for (const entity of smashTargets) {
-      shouldStopSmash = resolvePlayerEntityCollision(context, player, entity, true) || shouldStopSmash;
+      resolvePlayerEntityCollision(context, player, entity, true);
     }
 
     for (const entity of context.entities) {
@@ -56,10 +55,6 @@ export function resolvePlayerEntityCollisions(context: CollisionContext): void {
         resolveDamagingCollision(context, player, entity);
       }
     }
-
-    if (shouldStopSmash) {
-      stopSmash(player);
-    }
   }
 }
 
@@ -71,6 +66,7 @@ function getSmashTargets(context: CollisionContext, player: Player): Set<Entity>
   }
 
   const smashBox = getPlayerSmashBox(player, context.scrollX);
+  const sweptSmashBox = getPlayerSweptSmashBox(player, context.scrollX);
 
   for (const entity of context.entities) {
     if (!entity.alive || entity.type === "obstacle") {
@@ -78,8 +74,13 @@ function getSmashTargets(context: CollisionContext, player: Player): Set<Entity>
     }
 
     const entityCircle = getEntityCircle(entity);
+    const entityBounds = circleToBounds(entityCircle);
 
-    if (intersects(smashBox, circleToBounds(entityCircle)) || context.intersectsCompensatedEntity(player, entity)) {
+    if (
+      intersects(smashBox, entityBounds) ||
+      intersects(sweptSmashBox, entityBounds) ||
+      context.intersectsCompensatedEntity(player, entity)
+    ) {
       targets.add(entity);
     }
   }
@@ -87,42 +88,41 @@ function getSmashTargets(context: CollisionContext, player: Player): Set<Entity>
   return targets;
 }
 
-function resolvePlayerEntityCollision(context: CollisionContext, player: Player, entity: Entity, smashCollision = false): boolean {
+function resolvePlayerEntityCollision(context: CollisionContext, player: Player, entity: Entity, smashCollision = false): void {
   if (!entity.alive) {
-    return false;
+    return;
   }
 
   if (entity.type === "enemy") {
-    return resolveEnemyCollision(context, player, entity, smashCollision);
+    resolveEnemyCollision(context, player, entity, smashCollision);
+    return;
   }
 
   if (entity.type === "civilian") {
-    return resolveCivilianCollision(context, player, entity, smashCollision);
+    resolveCivilianCollision(context, player, entity, smashCollision);
+    return;
   }
 
   if (entity.type === "obstacle") {
     resolveDamagingCollision(context, player, entity);
   }
-
-  return false;
 }
 
-function resolveEnemyCollision(context: CollisionContext, player: Player, entity: Entity, smashCollision: boolean): boolean {
+function resolveEnemyCollision(context: CollisionContext, player: Player, entity: Entity, smashCollision: boolean): void {
   if (smashCollision) {
     entity.alive = false;
     player.score += entity.score;
 
     context.addEvent("enemyKilled", player, entity, 0, entity.score);
-    return true;
+    return;
   }
 
   resolveDamagingCollision(context, player, entity);
-  return false;
 }
 
-function resolveCivilianCollision(context: CollisionContext, player: Player, entity: Entity, smashCollision: boolean): boolean {
+function resolveCivilianCollision(context: CollisionContext, player: Player, entity: Entity, smashCollision: boolean): void {
   if (!smashCollision) {
-    return false;
+    return;
   }
 
   entity.alive = false;
@@ -131,7 +131,6 @@ function resolveCivilianCollision(context: CollisionContext, player: Player, ent
   player.score += scoreDelta;
 
   context.addEvent("civilianKilled", player, entity, 0, scoreDelta);
-  return true;
 }
 
 function resolveDamagingCollision(context: CollisionContext, player: Player, entity: Entity): void {
@@ -175,13 +174,6 @@ export function resolveEnemyCivilianCollisions(context: Pick<CollisionContext, "
       context.addEvent("civilianKilledByEnemy", undefined, civilian, 0, scoreDelta);
     }
   }
-}
-
-function stopSmash(player: Player): void {
-  player.smashing = false;
-  player.smashingForCollision = false;
-  player.smashSnapshotTick = undefined;
-  player.jumpStartY = player.y;
 }
 
 function getPlayerCircle(player: Player, scrollX: number): Circle {
@@ -237,6 +229,27 @@ function distanceSquared(ax: number, ay: number, bx: number, by: number): number
 
 function getPlayerSmashBox(player: Player, scrollX: number): Bounds {
   return getSmashBox(player.x + scrollX, player.y, player.size, player.smash);
+}
+
+function getPlayerSweptSmashBox(player: Player, scrollX: number): Bounds {
+  return mergeBounds(
+    getSmashBox(player.previousX + scrollX, player.previousY, player.size, player.smash),
+    getPlayerSmashBox(player, scrollX),
+  );
+}
+
+function mergeBounds(a: Bounds, b: Bounds): Bounds {
+  const x = Math.min(a.x, b.x);
+  const y = Math.min(a.y, b.y);
+  const right = Math.max(a.x + a.width, b.x + b.width);
+  const bottom = Math.max(a.y + a.height, b.y + b.height);
+
+  return {
+    x,
+    y,
+    width: right - x,
+    height: bottom - y,
+  };
 }
 
 function circleToBounds(circle: Circle): Bounds {
