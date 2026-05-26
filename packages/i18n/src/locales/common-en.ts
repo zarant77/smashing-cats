@@ -18,6 +18,8 @@ export const commonEN = {
   exit: "Exit game",
   close: "Close",
   restart: "Restart",
+  name: "Name",
+  character: "Character",
   score: "Score",
   time: "Time",
   leaderboard: "Leaderboard",

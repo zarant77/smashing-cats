@@ -20,7 +20,14 @@ import type {
 } from "@smashing-cats/protocol";
 
 import { storage } from "../storage.js";
-import { consumePauseToggle, isPaused, setPaused as setInputPaused, togglePause, readInput } from "../input.js";
+import {
+  consumeJumpPress,
+  consumePauseToggle,
+  isPaused,
+  setPaused as setInputPaused,
+  togglePause,
+  readInput,
+} from "../input.js";
 import { createSocket, parseServerMessage, sendClientMessage } from "../network/clientConnection.js";
 import type { TouchControls } from "../ui/TouchControls.js";
 import { createLocalGame, createLocalGameSeed } from "./localGame.js";
@@ -413,7 +420,7 @@ export class GameRuntime {
       }
     }
 
-    const input = this.applyLocalViewportRightGuard(this.readPlayerInput(), currentPlayerId);
+    const input = this.applyLocalViewportRightGuard(this.readHeldPlayerInput(), currentPlayerId);
     const currentInputSeq = this.getCurrentInputSeq(canSend && !isPaused(), input);
 
     this.updateLocalGame(canPlay, currentPlayerId, input);
@@ -425,9 +432,9 @@ export class GameRuntime {
     requestAnimationFrame(() => this.frame());
   }
 
-  private readPlayerInput(): PlayerInput {
+  private readHeldPlayerInput(): PlayerInput {
     const keyboardInput = readInput();
-    const touchInput = this.touchControls?.getInput();
+    const touchInput = this.touchControls?.getHeldInput();
 
     return {
       left: keyboardInput.left || touchInput?.left === true,
@@ -523,12 +530,14 @@ export class GameRuntime {
     this.localUpdateAccumulator += dt;
 
     if (isPaused()) {
+      consumeJumpPress();
+      this.touchControls?.consumeJumpPress();
       this.localUpdateAccumulator = 0;
       return;
     }
 
     while (this.localUpdateAccumulator >= FIXED_DT) {
-      const tickInput = normalizePlayerInput(input);
+      const tickInput = this.consumeLocalInputForTick(input);
       const nextTick = (this.localSnapshot?.tick ?? 0) + 1;
 
       this.previousLocalSnapshot = this.localSnapshot;
@@ -541,6 +550,15 @@ export class GameRuntime {
       saveTutorialDoneIfFinished(this.previousLocalSnapshot, this.localSnapshot);
       this.localUpdateAccumulator -= FIXED_DT;
     }
+  }
+
+  private consumeLocalInputForTick(heldInput: PlayerInput): PlayerInput {
+    const jumpPressed = consumeJumpPress() || this.touchControls?.consumeJumpPress() === true;
+
+    return normalizePlayerInput({
+      ...heldInput,
+      jump: heldInput.jump || jumpPressed,
+    });
   }
 
   private completeLocalReplay(snapshot: GameSnapshot, playerId: PlayerId): void {

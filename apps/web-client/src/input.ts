@@ -3,9 +3,11 @@ import type { PlayerInput } from "@smashing-cats/protocol";
 const keys = new Set<string>();
 
 const blockedBrowserKeys = new Set(["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]);
+const jumpKeys = new Set(["Space", "ArrowUp", "ArrowDown", "KeyW", "KeyS"]);
 
 let paused = false;
 let pausePressed = false;
+let pendingJumpPress = false;
 
 window.addEventListener("keydown", (event) => {
   if (blockedBrowserKeys.has(event.code)) {
@@ -16,6 +18,10 @@ window.addEventListener("keydown", (event) => {
     paused = !paused;
     pausePressed = true;
     return;
+  }
+
+  if (jumpKeys.has(event.code) && !event.repeat && !keys.has(event.code)) {
+    pendingJumpPress = true;
   }
 
   keys.add(event.code);
@@ -31,6 +37,7 @@ window.addEventListener("keyup", (event) => {
 
 window.addEventListener("blur", () => {
   keys.clear();
+  pendingJumpPress = false;
 });
 
 export function consumePauseToggle(): boolean {
@@ -52,6 +59,20 @@ export function setPaused(nextPaused: boolean): void {
 
 export function togglePause(): void {
   paused = !paused;
+}
+
+export function consumeJumpPress(): boolean {
+  if (!pendingJumpPress) {
+    return false;
+  }
+
+  if (paused) {
+    pendingJumpPress = false;
+    return false;
+  }
+
+  pendingJumpPress = false;
+  return true;
 }
 
 export function readInput(): PlayerInput {

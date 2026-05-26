@@ -11,6 +11,7 @@ export type LeaderboardEntry = {
   mode: LeaderboardMode;
   playerName: string;
   characterKind: string;
+  durationSeconds: number;
   score: number;
   createdAt: string;
 };

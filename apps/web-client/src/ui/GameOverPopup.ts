@@ -300,11 +300,19 @@ export class GameOverPopup {
 
     return `
       <ol class="game-over-leaderboard-list">
+        <li class="game-over-leaderboard-row game-over-leaderboard-row-header">
+          <span>${t("name")}</span>
+          <span>${t("character")}</span>
+          <span>${t("time")}</span>
+          <span>${t("score")}</span>
+        </li>
         ${this.leaderboardEntries
           .map(
             (entry) => `
               <li class="game-over-leaderboard-row">
                 <span class="game-over-leaderboard-name-text">${escapeHtml(entry.playerName)}</span>
+                <span class="game-over-leaderboard-character">${escapeHtml(t(entry.characterKind))}</span>
+                <span class="game-over-leaderboard-time">${formatDuration(entry.durationSeconds)}</span>
                 <strong class="game-over-leaderboard-score">${entry.score}</strong>
               </li>
             `,
@@ -409,4 +417,12 @@ function escapeHtml(value: string): string {
         return character;
     }
   });
+}
+
+function formatDuration(durationSeconds: number): string {
+  const totalSeconds = Number.isFinite(durationSeconds) ? Math.max(0, Math.floor(durationSeconds)) : 0;
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }

@@ -19,10 +19,12 @@ export class TouchControls {
   private readonly smashButton: HTMLDivElement;
 
   private touch: TouchState | undefined;
+  private readonly actionPointerIds = new Set<number>();
 
   private leftPressed = false;
   private rightPressed = false;
-  private jumpPressed = false;
+  private jumpHeld = false;
+  private pendingJumpPress = false;
 
   public constructor() {
     this.root = document.querySelector<HTMLDivElement>("#touch-control-placeholder") as HTMLDivElement;
@@ -70,15 +72,32 @@ export class TouchControls {
   }
 
   public getInput(): PlayerInput {
+    const jumpPressed = this.consumeJumpPress();
+
     const input: PlayerInput = {
       left: this.leftPressed,
       right: this.rightPressed,
-      jump: this.jumpPressed,
+      jump: this.jumpHeld || jumpPressed,
     };
 
-    this.jumpPressed = false;
-
     return input;
+  }
+
+  public getHeldInput(): PlayerInput {
+    return {
+      left: this.leftPressed,
+      right: this.rightPressed,
+      jump: this.jumpHeld,
+    };
+  }
+
+  public consumeJumpPress(): boolean {
+    if (!this.pendingJumpPress) {
+      return false;
+    }
+
+    this.pendingJumpPress = false;
+    return true;
   }
 
   private setActionMode(mode: ActionMode): void {
@@ -122,7 +141,10 @@ export class TouchControls {
       const isRightHalf = event.clientX >= window.innerWidth / 2;
 
       if (isRightHalf) {
-        this.jumpPressed = true;
+        this.root.setPointerCapture(event.pointerId);
+        this.actionPointerIds.add(event.pointerId);
+        this.jumpHeld = true;
+        this.pendingJumpPress = true;
         return;
       }
 
@@ -158,6 +180,12 @@ export class TouchControls {
     });
 
     this.root.addEventListener("pointerup", (event) => {
+      if (this.actionPointerIds.has(event.pointerId)) {
+        event.preventDefault();
+        this.releaseActionPointer(event.pointerId);
+        return;
+      }
+
       if (this.touch === undefined || event.pointerId !== this.touch.pointerId) {
         return;
       }
@@ -168,6 +196,11 @@ export class TouchControls {
     });
 
     this.root.addEventListener("pointercancel", (event) => {
+      if (this.actionPointerIds.has(event.pointerId)) {
+        this.releaseActionPointer(event.pointerId);
+        return;
+      }
+
       if (this.touch === undefined || event.pointerId !== this.touch.pointerId) {
         return;
       }
@@ -176,6 +209,11 @@ export class TouchControls {
     });
 
     this.root.addEventListener("lostpointercapture", (event) => {
+      if (this.actionPointerIds.has(event.pointerId)) {
+        this.releaseActionPointer(event.pointerId);
+        return;
+      }
+
       if (this.touch === undefined || event.pointerId !== this.touch.pointerId) {
         return;
       }
@@ -240,5 +278,10 @@ export class TouchControls {
     this.rightPressed = false;
 
     this.updateJoyCenter(0);
+  }
+
+  private releaseActionPointer(pointerId: number): void {
+    this.actionPointerIds.delete(pointerId);
+    this.jumpHeld = this.actionPointerIds.size > 0;
   }
 }

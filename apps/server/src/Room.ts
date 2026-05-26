@@ -41,6 +41,7 @@ type Match = {
 type PendingLeaderboardSubmission = {
   mode: LeaderboardMode;
   characterKind: string;
+  durationSeconds: number;
   score: number;
 };
 
@@ -359,6 +360,7 @@ export class Room {
       mode: pending.mode,
       playerName,
       characterKind: pending.characterKind,
+      durationSeconds: pending.durationSeconds,
       score: pending.score,
     });
 
@@ -437,6 +439,7 @@ export class Room {
     this.pendingLeaderboardSubmissions.set(playerId, {
       mode,
       characterKind: replay.playerKind,
+      durationSeconds: Math.floor(replay.finalTick / TICK_RATE),
       score: result.actualScore,
     });
 
@@ -574,6 +577,7 @@ export class Room {
       this.pendingLeaderboardSubmissions.set(player.playerId, {
         mode,
         characterKind: player.kind,
+        durationSeconds: Math.floor(snapshot.tick / TICK_RATE),
         score: player.score,
       });
 

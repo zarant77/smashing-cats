@@ -8,6 +8,7 @@ const FIELD_MAP = {
   type: "t",
   matchCode: "m",
   characterKind: "k",
+  durationSeconds: "ds",
   inputSeq: "s",
   snapshotTick: "st",
   input: "i",

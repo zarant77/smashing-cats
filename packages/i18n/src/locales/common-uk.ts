@@ -18,6 +18,8 @@ export const commonUK = {
   exit: "Вихід з гри",
   close: "Закрити",
   restart: "Перезапустити",
+  name: "Ім'я",
+  character: "Персонаж",
   score: "Рахунок",
   time: "Час",
   leaderboard: "Таблиця лідерів",

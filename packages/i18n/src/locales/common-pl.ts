@@ -18,6 +18,8 @@ export const commonPL = {
   exit: "Wyjdź z gry",
   close: "Zamknij",
   restart: "Restart",
+  name: "Nazwa",
+  character: "Postać",
   score: "Wynik",
   time: "Czas",
   leaderboard: "Tabela wyników",
