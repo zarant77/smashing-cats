@@ -52,7 +52,8 @@ export function buildCharacterSelectArrowHtml(direction: "left" | "right", ariaL
 export function buildCharacterCardHtml(options: BuildCharacterCardHtmlOptions): string {
   const { character, ranges, name, hpLabel, speedLabel, jumpLabel, selectLabel, enterClass } = options;
 
-  const imageClass = enterClass === undefined ? "portrait character-card-image" : `portrait character-card-image ${enterClass}`;
+  const imageClass =
+    enterClass === undefined ? "portrait character-card-image" : `portrait character-card-image ${enterClass}`;
 
   return `
     <div class="character-card">
@@ -175,7 +176,8 @@ export function clampIndex(index: number, length: number): number {
 function buildStatSegmentsHtml(filledSegments: number): string {
   return Array.from({ length: STAT_SEGMENT_COUNT })
     .map((_, index) => {
-      const className = index < filledSegments ? "character-stat-segment character-stat-segment-filled" : "character-stat-segment";
+      const className =
+        index < filledSegments ? "character-stat-segment character-stat-segment-filled" : "character-stat-segment";
 
       return `<span class="${className}"></span>`;
     })
@@ -204,5 +206,10 @@ function getCharacterImageSrc(character: CharacterDefinition): string {
 }
 
 function escapeHtml(value: string): string {
-  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }

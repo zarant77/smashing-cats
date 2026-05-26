@@ -126,21 +126,16 @@
 
 .game-over-speech::after {
   content: "";
-
   position: absolute;
-  left: 240px;
-  bottom: -14px;
-
+  right: 40px;
+  bottom: -15px;
   width: 22px;
   height: 22px;
-
   background: #fffdf8;
-
   border-left: 3px solid #4a2a00;
   border-bottom: 3px solid #4a2a00;
   border-bottom-left-radius: 7px;
-
-  transform: rotate(-48deg) skew(-4deg);
+  transform: rotate(-46deg) skew(-4deg);
 }
 
 .game-over-stats {

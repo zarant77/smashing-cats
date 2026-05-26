@@ -9,7 +9,15 @@ let paused = false;
 let pausePressed = false;
 let pendingJumpPress = false;
 
+function isTextInputTarget(target: EventTarget | null): boolean {
+  return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
+}
+
 window.addEventListener("keydown", (event) => {
+  if (isTextInputTarget(event.target)) {
+    return;
+  }
+
   if (blockedBrowserKeys.has(event.code)) {
     event.preventDefault();
   }
@@ -28,6 +36,10 @@ window.addEventListener("keydown", (event) => {
 });
 
 window.addEventListener("keyup", (event) => {
+  if (isTextInputTarget(event.target)) {
+    return;
+  }
+
   if (blockedBrowserKeys.has(event.code)) {
     event.preventDefault();
   }

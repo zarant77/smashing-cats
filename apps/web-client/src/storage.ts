@@ -61,6 +61,14 @@ class StorageManager {
     this.set("character", v);
   }
 
+  public get playerName(): string {
+    return this.get("playerName") ?? "";
+  }
+
+  public set playerName(v: string) {
+    this.set("playerName", v);
+  }
+
   public get debug(): Record<string, unknown> {
     const v = this.get("debug");
 

@@ -2,6 +2,19 @@ import type { GameSnapshot, LeaderboardEntry, PlayerId } from "@smashing-cats/pr
 import { TICK_RATE } from "@smashing-cats/core";
 import { getDeathPhrase, i18n, t } from "@smashing-cats/i18n";
 
+import {
+  escapeHtml,
+  getPlayerName,
+  formatDuration,
+  isTop10Place,
+  setPlayerName,
+  PLAYER_NAME_MAX_LENGTH,
+  sanitizePlayerName,
+  PLAYER_NAME_ALLOWED_PATTERN,
+  isAllowedKey,
+  isAllowedPlayerNameCharacter,
+} from "../helpers/index.js";
+
 type GameOverPopupOptions = {
   onRestart: () => void;
   onLeaderboardRequest: () => void;
@@ -10,7 +23,6 @@ type GameOverPopupOptions = {
 
 const SHOW_DELAY_MS = 2000;
 const SPEECH_DELAY_MS = 1000;
-const TOP_LEADERBOARD_LIMIT = 10;
 
 export class GameOverPopup {
   private readonly element: HTMLDivElement;
@@ -233,15 +245,19 @@ export class GameOverPopup {
 
     return `
     <form class="game-over-submit-form">
-      <input
-        class="game-over-submit-name"
-        name="playerName"
-        type="text"
-        maxlength="16"
-        autocomplete="off"
-        spellcheck="false"
-        value="PLAYER"
-      />
+    <input
+      class="game-over-submit-name"
+      name="playerName"
+      type="text"
+      inputmode="text"
+      maxlength="${PLAYER_NAME_MAX_LENGTH}"
+      autocomplete="off"
+      autocapitalize="characters"
+      autocorrect="off"
+      spellcheck="false"
+      pattern="${PLAYER_NAME_ALLOWED_PATTERN}{1,${PLAYER_NAME_MAX_LENGTH}}"
+      value="${getPlayerName()}"
+    />
 
       <button
         class="button game-over-submit-button"
@@ -293,6 +309,8 @@ export class GameOverPopup {
   }
 
   private bindEvents(): void {
+    const input = this.element.querySelector<HTMLInputElement>(".game-over-submit-name");
+
     this.element.querySelector<HTMLButtonElement>(".game-over-restart")?.addEventListener("click", () => {
       this.onRestart();
     });
@@ -300,8 +318,47 @@ export class GameOverPopup {
     this.element.querySelector<HTMLFormElement>(".game-over-submit-form")?.addEventListener("submit", (event) => {
       event.preventDefault();
 
-      const input = this.element.querySelector<HTMLInputElement>(".game-over-submit-name");
-      this.onLeaderboardSubmit(input?.value ?? "");
+      const playerName = sanitizePlayerName(input?.value ?? "");
+
+      if (playerName.length === 0) {
+        return;
+      }
+
+      setPlayerName(playerName);
+      this.onLeaderboardSubmit(playerName);
+    });
+
+    input?.addEventListener("input", () => {
+      const start = input.selectionStart ?? input.value.length;
+      const end = input.selectionEnd ?? input.value.length;
+
+      const before = input.value;
+      const after = sanitizePlayerName(before);
+
+      if (before === after) {
+        return;
+      }
+
+      const removedBeforeCursor = before.slice(0, start).length - sanitizePlayerName(before.slice(0, start)).length;
+
+      input.value = after;
+
+      const nextStart = Math.max(0, start - removedBeforeCursor);
+      const nextEnd = Math.max(0, end - removedBeforeCursor);
+
+      input.setSelectionRange(nextStart, nextEnd);
+    });
+
+    input?.addEventListener("keydown", (event) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
+
+      if (isAllowedKey(event.key) || isAllowedPlayerNameCharacter(event.key)) {
+        return;
+      }
+
+      event.preventDefault();
     });
   }
 
@@ -356,35 +413,4 @@ export class GameOverPopup {
     this.element.hidden = true;
     this.element.replaceChildren();
   }
-}
-
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (character) => {
-    switch (character) {
-      case "&":
-        return "&amp;";
-      case "<":
-        return "&lt;";
-      case ">":
-        return "&gt;";
-      case '"':
-        return "&quot;";
-      case "'":
-        return "&#39;";
-      default:
-        return character;
-    }
-  });
-}
-
-function formatDuration(durationSeconds: number): string {
-  const totalSeconds = Number.isFinite(durationSeconds) ? Math.max(0, Math.floor(durationSeconds)) : 0;
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
-
-function isTop10Place(place: number): boolean {
-  return Number.isInteger(place) && place >= 1 && place <= TOP_LEADERBOARD_LIMIT;
 }

@@ -15,7 +15,7 @@ import {
   removeCharacterAnimationClasses,
   wrapIndex,
   type CharacterChangeDirection,
-} from "./helpers.js";
+} from "../helpers/index.js";
 
 type CharacterSelectOptions = {
   initialCharacterKind: string | undefined;
