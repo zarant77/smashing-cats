@@ -22,6 +22,10 @@ coverage
 .env
 .env.*
 
+# Manager
+manager/state.json
+manager/logs/
+
 # Generated web assets
 apps/web-client/public
 apps/web-client/icons
