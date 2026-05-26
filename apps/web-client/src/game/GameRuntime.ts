@@ -416,7 +416,7 @@ export class GameRuntime {
     const input = this.applyLocalViewportRightGuard(this.readPlayerInput(), currentPlayerId);
     const currentInputSeq = this.getCurrentInputSeq(canSend && !isPaused(), input);
 
-    this.updateLocalGame(canPlay, currentPlayerId, currentInputSeq, input);
+    this.updateLocalGame(canPlay, currentPlayerId, input);
 
     const snapshot = this.getRenderSnapshot(currentInputSeq, input);
 
@@ -509,7 +509,6 @@ export class GameRuntime {
   private updateLocalGame(
     canPlay: boolean,
     currentPlayerId: PlayerId | undefined,
-    currentInputSeq: number,
     input: PlayerInput,
   ): void {
     if (this.multiplayer || !canPlay || this.localGame === undefined || currentPlayerId === undefined) {
@@ -518,20 +517,26 @@ export class GameRuntime {
       return;
     }
 
-    if (!isPaused()) {
-      this.localGame.setInput(currentPlayerId, input, undefined, currentInputSeq);
-    }
-
     const now = performance.now();
     const dt = Math.min(0.25, (now - this.lastLocalUpdateAt) / 1000);
     this.lastLocalUpdateAt = now;
     this.localUpdateAccumulator += dt;
 
+    if (isPaused()) {
+      this.localUpdateAccumulator = 0;
+      return;
+    }
+
     while (this.localUpdateAccumulator >= FIXED_DT) {
+      const tickInput = normalizePlayerInput(input);
+      const nextTick = (this.localSnapshot?.tick ?? 0) + 1;
+
       this.previousLocalSnapshot = this.localSnapshot;
+
+      this.localGame.setInput(currentPlayerId, tickInput, undefined, nextTick);
+      this.replayRecorder?.recordInput(nextTick, tickInput);
       this.localGame.update(FIXED_DT);
       this.localSnapshot = this.localGame.createSnapshot();
-      this.replayRecorder?.recordInput(this.localSnapshot.tick, input);
       this.completeLocalReplay(this.localSnapshot, currentPlayerId);
       saveTutorialDoneIfFinished(this.previousLocalSnapshot, this.localSnapshot);
       this.localUpdateAccumulator -= FIXED_DT;
@@ -663,4 +668,12 @@ function isSameInput(left: PlayerInput, right: PlayerInput): boolean {
 
 function hasActiveInput(input: PlayerInput): boolean {
   return input.left || input.right || input.jump;
+}
+
+function normalizePlayerInput(input: PlayerInput): PlayerInput {
+  return {
+    left: input.left === true,
+    right: input.right === true,
+    jump: input.jump === true,
+  };
 }

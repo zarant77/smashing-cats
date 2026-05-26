@@ -387,6 +387,7 @@ export class Room {
     console.log(
       `[leaderboard] replay verification starts player=${playerId} finalScore=${replay.finalScore} finalTick=${replay.finalTick} inputs=${replay.inputs.length}`,
     );
+    console.log("[leaderboard] replay verification input stats", analyzeReplayInputs(replay));
 
     const now = Date.now();
     const lastSubmitAt = this.lastReplayVerificationSubmitAt.get(playerId) ?? 0;
@@ -460,8 +461,14 @@ export class Room {
     replay: ReplayVerificationReplay,
     result?: ReplayVerificationResult,
   ): void {
+    const expectedScore = result?.expectedScore ?? replay.finalScore;
+    const actualScore = result?.actualScore ?? 0;
+    const expectedFinalTick = result?.expectedFinalTick ?? replay.finalTick;
+    const actualFinalTick = result?.actualFinalTick ?? 0;
+    const scoreDelta = actualScore - expectedScore;
+
     console.log(
-      `[leaderboard] replay verification rejected player=${playerId} reason=${reason} expectedScore=${result?.expectedScore ?? replay.finalScore} actualScore=${result?.actualScore ?? 0} expectedFinalTick=${result?.expectedFinalTick ?? replay.finalTick} actualFinalTick=${result?.actualFinalTick ?? 0}`,
+      `[leaderboard] replay verification rejected player=${playerId} reason=${reason} expectedScore=${expectedScore} actualScore=${actualScore} scoreDelta=${scoreDelta} expectedFinalTick=${expectedFinalTick} actualFinalTick=${actualFinalTick}`,
     );
   }
 
@@ -635,6 +642,44 @@ function parseClientMessage(raw: string): ClientToServerMessage | undefined {
   } catch {
     return undefined;
   }
+}
+
+function analyzeReplayInputs(replay: ReplayVerificationReplay): {
+  finalTick: number;
+  inputsLength: number;
+  firstInputFrames: ReplayVerificationReplay["inputs"];
+  lastInputFrames: ReplayVerificationReplay["inputs"];
+  duplicateTickCount: number;
+  missingTickCount: number;
+} {
+  const seenTicks = new Set<number>();
+  let duplicateTickCount = 0;
+  let missingTickCount = 0;
+  let previousTick = 0;
+
+  for (const input of replay.inputs) {
+    if (seenTicks.has(input.tick)) {
+      duplicateTickCount += 1;
+    }
+
+    if (previousTick === 0 && input.tick > 1) {
+      missingTickCount += input.tick - 1;
+    } else if (previousTick > 0 && input.tick > previousTick + 1) {
+      missingTickCount += input.tick - previousTick - 1;
+    }
+
+    seenTicks.add(input.tick);
+    previousTick = input.tick;
+  }
+
+  return {
+    finalTick: replay.finalTick,
+    inputsLength: replay.inputs.length,
+    firstInputFrames: replay.inputs.slice(0, 5),
+    lastInputFrames: replay.inputs.slice(-5),
+    duplicateTickCount,
+    missingTickCount,
+  };
 }
 
 function hasDeltaChanges(delta: DeltaSnapshot): boolean {

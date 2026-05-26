@@ -14,6 +14,9 @@ export class ReplayRecorder {
   private readonly inputs: ReplayInputFrame[] = [];
 
   private completedReplay: GameReplay | undefined;
+  private lastRecordedTick = 0;
+  private duplicateTickCount = 0;
+  private missingTickCount = 0;
 
   public constructor(options: ReplayRecorderOptions) {
     this.gameVersion = options.gameVersion;
@@ -26,6 +29,19 @@ export class ReplayRecorder {
     if (this.completedReplay !== undefined) {
       return;
     }
+
+    if (tick <= this.lastRecordedTick) {
+      this.duplicateTickCount += 1;
+      return;
+    }
+
+    if (this.lastRecordedTick === 0 && tick > 1) {
+      this.missingTickCount += tick - 1;
+    } else if (this.lastRecordedTick > 0 && tick > this.lastRecordedTick + 1) {
+      this.missingTickCount += tick - this.lastRecordedTick - 1;
+    }
+
+    this.lastRecordedTick = tick;
 
     this.inputs.push({
       tick,
@@ -58,6 +74,16 @@ export class ReplayRecorder {
       finalScore: player.score,
       inputs: this.inputs.map((input) => ({ ...input })),
     };
+
+    console.debug("[leaderboard] completed replay", {
+      finalScore: this.completedReplay.finalScore,
+      finalTick: this.completedReplay.finalTick,
+      inputsLength: this.completedReplay.inputs.length,
+      firstInputFrames: this.completedReplay.inputs.slice(0, 5),
+      lastInputFrames: this.completedReplay.inputs.slice(-5),
+      duplicateTickCount: this.duplicateTickCount,
+      missingTickCount: this.missingTickCount,
+    });
 
     return this.completedReplay;
   }

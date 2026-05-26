@@ -38,6 +38,22 @@ describe("verifyGameReplay", () => {
     expect(result.actualScore).toBe(replay.finalScore);
   });
 
+  test("verifies a replay built from normalized per-tick input frames", () => {
+    const rawInputs: PlayerInput[] = createSeedSensitiveInputs().map((input, index) => ({
+      left: input.left === true,
+      right: input.right === true || index % 37 === 0,
+      jump: input.jump === true,
+    }));
+    const replay = createReplay(2026, rawInputs, { tutorialCompleted: true });
+    const result = verifyGameReplay(replay);
+
+    expect(replay.inputs).toHaveLength(replay.finalTick);
+    expect(replay.inputs[0]?.tick).toBe(1);
+    expect(replay.inputs.at(-1)?.tick).toBe(replay.finalTick);
+    expect(result.valid).toBe(true);
+    expect(result.actualScore).toBe(replay.finalScore);
+  });
+
   test("fails when finalScore is tampered", () => {
     const replay = createReplay(1337, INPUTS);
     const result = verifyGameReplay({
