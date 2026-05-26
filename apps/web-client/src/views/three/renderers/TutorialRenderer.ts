@@ -169,11 +169,11 @@ export class TutorialRenderer {
     this.drawModel("schoolboard", "tutorial.schoolboard", 450, 200, 200, { rotationY: Math.PI + 0.1 });
 
     this.drawText("schoolboard-text", t("tutorialText"), 450, 340, {
-      font: "500 14px 'Comic Sans MS', cursive",
+      font: "500 18px GameFont",
       color: "#ffffff",
       align: "center",
-      maxWidth: 200,
-      lineHeight: 20,
+      maxWidth: 220,
+      lineHeight: 28,
       preserveNewlines: true,
     });
   }
@@ -211,7 +211,7 @@ export class TutorialRenderer {
     this.drawImage("speech-bubble", "common.speech_bubble", x, y, 1);
 
     this.drawText("speech-text", text, x + 210, y + 90, {
-      font: "700 22px Arial",
+      font: "700 32px GameFont",
       color: "#000000",
       align: "center",
       rotation: -0.1,
@@ -291,7 +291,7 @@ export class TutorialRenderer {
 
   private drawText(id: string, text: string, worldX: number, y: number, options?: DrawTextOptions): void {
     const state = this.getTextState(id);
-    const font = options?.font ?? "700 24px Arial";
+    const font = options?.font ?? "700 24px GameFont";
     const color = options?.color ?? "#111111";
     const align = options?.align ?? "left";
     const maxWidth = options?.maxWidth ?? 180;
@@ -459,7 +459,7 @@ export class TutorialRenderer {
 
   private renderTextTexture(state: TextState, text: string, options: DrawTextOptions): void {
     const ctx = state.context;
-    const font = options.font ?? "700 24px Arial";
+    const font = options.font ?? "700 24px GameFont";
     const maxWidth = options.maxWidth ?? 180;
     const lineHeight = options.lineHeight ?? 28;
 

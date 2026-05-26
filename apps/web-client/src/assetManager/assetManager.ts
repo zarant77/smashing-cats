@@ -10,6 +10,7 @@ export type AssetManifest = {
   images?: AssetMap;
   audio?: AssetMap;
   models?: AssetMap;
+  fonts?: AssetMap;
 };
 
 export type AssetLoadProgress = {
@@ -26,6 +27,7 @@ export type PreloadAssetsOptions = {
 
 type AssetEntry = {
   group: keyof AssetManifest;
+  key: string;
   path: string;
 };
 
@@ -50,6 +52,7 @@ export async function preloadAssets(engine: ViewKind, options: PreloadAssetsOpti
     ...getAssetEntries("images", manifest.images),
     ...getAssetEntries("audio", manifest.audio),
     ...getAssetEntries("models", manifest.models),
+    ...getAssetEntries("fonts", manifest.fonts),
   ];
 
   let loaded = 0;
@@ -138,32 +141,35 @@ async function loadManifest(engine: ViewKind): Promise<AssetManifest> {
 async function importManifest(engine: ViewKind): Promise<AssetManifest> {
   switch (engine) {
     case "canvas": {
-      const { IMAGES, AUDIO, MODELS } = await import("./manifests/canvas.js");
+      const { IMAGES, AUDIO, MODELS, FONTS } = await import("./manifests/canvas.js");
 
       return {
         images: IMAGES,
         audio: AUDIO,
         models: MODELS,
+        fonts: FONTS,
       };
     }
 
     case "phaser": {
-      const { IMAGES, AUDIO, MODELS } = await import("./manifests/phaser.js");
+      const { IMAGES, AUDIO, MODELS, FONTS } = await import("./manifests/phaser.js");
 
       return {
         images: IMAGES,
         audio: AUDIO,
         models: MODELS,
+        fonts: FONTS,
       };
     }
 
     case "three": {
-      const { IMAGES, AUDIO, MODELS } = await import("./manifests/three.js");
+      const { IMAGES, AUDIO, MODELS, FONTS } = await import("./manifests/three.js");
 
       return {
         images: IMAGES,
         audio: AUDIO,
         models: MODELS,
+        fonts: FONTS,
       };
     }
   }
@@ -190,8 +196,9 @@ function getAssetEntries(group: keyof AssetManifest, assets: AssetMap | undefine
     return [];
   }
 
-  return Object.values(assets).map((path) => ({
+  return Object.entries(assets).map(([key, path]) => ({
     group,
+    key,
     path,
   }));
 }
@@ -209,7 +216,20 @@ function preloadSingleAsset(entry: AssetEntry): Promise<void> {
     return models.preload([entry.path]);
   }
 
+  if (entry.group === "fonts") {
+    return preloadFont(entry.key, entry.path);
+  }
+
   return Promise.resolve();
+}
+
+async function preloadFont(fontFamily: string, path: string): Promise<void> {
+  const font = new FontFace(fontFamily, `url("${path}")`);
+
+  await font.load();
+
+  document.fonts.add(font);
+  await document.fonts.load(`16px "${fontFamily}"`);
 }
 
 function warnMissingAsset(group: keyof AssetManifest, key: string, fallbackKey: string): void {

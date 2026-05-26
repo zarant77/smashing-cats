@@ -148,3 +148,8 @@ export const AUDIO = {
 } as const;
 
 export const MODELS = {} as const;
+
+export const FONTS = {
+  GameFont: "/fonts/Caveat-Bold.ttf",
+  UIFont: "/fonts/Comfortaa-Bold.ttf",
+} as const;

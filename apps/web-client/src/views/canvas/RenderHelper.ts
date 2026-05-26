@@ -77,7 +77,7 @@ export class RenderHelper {
     ctx.translate(x, drawY);
     ctx.rotate(options?.rotation ?? 0);
 
-    ctx.font = options?.font ?? "700 24px Arial";
+    ctx.font = options?.font ?? "700 24px GameFont";
     ctx.fillStyle = options?.color ?? "#111111";
     ctx.textAlign = options?.align ?? "left";
     ctx.textBaseline = "middle";
@@ -100,7 +100,7 @@ export class RenderHelper {
     this.img(ctx, "common.speech_bubble", worldX, y, 1);
 
     this.text(ctx, text, worldX + 200, y + 95, {
-      font: "700 22px Arial",
+      font: "700 30px GameFont",
       color: "#2a1b12",
       align: "center",
       rotation: -0.1,

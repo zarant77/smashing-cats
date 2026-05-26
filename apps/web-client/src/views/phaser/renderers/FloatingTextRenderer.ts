@@ -65,9 +65,8 @@ export class FloatingTextRenderer {
 
   private spawnText(text: string, x: number, y: number, color: string): void {
     const label = this.scene.add.text(x, y, text, {
-      fontFamily: "Arial",
+      fontFamily: "GameFont",
       fontSize: "28px",
-      fontStyle: "700",
       color,
       stroke: "#000000",
       strokeThickness: 5,

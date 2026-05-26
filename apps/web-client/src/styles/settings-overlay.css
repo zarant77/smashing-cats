@@ -80,7 +80,7 @@
 
 .settings-overlay .card {
   position: absolute;
-  top: 112px;
+  top: 100px;
   right: 0;
 
   width: 280px;
@@ -156,7 +156,7 @@
   margin: 0;
 
   color: rgba(255, 255, 255, 0.82);
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1;
   font-weight: 900;
   letter-spacing: 1px;
@@ -233,7 +233,7 @@
 
   color: rgba(255, 255, 255, 0.42);
 
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   line-height: 1;
   text-align: center;

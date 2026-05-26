@@ -1,0 +1,26 @@
+@font-face {
+  font-family: "GameFont";
+  src: url("/fonts/Caveat-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "UIFont";
+  src: url("/fonts/Comfortaa-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+body {
+  font-family: "UIFont";
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}

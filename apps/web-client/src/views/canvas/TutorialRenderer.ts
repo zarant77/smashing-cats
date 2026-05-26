@@ -94,12 +94,12 @@ export class TutorialRenderer {
   private drawSchoolboard(): void {
     this.helpers.img(this.ctx, "tutorial.schoolboard", 350, 0, 1);
 
-    this.helpers.text(this.ctx, t("tutorialText"), 480, 150, {
-      font: "500 16px 'Comic Sans MS', cursive",
+    this.helpers.text(this.ctx, t("tutorialText"), 475, 150, {
+      font: "500 18px GameFont",
       color: "#ffffff",
       align: "center",
       maxWidth: 220,
-      lineHeight: 20,
+      lineHeight: 26,
       rotation: 0,
       preserveNewlines: true,
     });

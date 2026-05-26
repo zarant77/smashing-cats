@@ -58,8 +58,7 @@ export class FloatingTextRenderer {
 
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.font = `700 ${Math.round(viewport.worldToScreenSize(24))}px sans-serif`;
-    ctx.lineWidth = Math.max(2, viewport.worldToScreenSize(4));
+    ctx.font = `700 36px GameFont`;
 
     for (const text of this.texts) {
       const progress = Math.min(1, (now - text.createdAt) / LIFE_MS);

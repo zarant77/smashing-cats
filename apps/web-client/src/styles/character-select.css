@@ -164,9 +164,8 @@
 .character-stat-label {
   min-width: 0;
   color: #ffffff;
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1;
-  font-weight: 900;
   white-space: nowrap;
   text-align: left;
   text-transform: uppercase;

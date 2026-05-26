@@ -13,14 +13,8 @@ body {
 }
 
 body {
-  font-family: system-ui, sans-serif;
   background: #20242a;
   touch-action: none;
-}
-
-button,
-select {
-  font: inherit;
 }
 
 button {

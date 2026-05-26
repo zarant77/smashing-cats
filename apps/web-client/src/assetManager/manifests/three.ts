@@ -140,3 +140,8 @@ export const AUDIO = {
   "sound.ui_click": "/sfx/ui_click.wav",
   "sound.game_over": "/sfx/game_over.wav",
 } as const;
+
+export const FONTS = {
+  GameFont: "/fonts/Caveat-Bold.ttf",
+  UIFont: "/fonts/Comfortaa-Bold.ttf",
+} as const;

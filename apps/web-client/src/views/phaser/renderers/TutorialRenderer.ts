@@ -133,13 +133,12 @@ export class TutorialRenderer {
     this.drawImage("schoolboard", "tutorial.schoolboard", 350, 0, 1);
 
     this.drawText("schoolboard-text", t("tutorialText"), 480, 150, {
-      fontSize: 16,
-      fontFamily: '"Comic Sans MS", cursive',
-      fontStyle: "500",
+      fontSize: 18,
+      fontFamily: "GameFont",
       color: "#ffffff",
       align: "center",
       maxWidth: 220,
-      lineHeight: 20,
+      lineHeight: 24,
     });
   }
 
@@ -187,9 +186,8 @@ export class TutorialRenderer {
     this.drawImage("speech-bubble", "common.speech_bubble", worldX, y, 1);
 
     this.drawText("speech-text", text, worldX + 200, y + 100, {
-      fontSize: 22,
-      fontFamily: "Arial",
-      fontStyle: "700",
+      fontSize: 32,
+      fontFamily: "GameFont",
       color: "#2a1b12",
       align: "center",
       rotation: -0.1,
@@ -253,7 +251,7 @@ export class TutorialRenderer {
     textObject.setRotation(options?.rotation ?? 0);
     textObject.setStyle({
       color: options?.color ?? "#111111",
-      fontFamily: options?.fontFamily ?? "Arial",
+      fontFamily: options?.fontFamily ?? "GameFont",
       fontSize: `${fontSize}px`,
       fontStyle: options?.fontStyle ?? "700",
       align: options?.align ?? "left",
