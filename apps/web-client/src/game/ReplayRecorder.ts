@@ -1,4 +1,12 @@
-import type { GameReplay, GameSnapshot, PlayerId, PlayerInput, ReplayInputFrame } from "@smashing-cats/protocol";
+import {
+  encodeInputBitmask,
+  type GameReplay,
+  type GameReplayV2,
+  type GameSnapshot,
+  type PlayerId,
+  type PlayerInput,
+  type ReplayInputRun,
+} from "@smashing-cats/protocol";
 
 type ReplayRecorderOptions = {
   gameVersion: string;
@@ -11,9 +19,10 @@ export class ReplayRecorder {
   private readonly seed: string;
   private readonly playerKind: string;
   private readonly startedAt: string;
-  private readonly inputs: ReplayInputFrame[] = [];
+  private readonly inputRuns: ReplayInputRun[] = [];
+  private logicalInputCount = 0;
 
-  private completedReplay: GameReplay | undefined;
+  private completedReplay: GameReplayV2 | undefined;
   private lastRecordedTick = 0;
   private duplicateTickCount = 0;
   private missingTickCount = 0;
@@ -42,13 +51,17 @@ export class ReplayRecorder {
     }
 
     this.lastRecordedTick = tick;
+    this.logicalInputCount += 1;
 
-    this.inputs.push({
-      tick,
-      left: input.left,
-      right: input.right,
-      jump: input.jump,
-    });
+    const bitmask = encodeInputBitmask(input);
+    const lastRun = this.inputRuns.at(-1);
+
+    if (lastRun !== undefined && lastRun[0] + lastRun[1] === tick && lastRun[2] === bitmask) {
+      this.inputRuns[this.inputRuns.length - 1] = [lastRun[0], lastRun[1] + 1, lastRun[2]];
+      return;
+    }
+
+    this.inputRuns.push([tick, 1, bitmask]);
   }
 
   public complete(snapshot: GameSnapshot, playerId: PlayerId): GameReplay | undefined {
@@ -63,7 +76,7 @@ export class ReplayRecorder {
     }
 
     this.completedReplay = {
-      version: 1,
+      version: 2,
       gameVersion: this.gameVersion,
       mode: "single",
       seed: this.seed,
@@ -72,15 +85,19 @@ export class ReplayRecorder {
       endedAt: new Date().toISOString(),
       finalTick: snapshot.tick,
       finalScore: player.score,
-      inputs: this.inputs.map((input) => ({ ...input })),
+      inputRuns: this.inputRuns.map(cloneInputRun),
     };
+
+    const compressionRatio = this.inputRuns.length === 0 ? 1 : this.logicalInputCount / this.inputRuns.length;
 
     console.debug("[leaderboard] completed replay", {
       finalScore: this.completedReplay.finalScore,
       finalTick: this.completedReplay.finalTick,
-      inputsLength: this.completedReplay.inputs.length,
-      firstInputFrames: this.completedReplay.inputs.slice(0, 5),
-      lastInputFrames: this.completedReplay.inputs.slice(-5),
+      inputRunsLength: this.completedReplay.inputRuns.length,
+      logicalInputCount: this.logicalInputCount,
+      estimatedCompressionRatio: compressionRatio,
+      firstInputRuns: this.completedReplay.inputRuns.slice(0, 5),
+      lastInputRuns: this.completedReplay.inputRuns.slice(-5),
       duplicateTickCount: this.duplicateTickCount,
       missingTickCount: this.missingTickCount,
     });
@@ -95,7 +112,11 @@ export class ReplayRecorder {
 
     return {
       ...this.completedReplay,
-      inputs: this.completedReplay.inputs.map((input) => ({ ...input })),
+      inputRuns: this.completedReplay.inputRuns.map(cloneInputRun),
     };
   }
+}
+
+function cloneInputRun(run: ReplayInputRun): ReplayInputRun {
+  return [run[0], run[1], run[2]];
 }

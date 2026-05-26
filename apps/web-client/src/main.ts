@@ -120,18 +120,18 @@ async function bootstrap(): Promise<void> {
     onLeaderboard: (entries) => {
       gameOverPopup?.setLeaderboard(entries);
     },
-    onLeaderboardEligible: ({ score }) => {
-      gameOverPopup?.setLeaderboardEligible(score);
+    onLeaderboardEligible: ({ score, place }) => {
+      gameOverPopup?.setLeaderboardEligible(score, place);
     },
     onLeaderboardSubmitted: ({ entries }) => {
       gameOverPopup?.setLeaderboardSubmitted(entries);
     },
-    onReplayVerificationAccepted: ({ score }) => {
-      gameOverPopup?.setReplayVerificationAccepted(score);
+    onReplayVerificationAccepted: ({ score, place }) => {
+      gameOverPopup?.setReplayVerificationAccepted(score, place);
     },
     onReplayVerificationRejected: ({ reason }) => {
       console.warn("Replay verification rejected", reason);
-      gameOverPopup?.setReplayVerificationRejected(reason);
+      gameOverPopup?.setReplayVerificationRejected();
       runtime?.requestLeaderboard();
     },
     getVisibleWorldWidth: () => getViewSize(root).visibleWorldWidth,
@@ -160,7 +160,6 @@ async function bootstrap(): Promise<void> {
     onLeaderboardSubmit: (playerName) => {
       runtime?.submitLeaderboardEntry(playerName);
     },
-    verifyReplay: !multiplayer,
   });
 
   characterSelect = new CharacterSelect(uiRoot, {

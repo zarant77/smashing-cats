@@ -1,4 +1,11 @@
-import type { GameReplay, PlayerInput, ReplayInputFrame } from "@smashing-cats/protocol";
+import {
+  decodeInputBitmask,
+  REPLAY_INPUT_MAX_BITMASK,
+  type GameReplay,
+  type PlayerInput,
+  type ReplayInputFrame,
+  type ReplayInputRun,
+} from "@smashing-cats/protocol";
 import { FIXED_DT, GAME_CONFIG, TICK_RATE } from "./config.js";
 import { Game } from "./Game.js";
 
@@ -27,7 +34,7 @@ export function verifyGameReplay(replay: GameReplay): ReplayVerificationResult {
     actualFinalTick: 0,
   };
 
-  if (replay.version !== 1) {
+  if (replay.version !== 1 && replay.version !== 2) {
     return {
       ...baseResult,
       valid: false,
@@ -104,11 +111,13 @@ export function verifyGameReplay(replay: GameReplay): ReplayVerificationResult {
     };
   }
 
-  if (replay.inputs.length > replay.finalTick + 1) {
+  const inputValidationError = validateReplayInputs(replay);
+
+  if (inputValidationError !== undefined) {
     return {
       ...baseResult,
       valid: false,
-      reason: "Replay has too many input frames",
+      reason: inputValidationError,
     };
   }
 
@@ -162,7 +171,7 @@ type SimulateReplayOptions = {
 
 function simulateReplay(options: SimulateReplayOptions): Pick<ReplayVerificationResult, "actualScore" | "actualFinalTick"> {
   const game = new Game(options.seed);
-  const inputsByTick = createInputsByTick(options.replay.inputs);
+  const inputsByTick = createInputsByTick(options.replay);
 
   game.startTutorial({
     ...GAME_CONFIG.tutorial,
@@ -186,7 +195,55 @@ function simulateReplay(options: SimulateReplayOptions): Pick<ReplayVerification
   };
 }
 
-function createInputsByTick(inputs: readonly ReplayInputFrame[]): Map<number, PlayerInput> {
+function validateReplayInputs(replay: GameReplay): string | undefined {
+  if (replay.version === 1) {
+    if (!Array.isArray(replay.inputs)) {
+      return "Replay has invalid input frames";
+    }
+
+    return replay.inputs.length > replay.finalTick + 1 ? "Replay has too many input frames" : undefined;
+  }
+
+  if (!Array.isArray(replay.inputRuns)) {
+    return "Replay has invalid input runs";
+  }
+
+  return validateReplayInputRuns(replay.inputRuns);
+}
+
+function validateReplayInputRuns(inputRuns: readonly ReplayInputRun[]): string | undefined {
+  let previousEndTick = 0;
+
+  for (const run of inputRuns) {
+    const [tick, length, bitmask] = run;
+
+    if (!Number.isInteger(tick) || tick < 0) {
+      return "Replay has invalid input run tick";
+    }
+
+    if (!Number.isInteger(length) || length <= 0) {
+      return "Replay has invalid input run length";
+    }
+
+    if (!Number.isInteger(bitmask) || bitmask < 0 || bitmask > REPLAY_INPUT_MAX_BITMASK) {
+      return "Replay has invalid input bitmask";
+    }
+
+    if (tick <= previousEndTick) {
+      return "Replay input runs overlap or descend";
+    }
+
+    previousEndTick = tick + length - 1;
+  }
+
+  return undefined;
+}
+
+function createInputsByTick(replay: GameReplay): Map<number, PlayerInput> {
+  return replay.version === 1 ? createInputsByFrame(replay.inputs) : createInputsByRun(replay.inputRuns);
+}
+
+function createInputsByFrame(inputs: readonly ReplayInputFrame[]): Map<number, PlayerInput> {
   const inputsByTick = new Map<number, PlayerInput>();
 
   for (const input of inputs) {
@@ -195,6 +252,20 @@ function createInputsByTick(inputs: readonly ReplayInputFrame[]): Map<number, Pl
       right: input.right,
       jump: input.jump,
     });
+  }
+
+  return inputsByTick;
+}
+
+function createInputsByRun(inputRuns: readonly ReplayInputRun[]): Map<number, PlayerInput> {
+  const inputsByTick = new Map<number, PlayerInput>();
+
+  for (const [startTick, length, bitmask] of inputRuns) {
+    const input = decodeInputBitmask(bitmask);
+
+    for (let offset = 0; offset < length; offset += 1) {
+      inputsByTick.set(startTick + offset, input);
+    }
   }
 
   return inputsByTick;

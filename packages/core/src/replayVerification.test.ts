@@ -1,5 +1,13 @@
 import { describe, expect, test } from "vitest";
-import type { GameReplay, PlayerInput, ReplayInputFrame } from "@smashing-cats/protocol";
+import {
+  encodeInputBitmask,
+  type GameReplay,
+  type GameReplayV1,
+  type GameReplayV2,
+  type PlayerInput,
+  type ReplayInputFrame,
+  type ReplayInputRun,
+} from "@smashing-cats/protocol";
 import { FIXED_DT, GAME_CONFIG, Game, verifyGameReplay } from "./index.js";
 
 const PLAYER_ID = "p1";
@@ -54,6 +62,43 @@ describe("verifyGameReplay", () => {
     expect(result.actualScore).toBe(replay.finalScore);
   });
 
+  test("compresses mixed idle and action inputs into replay v2 runs", () => {
+    const replay = createReplay(1337, INPUTS);
+    const replayV2 = toReplayV2(replay);
+    const result = verifyGameReplay(replayV2);
+
+    expect(replayV2.inputRuns.length).toBeLessThan(replay.inputs.length);
+    expect(replayV2.inputRuns).toContainEqual([1, 55, encodeInputBitmask({ left: false, right: true, jump: false })]);
+    expect(replayV2.inputRuns).toContainEqual([56, 1, encodeInputBitmask({ left: false, right: true, jump: true })]);
+    expect(result.valid).toBe(true);
+    expect(result.actualScore).toBe(replay.finalScore);
+  });
+
+  test("verifies jump-only single-tick v2 runs", () => {
+    const inputs = createSeedSensitiveInputs();
+    inputs[10] = { left: false, right: false, jump: true };
+
+    const replay = createReplay(2027, inputs, { tutorialCompleted: true });
+    const replayV2 = toReplayV2(replay);
+    const result = verifyGameReplay(replayV2);
+
+    expect(replayV2.inputRuns).toContainEqual([11, 1, encodeInputBitmask({ left: false, right: false, jump: true })]);
+    expect(result.valid).toBe(true);
+    expect(result.actualFinalTick).toBe(replay.finalTick);
+  });
+
+  test("v1 and v2 produce identical final score and tick", () => {
+    const replay = createReplay(1337, createSeedSensitiveInputs(), { tutorialCompleted: true });
+    const replayV2 = toReplayV2(replay);
+    const v1Result = verifyGameReplay(replay);
+    const v2Result = verifyGameReplay(replayV2);
+
+    expect(v1Result.valid).toBe(true);
+    expect(v2Result.valid).toBe(true);
+    expect(v2Result.actualScore).toBe(v1Result.actualScore);
+    expect(v2Result.actualFinalTick).toBe(v1Result.actualFinalTick);
+  });
+
   test("fails when finalScore is tampered", () => {
     const replay = createReplay(1337, INPUTS);
     const result = verifyGameReplay({
@@ -92,12 +137,25 @@ describe("verifyGameReplay", () => {
     const replay = createReplay(1337, INPUTS);
     const unsupportedReplay = {
       ...replay,
-      version: 2,
+      version: 3,
     } as unknown as GameReplay;
     const result = verifyGameReplay(unsupportedReplay);
 
     expect(result.valid).toBe(false);
     expect(result.reason).toBe("Unsupported replay version");
+  });
+
+  test("fails for malformed v2 runs", () => {
+    const replay = toReplayV2(createReplay(1337, INPUTS));
+
+    expect(verifyGameReplay({ ...replay, inputRuns: [[1, 0, 0]] }).reason).toBe("Replay has invalid input run length");
+    expect(verifyGameReplay({ ...replay, inputRuns: [[10, 2, 0], [11, 1, 0]] }).reason).toBe(
+      "Replay input runs overlap or descend",
+    );
+    expect(verifyGameReplay({ ...replay, inputRuns: [[2, 1, 0], [1, 1, 0]] }).reason).toBe(
+      "Replay input runs overlap or descend",
+    );
+    expect(verifyGameReplay({ ...replay, inputRuns: [[1, 1, 8]] }).reason).toBe("Replay has invalid input bitmask");
   });
 
   test("fails when replay has too many input frames", () => {
@@ -177,7 +235,7 @@ type CreateReplayOptions = {
   tutorialCompleted?: boolean;
 };
 
-function createReplay(seed: number, inputs: readonly PlayerInput[], options: CreateReplayOptions = {}): GameReplay {
+function createReplay(seed: number, inputs: readonly PlayerInput[], options: CreateReplayOptions = {}): GameReplayV1 {
   const game = new Game(seed);
 
   game.startTutorial({
@@ -208,6 +266,39 @@ function createReplay(seed: number, inputs: readonly PlayerInput[], options: Cre
     finalScore: player?.score ?? 0,
     inputs: createReplayInputFrames(inputs),
   };
+}
+
+function toReplayV2(replay: GameReplayV1): GameReplayV2 {
+  return {
+    version: 2,
+    gameVersion: replay.gameVersion,
+    mode: replay.mode,
+    seed: replay.seed,
+    playerKind: replay.playerKind,
+    startedAt: replay.startedAt,
+    endedAt: replay.endedAt,
+    finalTick: replay.finalTick,
+    finalScore: replay.finalScore,
+    inputRuns: createReplayInputRuns(replay.inputs),
+  };
+}
+
+function createReplayInputRuns(inputs: readonly ReplayInputFrame[]): ReplayInputRun[] {
+  const runs: ReplayInputRun[] = [];
+
+  for (const input of inputs) {
+    const bitmask = encodeInputBitmask(input);
+    const lastRun = runs.at(-1);
+
+    if (lastRun !== undefined && lastRun[0] + lastRun[1] === input.tick && lastRun[2] === bitmask) {
+      runs[runs.length - 1] = [lastRun[0], lastRun[1] + 1, lastRun[2]];
+      continue;
+    }
+
+    runs.push([input.tick, 1, bitmask]);
+  }
+
+  return runs;
 }
 
 function createReplayInputFrames(inputs: readonly PlayerInput[]): ReplayInputFrame[] {

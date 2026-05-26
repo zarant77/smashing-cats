@@ -26,7 +26,6 @@ export const commonUK = {
   verifyingRun: "Перевіряємо забіг...",
   runVerified: "Забіг перевірено!",
   runVerificationFailed: "Не вдалося перевірити забіг",
-  top10Score: "Рахунок для топ 10",
   submit: "Надіслати",
   submitted: "Надіслано",
   noScoresYet: "Рахунків ще немає",

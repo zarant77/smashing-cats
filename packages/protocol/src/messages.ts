@@ -88,6 +88,7 @@ export type LeaderboardEligibleMessage = {
   type: "leaderboardEligible";
   mode: LeaderboardMode;
   score: number;
+  place: number;
 };
 
 export type LeaderboardSubmittedMessage = {

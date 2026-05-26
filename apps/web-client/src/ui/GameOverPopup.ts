@@ -6,27 +6,23 @@ type GameOverPopupOptions = {
   onRestart: () => void;
   onLeaderboardRequest: () => void;
   onLeaderboardSubmit: (playerName: string) => void;
-  verifyReplay?: boolean;
 };
 
 const SHOW_DELAY_MS = 2000;
 const SPEECH_DELAY_MS = 1000;
-
-type ReplayVerificationStatus = "idle" | "pending" | "accepted" | "rejected";
+const TOP_LEADERBOARD_LIMIT = 10;
 
 export class GameOverPopup {
   private readonly element: HTMLDivElement;
   private readonly onRestart: () => void;
   private readonly onLeaderboardRequest: () => void;
   private readonly onLeaderboardSubmit: (playerName: string) => void;
-  private readonly verifyReplay: boolean;
 
   private visible = false;
   private speechVisible = false;
   private leaderboardRequested = false;
   private leaderboardEligible = false;
   private leaderboardSubmitted = false;
-  private replayVerificationStatus: ReplayVerificationStatus = "idle";
 
   private deadAt: number | undefined;
   private shownForPlayerId: PlayerId | undefined;
@@ -37,13 +33,11 @@ export class GameOverPopup {
   private eligibleScore = 0;
   private leaderboardEntries: LeaderboardEntry[] = [];
   private speechPhrase = "";
-  private replayVerificationReason = "";
 
   public constructor(root: HTMLElement, options: GameOverPopupOptions) {
     this.onRestart = options.onRestart;
     this.onLeaderboardRequest = options.onLeaderboardRequest;
     this.onLeaderboardSubmit = options.onLeaderboardSubmit;
-    this.verifyReplay = options.verifyReplay === true;
 
     this.element = document.createElement("div");
     this.element.className = "game-over-popup";
@@ -99,21 +93,17 @@ export class GameOverPopup {
     this.rerender();
   }
 
-  public setLeaderboardEligible(score: number): void {
-    this.leaderboardEligible = true;
+  public setLeaderboardEligible(score: number, place: number): void {
+    this.leaderboardEligible = isTop10Place(place);
     this.eligibleScore = score;
     this.rerender();
   }
 
-  public setReplayVerificationAccepted(score: number): void {
-    this.replayVerificationStatus = "accepted";
-    this.replayVerificationReason = "";
-    this.setLeaderboardEligible(score);
+  public setReplayVerificationAccepted(score: number, place: number): void {
+    this.setLeaderboardEligible(score, place);
   }
 
-  public setReplayVerificationRejected(reason: string): void {
-    this.replayVerificationStatus = "rejected";
-    this.replayVerificationReason = reason;
+  public setReplayVerificationRejected(): void {
     this.leaderboardEligible = false;
     this.rerender();
   }
@@ -137,11 +127,7 @@ export class GameOverPopup {
     this.speechVisible = false;
     this.element.hidden = false;
 
-    if (this.verifyReplay && this.replayVerificationStatus === "idle") {
-      this.replayVerificationStatus = "pending";
-    }
-
-    if (!this.leaderboardEligible && !this.leaderboardRequested) {
+    if (!this.leaderboardRequested) {
       this.leaderboardRequested = true;
       this.onLeaderboardRequest();
     }
@@ -182,38 +168,40 @@ export class GameOverPopup {
     const speechHidden = this.speechVisible ? "" : "hidden";
 
     return `
-      <section class="game-over-hero" aria-label="${t("gameOverCharacter")}">
-        <div class="game-over-character">
-          <div class="game-over-speech" ${speechHidden}>
-            ${escapeHtml(this.speechPhrase)}
-          </div>
-
-          <img
-            class="game-over-platform"
-            src="/ui/character_platform.png"
-            alt=""
-          />
-
-          <img
-            class="game-over-portrait"
-            src="/portraits/${escapeHtml(kind)}.png"
-            alt="${escapeHtml(kind)}"
-          />
+    <section class="game-over-hero" aria-label="${t("gameOverCharacter")}">
+      <div class="game-over-character">
+        <div class="game-over-speech" ${speechHidden}>
+          ${escapeHtml(this.speechPhrase)}
         </div>
 
-        <dl class="game-over-stats">
-          <div class="game-over-stat">
-            <dt>${t("score")}</dt>
-            <dd>${score}</dd>
-          </div>
+        <img
+          class="game-over-platform"
+          src="/ui/character_platform.png"
+          alt=""
+        />
 
-          <div class="game-over-stat">
-            <dt>${t("time")}</dt>
-            <dd>${this.renderElapsedTime()}</dd>
-          </div>
-        </dl>
-      </section>
-    `;
+        <img
+          class="game-over-portrait"
+          src="/portraits/${escapeHtml(kind)}.png"
+          alt="${escapeHtml(kind)}"
+        />
+      </div>
+
+      <div class="game-over-stats">
+        <div class="game-over-stat">
+          <span>${t("score")}</span>
+          <strong>${score}</strong>
+        </div>
+
+        <div class="game-over-stat">
+          <span>${t("time")}</span>
+          <strong>${this.renderElapsedTime()}</strong>
+        </div>
+
+        ${this.renderNameSubmitForm()}
+      </div>
+    </section>
+  `;
   }
 
   private renderLeaderboard(): string {
@@ -224,78 +212,50 @@ export class GameOverPopup {
         </header>
 
         <div class="game-over-leaderboard-body">
-          ${this.renderReplayVerificationStatus()}
-          ${this.renderLeaderboardStatus()}
           ${this.renderLeaderboardRows()}
         </div>
       </section>
     `;
   }
 
-  private renderReplayVerificationStatus(): string {
-    if (!this.verifyReplay || this.leaderboardSubmitted) {
+  private renderNameSubmitForm(): string {
+    if (this.leaderboardSubmitted) {
+      return `
+      <div class="game-over-submit-status">
+        ${t("submitted")}
+      </div>
+    `;
+    }
+
+    if (!this.leaderboardEligible) {
       return "";
     }
 
-    if (this.replayVerificationStatus === "pending") {
-      return `<p class="game-over-leaderboard-status replay-pending">${t("verifyingRun")}</p>`;
-    }
+    return `
+    <form class="game-over-submit-form">
+      <input
+        class="game-over-submit-name"
+        name="playerName"
+        type="text"
+        maxlength="16"
+        autocomplete="off"
+        spellcheck="false"
+        value="PLAYER"
+      />
 
-    if (this.replayVerificationStatus === "accepted") {
-      return `<p class="game-over-leaderboard-status replay-accepted">${t("runVerified")}</p>`;
-    }
-
-    if (this.replayVerificationStatus === "rejected") {
-      const reason =
-        this.replayVerificationReason === ""
-          ? ""
-          : `<p class="game-over-leaderboard-status replay-rejected-reason">${escapeHtml(this.replayVerificationReason)}</p>`;
-
-      return `
-        <p class="game-over-leaderboard-status replay-rejected">${t("runVerificationFailed")}</p>
-        ${reason}
-      `;
-    }
-
-    return "";
-  }
-
-  private renderLeaderboardStatus(): string {
-    if (this.leaderboardEligible) {
-      return `
-        <form class="game-over-leaderboard-form">
-          <label class="game-over-leaderboard-label">
-            <span>${t("top10Score")}: ${this.eligibleScore}</span>
-            <input
-              class="game-over-leaderboard-name"
-              name="playerName"
-              maxlength="16"
-              autocomplete="off"
-              value="${t("playerNameDefault")}"
-            />
-          </label>
-
-          <button class="button game-over-leaderboard-submit" type="submit">
-            ${t("submit")}
-          </button>
-        </form>
-      `;
-    }
-
-    if (this.leaderboardSubmitted) {
-      return `<p class="game-over-leaderboard-status">${t("submitted")}</p>`;
-    }
-
-    if (this.leaderboardRequested && this.leaderboardEntries.length === 0) {
-      return `<p class="game-over-leaderboard-status">${t("noScoresYet")}</p>`;
-    }
-
-    return "";
+      <button
+        class="button game-over-submit-button"
+        type="submit"
+      >
+        ${t("submit")}
+      </button>
+    </form>
+  `;
   }
 
   private renderLeaderboardRows(): string {
     if (this.leaderboardEntries.length === 0) {
-      return "";
+      return `<p class="game-over-empty-leaderboard">${t("noScoresYet")}</p>`;
     }
 
     return `
@@ -337,10 +297,10 @@ export class GameOverPopup {
       this.onRestart();
     });
 
-    this.element.querySelector<HTMLFormElement>(".game-over-leaderboard-form")?.addEventListener("submit", (event) => {
+    this.element.querySelector<HTMLFormElement>(".game-over-submit-form")?.addEventListener("submit", (event) => {
       event.preventDefault();
 
-      const input = this.element.querySelector<HTMLInputElement>(".game-over-leaderboard-name");
+      const input = this.element.querySelector<HTMLInputElement>(".game-over-submit-name");
       this.onLeaderboardSubmit(input?.value ?? "");
     });
   }
@@ -379,12 +339,10 @@ export class GameOverPopup {
     this.eligibleScore = 0;
     this.leaderboardEntries = [];
     this.speechPhrase = "";
-    this.replayVerificationReason = "";
 
     this.leaderboardRequested = false;
     this.leaderboardEligible = false;
     this.leaderboardSubmitted = false;
-    this.replayVerificationStatus = "idle";
   }
 
   private hide(): void {
@@ -425,4 +383,8 @@ function formatDuration(durationSeconds: number): string {
   const seconds = totalSeconds % 60;
 
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function isTop10Place(place: number): boolean {
+  return Number.isInteger(place) && place >= 1 && place <= TOP_LEADERBOARD_LIMIT;
 }

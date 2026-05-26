@@ -33,6 +33,7 @@ const FIELD_MAP = {
   finalTick: "ft",
   finalScore: "fs",
   inputs: "in",
+  inputRuns: "ir",
   tick: "tk",
   createdAt: "ca",
   gamePaused: "gp",

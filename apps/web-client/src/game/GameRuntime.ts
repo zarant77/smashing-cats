@@ -16,6 +16,7 @@ import type {
   PlayerId,
   PlayerInput,
   PlayerSnapshot,
+  ReplayInputRun,
   ServerToClientMessage,
 } from "@smashing-cats/protocol";
 
@@ -214,7 +215,8 @@ export class GameRuntime {
       playerKind: replay.playerKind,
       finalTick: replay.finalTick,
       finalScore: replay.finalScore,
-      "replay.inputs.length": replay.inputs.length,
+      inputFrames: replay.version === 1 ? replay.inputs.length : undefined,
+      inputRuns: replay.version === 2 ? replay.inputRuns.length : undefined,
       startedAt: replay.startedAt,
       endedAt: replay.endedAt,
     });
@@ -226,12 +228,21 @@ export class GameRuntime {
   }
 
   public getCompletedReplay(): GameReplay | undefined {
-    return this.completedReplay === undefined
-      ? undefined
-      : {
-          ...this.completedReplay,
-          inputs: this.completedReplay.inputs.map((input) => ({ ...input })),
-        };
+    if (this.completedReplay === undefined) {
+      return undefined;
+    }
+
+    if (this.completedReplay.version === 1) {
+      return {
+        ...this.completedReplay,
+        inputs: this.completedReplay.inputs.map((input) => ({ ...input })),
+      };
+    }
+
+    return {
+      ...this.completedReplay,
+      inputRuns: this.completedReplay.inputRuns.map(cloneInputRun),
+    };
   }
 
   public setPaused(paused: boolean): void {
@@ -694,4 +705,8 @@ function normalizePlayerInput(input: PlayerInput): PlayerInput {
     right: input.right === true,
     jump: input.jump === true,
   };
+}
+
+function cloneInputRun(run: ReplayInputRun): ReplayInputRun {
+  return [run[0], run[1], run[2]];
 }

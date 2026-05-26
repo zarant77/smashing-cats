@@ -14,6 +14,8 @@ import {
   type ClientToServerMessage,
   type DeltaSnapshot,
   type GameEvent,
+  type ReplayInputFrame,
+  type ReplayInputRun,
   type GameSnapshot,
   type LeaderboardMode,
   type ServerToClientMessage,
@@ -387,7 +389,7 @@ export class Room {
     }
 
     console.log(
-      `[leaderboard] replay verification starts player=${playerId} finalScore=${replay.finalScore} finalTick=${replay.finalTick} inputs=${replay.inputs.length}`,
+      `[leaderboard] replay verification starts player=${playerId} version=${replay.version} finalScore=${replay.finalScore} finalTick=${replay.finalTick}`,
     );
     console.log("[leaderboard] replay verification input stats", analyzeReplayInputs(replay));
 
@@ -570,7 +572,9 @@ export class Room {
 
       match.leaderboardProcessedPlayerIds.add(player.playerId);
 
-      if (!leaderboardStore.isEligible(mode, player.score)) {
+      const place = leaderboardStore.getEligiblePlace(mode, player.score);
+
+      if (place === undefined) {
         continue;
       }
 
@@ -591,6 +595,7 @@ export class Room {
         type: "leaderboardEligible",
         mode,
         score: player.score,
+        place,
       });
     }
   }
@@ -650,9 +655,28 @@ function parseClientMessage(raw: string): ClientToServerMessage | undefined {
 
 function analyzeReplayInputs(replay: ReplayVerificationReplay): {
   finalTick: number;
+  inputsLength?: number;
+  inputRunsLength?: number;
+  firstInputFrames?: readonly ReplayInputFrame[];
+  lastInputFrames?: readonly ReplayInputFrame[];
+  firstInputRuns?: readonly ReplayInputRun[];
+  lastInputRuns?: readonly ReplayInputRun[];
+  estimatedCompressionRatio?: number;
+  duplicateTickCount: number;
+  missingTickCount: number;
+} {
+  if (replay.version === 2) {
+    return analyzeReplayInputRuns(replay);
+  }
+
+  return analyzeReplayInputFrames(replay);
+}
+
+function analyzeReplayInputFrames(replay: Extract<ReplayVerificationReplay, { version: 1 }>): {
+  finalTick: number;
   inputsLength: number;
-  firstInputFrames: ReplayVerificationReplay["inputs"];
-  lastInputFrames: ReplayVerificationReplay["inputs"];
+  firstInputFrames: Extract<ReplayVerificationReplay, { version: 1 }>["inputs"];
+  lastInputFrames: Extract<ReplayVerificationReplay, { version: 1 }>["inputs"];
   duplicateTickCount: number;
   missingTickCount: number;
 } {
@@ -681,6 +705,45 @@ function analyzeReplayInputs(replay: ReplayVerificationReplay): {
     inputsLength: replay.inputs.length,
     firstInputFrames: replay.inputs.slice(0, 5),
     lastInputFrames: replay.inputs.slice(-5),
+    duplicateTickCount,
+    missingTickCount,
+  };
+}
+
+function analyzeReplayInputRuns(replay: Extract<ReplayVerificationReplay, { version: 2 }>): {
+  finalTick: number;
+  inputRunsLength: number;
+  firstInputRuns: Extract<ReplayVerificationReplay, { version: 2 }>["inputRuns"];
+  lastInputRuns: Extract<ReplayVerificationReplay, { version: 2 }>["inputRuns"];
+  estimatedCompressionRatio: number;
+  duplicateTickCount: number;
+  missingTickCount: number;
+} {
+  let logicalInputCount = 0;
+  let duplicateTickCount = 0;
+  let missingTickCount = 0;
+  let previousEndTick = 0;
+
+  for (const [tick, length] of replay.inputRuns) {
+    logicalInputCount += Math.max(0, length);
+
+    if (tick <= previousEndTick) {
+      duplicateTickCount += 1;
+    } else if (previousEndTick === 0 && tick > 1) {
+      missingTickCount += tick - 1;
+    } else if (previousEndTick > 0 && tick > previousEndTick + 1) {
+      missingTickCount += tick - previousEndTick - 1;
+    }
+
+    previousEndTick = Math.max(previousEndTick, tick + length - 1);
+  }
+
+  return {
+    finalTick: replay.finalTick,
+    inputRunsLength: replay.inputRuns.length,
+    firstInputRuns: replay.inputRuns.slice(0, 5),
+    lastInputRuns: replay.inputRuns.slice(-5),
+    estimatedCompressionRatio: replay.inputRuns.length === 0 ? 1 : logicalInputCount / replay.inputRuns.length,
     duplicateTickCount,
     missingTickCount,
   };

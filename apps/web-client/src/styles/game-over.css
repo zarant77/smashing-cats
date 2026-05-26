@@ -3,7 +3,7 @@
   inset: 0;
   z-index: 30;
   box-sizing: border-box;
-  padding: 22px 0 22px 0;
+  padding: 22px 0;
   pointer-events: auto;
   background: #000000aa;
 }
@@ -19,6 +19,7 @@
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: 18px;
+  margin: auto;
 }
 
 .game-over-header {
@@ -56,7 +57,6 @@
 
 .game-over-hero {
   position: relative;
-  bottom: -45px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -66,6 +66,7 @@
 
 .game-over-character {
   position: relative;
+
   width: 320px;
   height: 300px;
 }
@@ -73,6 +74,7 @@
 .game-over-platform {
   position: absolute;
   bottom: -150px;
+
   width: 100%;
   height: auto;
 }
@@ -80,14 +82,15 @@
 .game-over-portrait {
   position: absolute;
   bottom: -32px;
+
   width: 350px;
   height: auto;
 }
 
 .game-over-speech {
   position: absolute;
-  left: 80px;
-  top: -80px;
+  left: -60px;
+  top: -60px;
   z-index: 5;
 
   min-width: 250px;
@@ -123,24 +126,30 @@
 
 .game-over-speech::after {
   content: "";
+
   position: absolute;
-  left: 40px;
+  left: 240px;
   bottom: -14px;
+
   width: 22px;
   height: 22px;
+
   background: #fffdf8;
+
   border-left: 3px solid #4a2a00;
   border-bottom: 3px solid #4a2a00;
   border-bottom-left-radius: 7px;
+
   transform: rotate(-48deg) skew(-4deg);
 }
 
 .game-over-stats {
   z-index: 1;
+
   display: grid;
   gap: 8px;
 
-  min-width: 290px;
+  width: 330px;
   box-sizing: border-box;
   padding: 12px 20px;
 
@@ -148,7 +157,6 @@
   background: #00000044;
 
   border-radius: 16px;
-  text-align: center;
   text-transform: uppercase;
   text-shadow:
     0 3px 0 #00000044,
@@ -162,16 +170,67 @@
 }
 
 .game-over-stat dt,
-.game-over-stat dd {
+.game-over-stat dd,
+.game-over-stat span,
+.game-over-stat strong {
   margin: 0;
 
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 900;
   line-height: 1.05;
 }
 
-.game-over-stat dd {
+.game-over-stat dd,
+.game-over-stat strong {
   color: #ffc83d;
+}
+
+.game-over-submit-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  min-width: 0;
+  margin-top: 6px;
+}
+
+.game-over-submit-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 38px;
+
+  box-sizing: border-box;
+  padding: 0 10px;
+
+  color: #281600;
+  background: #fffdf8;
+
+  border: 2px solid #4a2a00;
+  border-radius: 14px;
+
+  font: inherit;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.game-over-submit-button {
+  height: 38px;
+  padding: 0 10px 0 10px;
+  font-size: 14px;
+  white-space: nowrap;
+  border-radius: 14px;
+}
+
+.game-over-submit-status {
+  margin: 6px 0 0;
+  padding-top: 8px;
+
+  color: #8df0a4;
+
+  font-size: 16px;
+  font-weight: 900;
+  text-align: center;
+  text-transform: uppercase;
 }
 
 .game-over-leaderboard {
@@ -218,81 +277,15 @@
   min-height: 0;
 }
 
-.game-over-leaderboard-status {
-  display: none;
-  margin: 0 0 14px;
+.game-over-empty-leaderboard {
+  margin: 16px 0 0;
 
-  font-size: 10px;
+  color: #b8e0ff;
+
+  font-size: 16px;
   font-weight: 900;
   text-align: center;
   text-transform: uppercase;
-}
-
-.replay-pending {
-  color: #ffe066;
-}
-
-.replay-accepted {
-  color: #8df0a4;
-}
-
-.replay-rejected {
-  color: #ff9b9b;
-}
-
-.replay-rejected-reason {
-  margin-top: -8px;
-  color: #ffd0d0;
-  font-size: 12px;
-  line-height: 1.25;
-  overflow-wrap: anywhere;
-  text-transform: none;
-}
-
-.game-over-leaderboard-form {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-
-  margin-bottom: 14px;
-}
-
-.game-over-leaderboard-label {
-  flex: 1;
-
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-
-  font-size: 12px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.game-over-leaderboard-name {
-  width: 100%;
-  min-width: 0;
-
-  box-sizing: border-box;
-  padding: 8px 10px;
-
-  color: #281600;
-  background: #fffdf8;
-
-  border: 2px solid #4a2a00;
-  border-radius: 6px;
-
-  font: inherit;
-  text-transform: uppercase;
-}
-
-.game-over-leaderboard-submit {
-  flex-shrink: 0;
-
-  min-height: 38px;
-  padding-inline: 12px;
-
-  font-size: 14px;
 }
 
 .game-over-leaderboard-list {
@@ -317,7 +310,7 @@
   gap: 8px;
   align-items: center;
 
-  min-height: 30px;
+  min-height: 32px;
   padding: 0 8px;
 
   border-bottom: 1px solid #ffffff18;
@@ -338,8 +331,11 @@
 
 .game-over-leaderboard-row-header {
   counter-increment: none;
+
   min-height: 24px;
+
   color: #b8e0ff;
+
   font-size: 12px;
   letter-spacing: 0;
   text-transform: uppercase;
@@ -352,23 +348,16 @@
 .game-over-leaderboard-character,
 .game-over-leaderboard-name-text {
   min-width: 0;
+
   overflow: hidden;
-  text-overflow: ellipsis;
+
   white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .game-over-leaderboard-time,
 .game-over-leaderboard-score {
   text-align: right;
-}
-
-.game-over-leaderboard-name-text {
-  min-width: 0;
-
-  overflow: hidden;
-
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
 .game-over-leaderboard-score {
@@ -389,7 +378,7 @@
 }
 
 .game-over-restart:hover,
-.game-over-leaderboard-submit:hover {
+.game-over-submit-button:hover {
   transform: translateY(-1px);
   filter: brightness(1.08);
 }

@@ -26,7 +26,6 @@ export const commonEN = {
   verifyingRun: "Verifying run...",
   runVerified: "Run verified!",
   runVerificationFailed: "Could not verify run",
-  top10Score: "Top 10 score",
   submit: "Submit",
   submitted: "Submitted",
   noScoresYet: "No scores yet",

@@ -26,7 +26,6 @@ export const commonPL = {
   verifyingRun: "Weryfikacja próby...",
   runVerified: "Próba zweryfikowana!",
   runVerificationFailed: "Nie udało się zweryfikować próby",
-  top10Score: "Wynik do top 10",
   submit: "Wyślij",
   submitted: "Wysłano",
   noScoresYet: "Brak wyników",
