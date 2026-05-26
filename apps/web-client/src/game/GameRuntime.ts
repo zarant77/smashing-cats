@@ -172,7 +172,7 @@ export class GameRuntime {
     this.previousLocalSnapshot = this.localSnapshot;
     this.completedReplay = undefined;
     this.replayRecorder = new ReplayRecorder({
-      gameVersion: __ASSET_VERSION__,
+      gameVersion: __APP_VERSION__,
       seed,
       playerKind: characterKind,
     });

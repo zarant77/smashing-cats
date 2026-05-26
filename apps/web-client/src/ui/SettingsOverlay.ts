@@ -150,6 +150,8 @@ export class SettingsOverlay {
             <span class="icon icon-exit"></span>
           </button>
         </div>
+
+        <div class="version">v${__APP_VERSION__}</div>
       </div>
     `;
 

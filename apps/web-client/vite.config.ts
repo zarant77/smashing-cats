@@ -13,6 +13,6 @@ export default defineConfig({
     chunkSizeWarningLimit: 3000,
   },
   define: {
-    __ASSET_VERSION__: JSON.stringify(pkg.version),
+    __APP_VERSION__: JSON.stringify(pkg.version),
   },
 });

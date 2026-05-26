@@ -227,3 +227,17 @@
 
   background: rgba(54, 74, 98, 0.96);
 }
+
+.settings-overlay .version {
+  margin-top: -4px;
+
+  color: rgba(255, 255, 255, 0.42);
+
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  letter-spacing: 1px;
+
+  user-select: text;
+}

@@ -294,7 +294,7 @@ async function bootstrap(): Promise<void> {
   // Run the game
   i18n.onLocaleChanged((newLocale) => {
     storage.locale = newLocale;
-    document.title = `${i18n.t("title")} v${__ASSET_VERSION__}`;
+    document.title = `${i18n.t("title")} v${__APP_VERSION__}`;
     applyStaticTranslations();
     renderCharacterSelect();
     syncSettingsOverlay();
