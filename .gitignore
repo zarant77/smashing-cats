@@ -1,12 +1,55 @@
 .DS_Store
-apps/web-client/android
-apps/web-client/public
-apps/web-client/icons
+
+# Dependencies
 node_modules
+.pnpm-store
+
+# Builds
 dist
 build
+coverage
+.cache
+.vite
+.turbo
 *.tsbuildinfo
+
+# Database
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
+
+# Env
 .env
+.env.*
+
+# Generated web assets
+apps/web-client/public
+apps/web-client/icons
+
+# Android / Capacitor
+apps/web-client/android/.gradle
+apps/web-client/android/build
+apps/web-client/android/app/build
+apps/web-client/android/app/release
+apps/web-client/android/app/debug
+apps/web-client/android/app/outputs
+apps/web-client/android/app/.cxx
+apps/web-client/android/local.properties
+apps/web-client/android/**/*.png
+apps/web-client/android/keystore.properties
+
+# Generated Capacitor web copy
+apps/web-client/android/app/src/main/assets/public
+
+# Android artifacts
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+
+# Signing keys
+*.jks
+*.keystore
+*.p12
+*.pem

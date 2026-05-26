@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Smashing Cats</string>
+    <string name="title_activity_main">Smashing Cats</string>
+    <string name="package_name">com.catemup.smashingcats</string>
+    <string name="custom_url_scheme">com.catemup.smashingcats</string>
+</resources>
