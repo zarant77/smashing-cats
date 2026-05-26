@@ -1,5 +1,7 @@
 import type { PlayerInput } from "@smashing-cats/protocol";
 
+import { isTextEditingTarget } from "./helpers/index.js";
+
 const keys = new Set<string>();
 
 const blockedBrowserKeys = new Set(["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]);
@@ -9,12 +11,8 @@ let paused = false;
 let pausePressed = false;
 let pendingJumpPress = false;
 
-function isTextInputTarget(target: EventTarget | null): boolean {
-  return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
-}
-
 window.addEventListener("keydown", (event) => {
-  if (isTextInputTarget(event.target)) {
+  if (isTextEditingTarget(event.target)) {
     return;
   }
 
@@ -36,7 +34,7 @@ window.addEventListener("keydown", (event) => {
 });
 
 window.addEventListener("keyup", (event) => {
-  if (isTextInputTarget(event.target)) {
+  if (isTextEditingTarget(event.target)) {
     return;
   }
 

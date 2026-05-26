@@ -13,6 +13,7 @@ import {
   getExitClass,
   getStatRanges,
   removeCharacterAnimationClasses,
+  isTextEditingTarget,
   wrapIndex,
   type CharacterChangeDirection,
 } from "../helpers/index.js";
@@ -101,7 +102,7 @@ export class CharacterSelect {
   }
 
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
-    if (this.element.hidden || this.lastCharacters.length === 0) {
+    if (this.element.hidden || this.lastCharacters.length === 0 || isTextEditingTarget(event.target)) {
       return;
     }
 

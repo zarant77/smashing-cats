@@ -27,6 +27,7 @@ import { Hud } from "./ui/Hud.js";
 import { createView, hasMultipleViewKinds, parseViewKind } from "./views/createView.js";
 import { getViewSize } from "./views/viewport.js";
 import type { GameView, ViewKind } from "./views/types.js";
+import { isTextEditingTarget } from "./helpers/index.js";
 
 import "./styles/index.css";
 
@@ -340,7 +341,7 @@ async function bootstrap(): Promise<void> {
 
   function bindViewShortcuts(): void {
     window.addEventListener("keydown", (event) => {
-      if (event.repeat || isEditableTarget(event.target)) {
+      if (event.repeat || isTextEditingTarget(event.target)) {
         return;
       }
 
@@ -364,18 +365,5 @@ async function bootstrap(): Promise<void> {
       once: true,
       capture: true,
     });
-  }
-
-  function isEditableTarget(target: EventTarget | null): boolean {
-    if (!(target instanceof HTMLElement)) {
-      return false;
-    }
-
-    return (
-      target.isContentEditable ||
-      target instanceof HTMLInputElement ||
-      target instanceof HTMLTextAreaElement ||
-      target instanceof HTMLSelectElement
-    );
   }
 }

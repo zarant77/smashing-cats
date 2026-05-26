@@ -11,7 +11,7 @@ import {
   PLAYER_NAME_MAX_LENGTH,
   sanitizePlayerName,
   PLAYER_NAME_ALLOWED_PATTERN,
-  isAllowedKey,
+  isAllowedPlayerNameKey,
   isAllowedPlayerNameCharacter,
 } from "../helpers/index.js";
 
@@ -256,7 +256,7 @@ export class GameOverPopup {
       autocorrect="off"
       spellcheck="false"
       pattern="${PLAYER_NAME_ALLOWED_PATTERN}{1,${PLAYER_NAME_MAX_LENGTH}}"
-      value="${getPlayerName()}"
+      value="${escapeHtml(sanitizePlayerName(getPlayerName()))}"
     />
 
       <button
@@ -324,6 +324,10 @@ export class GameOverPopup {
         return;
       }
 
+      if (input) {
+        input.value = playerName;
+      }
+
       setPlayerName(playerName);
       this.onLeaderboardSubmit(playerName);
     });
@@ -339,14 +343,22 @@ export class GameOverPopup {
         return;
       }
 
-      const removedBeforeCursor = before.slice(0, start).length - sanitizePlayerName(before.slice(0, start)).length;
+      const nextStart = sanitizePlayerName(before.slice(0, start)).length;
+      const nextEnd = sanitizePlayerName(before.slice(0, end)).length;
 
       input.value = after;
-
-      const nextStart = Math.max(0, start - removedBeforeCursor);
-      const nextEnd = Math.max(0, end - removedBeforeCursor);
-
       input.setSelectionRange(nextStart, nextEnd);
+    });
+
+    input?.addEventListener("paste", (event) => {
+      const pastedText = event.clipboardData?.getData("text") ?? "";
+
+      if (pastedText.length === 0) {
+        return;
+      }
+
+      event.preventDefault();
+      this.insertSanitizedPlayerNameText(input, pastedText);
     });
 
     input?.addEventListener("keydown", (event) => {
@@ -354,12 +366,29 @@ export class GameOverPopup {
         return;
       }
 
-      if (isAllowedKey(event.key) || isAllowedPlayerNameCharacter(event.key)) {
+      if (isAllowedPlayerNameKey(event.key)) {
         return;
       }
 
-      event.preventDefault();
+      if (event.key.length === 1 && !isAllowedPlayerNameCharacter(event.key)) {
+        event.preventDefault();
+      }
     });
+  }
+
+  private insertSanitizedPlayerNameText(input: HTMLInputElement, text: string): void {
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? input.value.length;
+    const prefix = input.value.slice(0, start);
+    const suffix = input.value.slice(end);
+    const availableLength = PLAYER_NAME_MAX_LENGTH - sanitizePlayerName(prefix).length - sanitizePlayerName(suffix).length;
+    const insertion = sanitizePlayerName(text).slice(0, Math.max(0, availableLength));
+    const nextValue = sanitizePlayerName(`${prefix}${insertion}${suffix}`);
+    const nextCaret = sanitizePlayerName(`${prefix}${insertion}`).length;
+
+    input.value = nextValue;
+    input.setSelectionRange(nextCaret, nextCaret);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
   private renderElapsedTime(): string {
