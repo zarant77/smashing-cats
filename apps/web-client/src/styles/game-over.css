@@ -3,7 +3,7 @@
   inset: 0;
   z-index: 30;
   box-sizing: border-box;
-  padding: 22px 40px 30px;
+  padding: 22px 0 22px 0;
   pointer-events: auto;
   background: #000000aa;
 }
@@ -13,7 +13,7 @@
 }
 
 .game-over-card {
-  width: 100%;
+  width: 940px;
   height: 100%;
 
   display: grid;
@@ -39,7 +39,7 @@
   line-height: 1;
   text-align: center;
   text-transform: uppercase;
-  letter-spacing: clamp(5px, 0.8vw, 12px);
+  letter-spacing: 8px;
 
   text-shadow:
     0 4px 0 #00000044,
@@ -55,7 +55,8 @@
 }
 
 .game-over-hero {
-  min-width: 0;
+  position: relative;
+  bottom: -45px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -85,8 +86,8 @@
 
 .game-over-speech {
   position: absolute;
-  left: 240px;
-  bottom: 200px;
+  left: 80px;
+  top: -80px;
   z-index: 5;
 
   min-width: 250px;
@@ -123,15 +124,15 @@
 .game-over-speech::after {
   content: "";
   position: absolute;
-  left: -8px;
-  top: 50px;
+  left: 40px;
+  bottom: -14px;
   width: 22px;
   height: 22px;
   background: #fffdf8;
   border-left: 3px solid #4a2a00;
   border-bottom: 3px solid #4a2a00;
   border-bottom-left-radius: 7px;
-  transform: rotate(16deg) skew(-4deg);
+  transform: rotate(-48deg) skew(-4deg);
 }
 
 .game-over-stats {
@@ -155,17 +156,16 @@
 }
 
 .game-over-stat {
-  display: grid;
-  grid-template-columns: auto 1fr;
+  display: flex;
+  justify-content: space-between;
   gap: 10px;
-  align-items: baseline;
 }
 
 .game-over-stat dt,
 .game-over-stat dd {
   margin: 0;
 
-  font-size: clamp(24px, 2.1vw, 34px);
+  font-size: 24px;
   font-weight: 900;
   line-height: 1.05;
 }
@@ -202,9 +202,10 @@
 
   color: #ffc83d;
 
-  font-size: clamp(28px, 2.8vw, 42px);
+  font-size: 28px;
   font-weight: 900;
   line-height: 1;
+  letter-spacing: 4px;
   text-align: center;
   text-transform: uppercase;
 
@@ -218,9 +219,10 @@
 }
 
 .game-over-leaderboard-status {
+  display: none;
   margin: 0 0 14px;
 
-  font-size: clamp(16px, 1.4vw, 20px);
+  font-size: 10px;
   font-weight: 900;
   text-align: center;
   text-transform: uppercase;
@@ -303,7 +305,7 @@
   list-style: none;
   counter-reset: leaderboard;
 
-  font-size: clamp(16px, 1.45vw, 21px);
+  font-size: 16px;
   font-weight: 900;
 }
 
@@ -315,8 +317,8 @@
   gap: 8px;
   align-items: center;
 
-  min-height: 34px;
-  padding: 4px 8px;
+  min-height: 30px;
+  padding: 0 8px;
 
   border-bottom: 1px solid #ffffff18;
   border-radius: 10px;
@@ -338,7 +340,7 @@
   counter-increment: none;
   min-height: 24px;
   color: #b8e0ff;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0;
   text-transform: uppercase;
 }
