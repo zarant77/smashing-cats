@@ -5,6 +5,7 @@ import {
   SNAPSHOT_INTERVAL_TICKS,
   TICK_RATE,
   createDeltaSnapshot,
+  type ReplayVerificationResult,
   verifyGameReplay,
 } from "@smashing-cats/core";
 import {
@@ -42,6 +43,8 @@ type PendingLeaderboardSubmission = {
   characterKind: string;
   score: number;
 };
+
+type ReplayVerificationReplay = Extract<ClientToServerMessage, { type: "submitReplayForVerification" }>["replay"];
 
 type RoomOptions = {
   onEmpty: () => void;
@@ -373,7 +376,7 @@ export class Room {
 
   private submitReplayForVerification(
     playerId: string,
-    replay: Extract<ClientToServerMessage, { type: "submitReplayForVerification" }>["replay"],
+    replay: ReplayVerificationReplay,
   ): void {
     const client = this.clients.get(playerId);
 
@@ -389,7 +392,7 @@ export class Room {
     const lastSubmitAt = this.lastReplayVerificationSubmitAt.get(playerId) ?? 0;
 
     if (now - lastSubmitAt < REPLAY_VERIFICATION_COOLDOWN_MS) {
-      console.log(`[leaderboard] replay verification rejected player=${playerId} reason=cooldown`);
+      this.logReplayVerificationRejected(playerId, "Replay verification is on cooldown", replay);
       this.send(client.socket, {
         type: "replayVerificationRejected",
         reason: "Replay verification is on cooldown",
@@ -402,9 +405,7 @@ export class Room {
     const result = verifyGameReplay(replay);
 
     if (!result.valid) {
-      console.log(
-        `[leaderboard] replay verification rejected player=${playerId} reason=${result.reason ?? "unknown"} actualScore=${result.actualScore}`,
-      );
+      this.logReplayVerificationRejected(playerId, result.reason ?? "Replay verification failed", replay, result);
       this.pendingLeaderboardSubmissions.delete(playerId);
       this.send(client.socket, {
         type: "replayVerificationRejected",
@@ -422,9 +423,7 @@ export class Room {
     );
 
     if (place === undefined) {
-      console.log(
-        `[leaderboard] replay verification rejected player=${playerId} reason=score-not-eligible actualScore=${result.actualScore}`,
-      );
+      this.logReplayVerificationRejected(playerId, "Score did not reach leaderboard", replay, result);
       this.pendingLeaderboardSubmissions.delete(playerId);
       this.send(client.socket, {
         type: "replayVerificationRejected",
@@ -453,6 +452,17 @@ export class Room {
       score: result.actualScore,
       place,
     });
+  }
+
+  private logReplayVerificationRejected(
+    playerId: string,
+    reason: string,
+    replay: ReplayVerificationReplay,
+    result?: ReplayVerificationResult,
+  ): void {
+    console.log(
+      `[leaderboard] replay verification rejected player=${playerId} reason=${reason} expectedScore=${result?.expectedScore ?? replay.finalScore} actualScore=${result?.actualScore ?? 0} expectedFinalTick=${result?.expectedFinalTick ?? replay.finalTick} actualFinalTick=${result?.actualFinalTick ?? 0}`,
+    );
   }
 
   private getOrCreateMatch(code: string): Match {

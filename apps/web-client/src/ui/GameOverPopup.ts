@@ -37,6 +37,7 @@ export class GameOverPopup {
   private eligibleScore = 0;
   private leaderboardEntries: LeaderboardEntry[] = [];
   private speechPhrase = "";
+  private replayVerificationReason = "";
 
   public constructor(root: HTMLElement, options: GameOverPopupOptions) {
     this.onRestart = options.onRestart;
@@ -106,11 +107,13 @@ export class GameOverPopup {
 
   public setReplayVerificationAccepted(score: number): void {
     this.replayVerificationStatus = "accepted";
+    this.replayVerificationReason = "";
     this.setLeaderboardEligible(score);
   }
 
-  public setReplayVerificationRejected(): void {
+  public setReplayVerificationRejected(reason: string): void {
     this.replayVerificationStatus = "rejected";
+    this.replayVerificationReason = reason;
     this.leaderboardEligible = false;
     this.rerender();
   }
@@ -243,7 +246,15 @@ export class GameOverPopup {
     }
 
     if (this.replayVerificationStatus === "rejected") {
-      return `<p class="game-over-leaderboard-status replay-rejected">${t("runVerificationFailed")}</p>`;
+      const reason =
+        this.replayVerificationReason === ""
+          ? ""
+          : `<p class="game-over-leaderboard-status replay-rejected-reason">${escapeHtml(this.replayVerificationReason)}</p>`;
+
+      return `
+        <p class="game-over-leaderboard-status replay-rejected">${t("runVerificationFailed")}</p>
+        ${reason}
+      `;
     }
 
     return "";
@@ -360,6 +371,7 @@ export class GameOverPopup {
     this.eligibleScore = 0;
     this.leaderboardEntries = [];
     this.speechPhrase = "";
+    this.replayVerificationReason = "";
 
     this.leaderboardRequested = false;
     this.leaderboardEligible = false;

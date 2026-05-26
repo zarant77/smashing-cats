@@ -131,7 +131,7 @@ async function bootstrap(): Promise<void> {
     },
     onReplayVerificationRejected: ({ reason }) => {
       console.warn("Replay verification rejected", reason);
-      gameOverPopup?.setReplayVerificationRejected();
+      gameOverPopup?.setReplayVerificationRejected(reason);
       runtime?.requestLeaderboard();
     },
     getVisibleWorldWidth: () => getViewSize(root).visibleWorldWidth,

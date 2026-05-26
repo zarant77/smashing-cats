@@ -200,11 +200,16 @@ export class GameRuntime {
 
   public submitReplayForVerification(replay: GameReplay): void {
     console.debug("[leaderboard] submitting replay for verification", {
-      finalScore: replay.finalScore,
-      finalTick: replay.finalTick,
-      inputFrames: replay.inputs.length,
+      version: replay.version,
+      gameVersion: replay.gameVersion,
       mode: replay.mode,
       seed: replay.seed,
+      playerKind: replay.playerKind,
+      finalTick: replay.finalTick,
+      finalScore: replay.finalScore,
+      "replay.inputs.length": replay.inputs.length,
+      startedAt: replay.startedAt,
+      endedAt: replay.endedAt,
     });
 
     this.sendClientMessage({
@@ -363,7 +368,7 @@ export class GameRuntime {
     }
 
     if (message.type === "replayVerificationRejected") {
-      console.debug("[leaderboard] received replayVerificationRejected", {
+      console.warn("[leaderboard] received replayVerificationRejected", {
         reason: message.reason,
       });
       this.onReplayVerificationRejected(message);

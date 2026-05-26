@@ -238,17 +238,28 @@
   color: #ff9b9b;
 }
 
+.replay-rejected-reason {
+  margin-top: -8px;
+  color: #ffd0d0;
+  font-size: 12px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  text-transform: none;
+}
+
 .game-over-leaderboard-form {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-  align-items: end;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
 
   margin-bottom: 14px;
 }
 
 .game-over-leaderboard-label {
-  display: grid;
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
   gap: 4px;
 
   font-size: 12px;
@@ -258,6 +269,8 @@
 
 .game-over-leaderboard-name {
   width: 100%;
+  min-width: 0;
+
   box-sizing: border-box;
   padding: 8px 10px;
 
@@ -272,6 +285,8 @@
 }
 
 .game-over-leaderboard-submit {
+  flex-shrink: 0;
+
   min-height: 38px;
   padding-inline: 12px;
 
