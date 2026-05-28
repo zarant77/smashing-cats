@@ -3,6 +3,7 @@
   "version": "0.1.1",
   "private": true,
   "type": "module",
+  "license": "GPL-3.0-or-later",
   "scripts": {
     "manager": "node scripts/manager.mjs",
     "dev": "node manager/devLauncher.mjs",
