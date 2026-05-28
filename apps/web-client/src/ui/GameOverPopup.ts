@@ -23,6 +23,7 @@ type GameOverPopupOptions = {
 
 const SHOW_DELAY_MS = 2000;
 const SPEECH_DELAY_MS = 1000;
+const LEADERBOARD_ENTRY_CLASS = "game-over--leaderboard-entry";
 
 export class GameOverPopup {
   private readonly element: HTMLDivElement;
@@ -35,6 +36,7 @@ export class GameOverPopup {
   private leaderboardRequested = false;
   private leaderboardEligible = false;
   private leaderboardSubmitted = false;
+  private leaderboardEntrySkipped = false;
 
   private deadAt: number | undefined;
   private shownForPlayerId: PlayerId | undefined;
@@ -107,6 +109,7 @@ export class GameOverPopup {
 
   public setLeaderboardEligible(score: number, place: number): void {
     this.leaderboardEligible = isTop10Place(place);
+    this.leaderboardEntrySkipped = false;
     this.eligibleScore = score;
     this.rerender();
   }
@@ -157,6 +160,7 @@ export class GameOverPopup {
     `;
 
     this.bindEvents();
+    this.syncLeaderboardEntryState();
   }
 
   private renderHeader(): string {
@@ -209,8 +213,6 @@ export class GameOverPopup {
           <span>${t("time")}</span>
           <strong>${this.renderElapsedTime()}</strong>
         </div>
-
-        ${this.renderNameSubmitForm()}
       </div>
     </section>
   `;
@@ -231,39 +233,36 @@ export class GameOverPopup {
   }
 
   private renderNameSubmitForm(): string {
-    if (this.leaderboardSubmitted) {
-      return `
-      <div class="game-over-submit-status">
-        ${t("submitted")}
-      </div>
-    `;
-    }
-
-    if (!this.leaderboardEligible) {
-      return "";
-    }
-
     return `
-    <form class="game-over-submit-form">
-    <input
-      class="game-over-submit-name"
-      name="playerName"
-      type="text"
-      inputmode="text"
-      maxlength="${PLAYER_NAME_MAX_LENGTH}"
-      autocomplete="off"
-      autocapitalize="characters"
-      autocorrect="off"
-      spellcheck="false"
-      pattern="${PLAYER_NAME_ALLOWED_PATTERN}{1,${PLAYER_NAME_MAX_LENGTH}}"
-      value="${escapeHtml(sanitizePlayerName(getPlayerName()))}"
-    />
+    <form class="game-over-submit-form" aria-label="${t("gameOverLeaderboardEntryTitle")}">
+      <h3 class="game-over-submit-title">${t("gameOverLeaderboardEntryTitle")}</h3>
 
-      <button
-        class="button game-over-submit-button"
-        type="submit"
-      >
-        ${t("submit")}
+      <div class="game-over-submit-controls">
+        <input
+          class="game-over-submit-name"
+          name="playerName"
+          type="text"
+          inputmode="text"
+          aria-label="${t("name")}"
+          maxlength="${PLAYER_NAME_MAX_LENGTH}"
+          autocomplete="off"
+          autocapitalize="characters"
+          autocorrect="off"
+          spellcheck="false"
+          pattern="${PLAYER_NAME_ALLOWED_PATTERN}{1,${PLAYER_NAME_MAX_LENGTH}}"
+          value="${escapeHtml(sanitizePlayerName(getPlayerName()))}"
+        />
+
+        <button
+          class="button game-over-submit-button"
+          type="submit"
+        >
+          ${t("gameOverLeaderboardSubmit")}
+        </button>
+      </div>
+
+      <button class="game-over-submit-skip" type="button">
+        ${t("gameOverLeaderboardSkip")}
       </button>
     </form>
   `;
@@ -299,6 +298,14 @@ export class GameOverPopup {
   }
 
   private renderFooter(): string {
+    if (this.isLeaderboardEntryActive()) {
+      return `
+        <footer class="game-over-footer">
+          ${this.renderNameSubmitForm()}
+        </footer>
+      `;
+    }
+
     return `
       <footer class="game-over-footer">
         <button class="button game-over-restart" type="button">
@@ -313,6 +320,12 @@ export class GameOverPopup {
 
     this.element.querySelector<HTMLButtonElement>(".game-over-restart")?.addEventListener("click", () => {
       this.onRestart();
+    });
+
+    this.element.querySelector<HTMLButtonElement>(".game-over-submit-skip")?.addEventListener("click", () => {
+      this.leaderboardEntrySkipped = true;
+      this.leaderboardEligible = false;
+      this.rerender();
     });
 
     this.element.querySelector<HTMLFormElement>(".game-over-submit-form")?.addEventListener("submit", (event) => {
@@ -415,6 +428,31 @@ export class GameOverPopup {
     }
   }
 
+  private syncLeaderboardEntryState(): void {
+    const active = this.isLeaderboardEntryActive();
+    const wasActive = this.element.classList.contains(LEADERBOARD_ENTRY_CLASS);
+
+    this.element.classList.toggle(LEADERBOARD_ENTRY_CLASS, active);
+
+    if (active && !wasActive && this.canFocusLeaderboardInput()) {
+      window.requestAnimationFrame(() => {
+        this.element.querySelector<HTMLInputElement>(".game-over-submit-name")?.focus({ preventScroll: true });
+      });
+    }
+  }
+
+  private canFocusLeaderboardInput(): boolean {
+    if (document.activeElement !== null && document.activeElement !== document.body) {
+      return false;
+    }
+
+    return window.matchMedia("(pointer: fine)").matches;
+  }
+
+  private isLeaderboardEntryActive(): boolean {
+    return this.leaderboardEligible && !this.leaderboardSubmitted && !this.leaderboardEntrySkipped;
+  }
+
   private reset(): void {
     this.deadAt = undefined;
     this.shownForPlayerId = undefined;
@@ -429,6 +467,7 @@ export class GameOverPopup {
     this.leaderboardRequested = false;
     this.leaderboardEligible = false;
     this.leaderboardSubmitted = false;
+    this.leaderboardEntrySkipped = false;
   }
 
   private hide(): void {
@@ -440,6 +479,7 @@ export class GameOverPopup {
     this.speechVisible = false;
 
     this.element.hidden = true;
+    this.element.classList.remove(LEADERBOARD_ENTRY_CLASS);
     this.element.replaceChildren();
   }
 }

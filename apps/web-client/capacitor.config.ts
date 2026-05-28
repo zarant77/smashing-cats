@@ -1,9 +1,9 @@
-import type { CapacitorConfig } from '@capacitor/cli';
+import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: 'com.catemup.smashingcats',
-  appName: 'Smashing Cats',
-  webDir: 'dist'
+  appId: "com.catemup.smashingcats",
+  appName: "Smash!ng Cats",
+  webDir: "dist",
 };
 
 export default config;

@@ -20,7 +20,7 @@
     "preview": "vite preview",
     "start": "node server.js",
     "assets:generate": "capacitor-assets generate",
-    "cap:init": "cap init \"Smashing Cats\" \"com.catemup.smashingcats\" --web-dir=dist",
+    "cap:init": "cap init \"Smash!ng Cats\" \"com.catemup.smashingcats\" --web-dir=dist",
     "cap:add": "cap add android",
     "cap:sync": "cap sync android",
     "cap:sync:canvas": "pnpm build:canvas && cap sync android",

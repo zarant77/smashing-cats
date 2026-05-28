@@ -1,5 +1,5 @@
-const EMAIL = "smashingcatsgame@gmail.com";
-const SUBJECT = encodeURIComponent("Smashing Cats Crash");
+const EMAIL = "catemupgames@gmail.com";
+const SUBJECT = encodeURIComponent("Smash!ng Crash");
 
 function normalizeError(error: unknown): string {
   if (error instanceof Error) {

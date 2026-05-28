@@ -11,7 +11,7 @@ export class AppController {
   public constructor(private readonly serverUrl: string) {
     this.screen = blessed.screen({
       smartCSR: true,
-      title: "Smashing Cats CLI",
+      title: "Smash!ng Cats CLI",
     });
 
     this.screen.key(["C-c"], () => {
