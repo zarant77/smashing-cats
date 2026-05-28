@@ -1,0 +1,11 @@
+Smash!ng Cats is a small arcade runner game about cats, enemies, jumps, and chaos.
+
+Run forward, jump over obstacles, smash enemies from the air, and try to survive as long as possible.
+
+Features:
+* Simple arcade gameplay
+* Multiple playable cats
+* Different enemies and obstacles
+* Online leaderboard
+* No ads
+* No microtransactions

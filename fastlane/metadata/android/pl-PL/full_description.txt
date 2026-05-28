@@ -1,0 +1,11 @@
+M!ażdżące Koty to mała zręcznościowa gra typu runner o kotach, wrogach, skokach i chaosie.
+
+Biegnij przed siebie, przeskakuj przeszkody, miażdż wrogów z powietrza i spróbuj przetrwać jak najdłużej.
+
+Funkcje:
+* Prosta rozgrywka zręcznościowa
+* Kilka grywalnych kotów
+* Różni wrogowie i przeszkody
+* Internetowa tabela wyników
+* Bez reklam
+* Bez mikropłatności
