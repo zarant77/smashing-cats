@@ -1,11 +1,17 @@
-import { Capacitor } from "@capacitor/core";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 
 type BackListener = () => void;
 type AppStateListener = (isActive: boolean) => void;
 type ResumeListener = () => void;
 
+type SmashingCatsDevicePlugin = {
+  vibrate(options: { pattern: number[] }): Promise<void>;
+};
+
 export const isNativeApp = Capacitor.isNativePlatform();
 export const platform = Capacitor.getPlatform();
+
+const nativeDevice = registerPlugin<SmashingCatsDevicePlugin>("SmashingCatsDevice");
 
 class CapacitorBridge {
   private readonly backListeners = new Set<BackListener>();
@@ -73,6 +79,18 @@ class CapacitorBridge {
       const { App } = await import("@capacitor/app");
 
       await App.exitApp();
+    } catch {
+      // Ignore capacitor errors
+    }
+  }
+
+  public async vibrate(pattern: number | number[]): Promise<void> {
+    if (!isNativeApp) {
+      return;
+    }
+
+    try {
+      await nativeDevice.vibrate({ pattern: Array.isArray(pattern) ? pattern : [pattern] });
     } catch {
       // Ignore capacitor errors
     }

@@ -75,7 +75,12 @@ async function bootstrap(): Promise<void> {
   const gameStateController = new GameStateController();
 
   gameStateController
+    .on("localPlayerSmashStarted", () => {
+      deviceController.vibrate([35]);
+    })
     .on("enemyKilled", (enemy) => {
+      deviceController.vibrate([45, 35, 70]);
+
       if (enemy.kind === "crow") {
         setTimeout(() => deviceController.vibrate(100), 500);
       }

@@ -1,6 +1,7 @@
 import type { GameSnapshot, PlayerId } from "@smashing-cats/protocol";
 
 type GameStateEventMap = {
+  localPlayerSmashStarted: { playerId: PlayerId };
   localPlayerHurt: { playerId: PlayerId; damage: number; kind: string | undefined; type: string | undefined };
   localPlayerDied: { playerId: PlayerId; kind: string | undefined; type: string | undefined };
 
@@ -18,6 +19,7 @@ export class GameStateController {
   private readonly listeners: {
     [K in keyof GameStateEventMap]: Set<Listener<K>>;
   } = {
+    localPlayerSmashStarted: new Set(),
     localPlayerHurt: new Set(),
     localPlayerDied: new Set(),
 
@@ -75,6 +77,12 @@ export class GameStateController {
 
       const kind = hitEvent?.type === "playerHit" ? hitEvent.entityKind : undefined;
       const type = hitEvent?.type === "playerHit" ? hitEvent.entityType : undefined;
+
+      if (currentPlayer.playerId === localPlayerId && currentPlayer.smashing && !previousPlayer.smashing) {
+        this.emit("localPlayerSmashStarted", {
+          playerId: currentPlayer.playerId,
+        });
+      }
 
       if (currentPlayer.hp < previousPlayer.hp) {
         const damage = previousPlayer.hp - currentPlayer.hp;

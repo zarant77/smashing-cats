@@ -1,4 +1,4 @@
-import { isNativeApp } from "./capacitor.js";
+import { capacitorBridge, isNativeApp } from "./capacitor.js";
 
 export type DeviceTilt = { x: number; y: number };
 
@@ -61,6 +61,11 @@ export class DeviceController {
       return false;
     }
 
+    if (isNativeApp) {
+      void capacitorBridge.vibrate(pattern);
+      return true;
+    }
+
     if (!isNativeApp && navigator.userActivation?.isActive !== true) {
       return false;
     }
@@ -112,11 +117,15 @@ export class DeviceController {
   }
 
   public get vibrationSupported(): boolean {
+    if (isNativeApp) {
+      return true;
+    }
+
     if (!("vibrate" in navigator)) {
       return false;
     }
 
-    return isNativeApp || window.matchMedia("(pointer: coarse)").matches;
+    return window.matchMedia("(pointer: coarse)").matches;
   }
 
   public setupUnlock(): this {
