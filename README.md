@@ -215,4 +215,6 @@ pnpm android:run
 
 ## License
 
-MIT
+Source code is licensed under the GNU General Public License v3.0 or later.
+
+Game assets are licensed under Creative Commons Attribution-ShareAlike 4.0 International unless stated otherwise. See [ASSETS_LICENSE.md](./ASSETS_LICENSE.md).
