@@ -1,4 +1,4 @@
-import { cleanTargets, modules, oneShotTasks } from "./config.mjs";
+import { buildViews, cleanTargets, devModules, oneShotTasks } from "./config.mjs";
 
 export const menuTree = [
   {
@@ -87,7 +87,14 @@ export const menuTree = [
 ];
 
 export function getModuleChoices() {
-  return Object.entries(modules).map(([value, moduleConfig]) => ({
+  return Object.entries(devModules).map(([value, moduleConfig]) => ({
+    name: moduleConfig.title,
+    value,
+  }));
+}
+
+export function getBuildViewChoices() {
+  return Object.entries(buildViews).map(([value, moduleConfig]) => ({
     name: moduleConfig.title,
     value,
   }));

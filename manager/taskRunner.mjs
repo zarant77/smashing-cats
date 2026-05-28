@@ -1,5 +1,5 @@
 import { copyFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { join } from "node:path";
 
 import {
@@ -8,14 +8,15 @@ import {
   buildWebCommand,
   cleanTargets,
   getArtifactPrefix,
-  getModuleEnv,
+  getClientViewsFromModules,
+  getViewEnv,
   oneShotTasks,
   paths,
 } from "./config.mjs";
 
 import { setLastBuild } from "./stateStore.mjs";
 
-export function runOneShotTask(taskName) {
+export async function runOneShotTask(taskName, options = {}) {
   const task = oneShotTasks[taskName];
 
   if (task === undefined) {
@@ -25,21 +26,31 @@ export function runOneShotTask(taskName) {
   return runCommand(task.command, task.args, {
     cwd: task.cwd,
     title: task.title,
+    onLog: options.onLog,
   });
 }
 
-export function buildWeb(selectedModules) {
-  const result = runCommand(buildWebCommand.command, buildWebCommand.args, {
+export async function buildWeb(selectedViews, options = {}) {
+  const clientViews = getClientViewsFromModules(selectedViews);
+
+  if (clientViews.length === 0) {
+    throw new Error("Select at least one client view to build.");
+  }
+
+  const enabledViews = getViewEnv(clientViews);
+  const result = await runCommand(buildWebCommand.command, buildWebCommand.args, {
     cwd: buildWebCommand.cwd,
     title: buildWebCommand.title,
+    onLog: options.onLog,
     env: {
-      ENABLED_MODULES: getModuleEnv(selectedModules),
+      ENABLED_VIEWS: enabledViews,
+      VITE_ENABLED_VIEWS: enabledViews,
     },
   });
 
   setLastBuild({
     type: "web",
-    modules: selectedModules,
+    modules: clientViews,
     success: result.success,
     finishedAt: new Date().toISOString(),
   });
@@ -47,15 +58,25 @@ export function buildWeb(selectedModules) {
   return result;
 }
 
-export function buildAndroid(selectedModules) {
+export async function buildAndroid(selectedViews, options = {}) {
+  const onLog = options.onLog;
+  const clientViews = getClientViewsFromModules(selectedViews);
+
+  if (clientViews.length === 0) {
+    throw new Error("Select at least one client view to build.");
+  }
+
+  const enabledViews = getViewEnv(clientViews);
+
   mkdirSync(paths.build, { recursive: true });
 
-  runCommand("npx", ["capacitor-assets", "generate"], {
+  await runCommand("npx", ["capacitor-assets", "generate"], {
     cwd: paths.web,
     title: "Generate Capacitor assets",
+    onLog,
   });
 
-  runCommand(
+  await runCommand(
     "find",
     [
       "android/app/src/main/res",
@@ -71,32 +92,37 @@ export function buildAndroid(selectedModules) {
     {
       cwd: paths.web,
       title: "Remove duplicate splash images",
+      onLog,
     },
   );
 
-  runCommand(buildAndroidCommand.command, buildAndroidCommand.args, {
+  await runCommand(buildAndroidCommand.command, buildAndroidCommand.args, {
     cwd: buildAndroidCommand.cwd,
     title: buildAndroidCommand.title,
+    onLog,
     env: {
-      ENABLED_MODULES: getModuleEnv(selectedModules),
+      ENABLED_VIEWS: enabledViews,
+      VITE_ENABLED_VIEWS: enabledViews,
     },
   });
 
-  runCommand("./gradlew", ["clean"], {
+  await runCommand("./gradlew", ["clean"], {
     cwd: paths.android,
     title: "Gradle clean",
+    onLog,
   });
 
-  runCommand("./gradlew", ["assembleDebug", "assembleRelease", "bundleRelease"], {
+  await runCommand("./gradlew", ["assembleDebug", "assembleRelease", "bundleRelease"], {
     cwd: paths.android,
     title: "Gradle Android build",
+    onLog,
   });
 
-  copyAndroidArtifacts(selectedModules);
+  copyAndroidArtifacts(clientViews, onLog);
 
   setLastBuild({
     type: "android",
-    modules: selectedModules,
+    modules: clientViews,
     success: true,
     finishedAt: new Date().toISOString(),
   });
@@ -106,7 +132,7 @@ export function buildAndroid(selectedModules) {
   };
 }
 
-export function cleanTarget(targetName) {
+export async function cleanTarget(targetName, options = {}) {
   const target = cleanTargets[targetName];
 
   if (target === undefined) {
@@ -119,34 +145,34 @@ export function cleanTarget(targetName) {
       force: true,
     });
 
-    console.log(`Removed ${targetPath}`);
+    writeLog(options.onLog, `Removed ${targetPath}\n`);
   }
 }
 
-export function cleanAll() {
+export async function cleanAll(options = {}) {
   for (const targetName of Object.keys(cleanTargets)) {
-    cleanTarget(targetName);
+    await cleanTarget(targetName, options);
   }
 }
 
-function copyAndroidArtifacts(selectedModules) {
-  copyAndroidArtifact(selectedModules, androidOutputs.debugApk);
-  copyFirstExistingAndroidArtifact(selectedModules, androidOutputs.releaseApk);
-  copyAndroidArtifact(selectedModules, androidOutputs.releaseAab);
+function copyAndroidArtifacts(selectedModules, onLog) {
+  copyAndroidArtifact(selectedModules, androidOutputs.debugApk, onLog);
+  copyFirstExistingAndroidArtifact(selectedModules, androidOutputs.releaseApk, onLog);
+  copyAndroidArtifact(selectedModules, androidOutputs.releaseAab, onLog);
 }
 
-function copyAndroidArtifact(selectedModules, output) {
+function copyAndroidArtifact(selectedModules, output, onLog) {
   const sourcePath = join(paths.android, output.source);
 
   if (!existsSync(sourcePath)) {
-    console.warn(`Build not found: ${output.source}`);
+    writeLog(onLog, `Build not found: ${output.source}\n`);
     return;
   }
 
-  copyArtifactFile(selectedModules, output.suffix, sourcePath);
+  copyArtifactFile(selectedModules, output.suffix, sourcePath, onLog);
 }
 
-function copyFirstExistingAndroidArtifact(selectedModules, output) {
+function copyFirstExistingAndroidArtifact(selectedModules, output, onLog) {
   for (const source of output.sources) {
     const sourcePath = join(paths.android, source);
 
@@ -154,20 +180,20 @@ function copyFirstExistingAndroidArtifact(selectedModules, output) {
       continue;
     }
 
-    copyArtifactFile(selectedModules, output.suffix, sourcePath);
+    copyArtifactFile(selectedModules, output.suffix, sourcePath, onLog);
     return;
   }
 
-  console.warn(`Build not found: ${output.suffix}`);
+  writeLog(onLog, `Build not found: ${output.suffix}\n`);
 }
 
-function copyArtifactFile(selectedModules, suffix, sourcePath) {
+function copyArtifactFile(selectedModules, suffix, sourcePath, onLog) {
   const targetPath = join(paths.build, `${getArtifactPrefix(selectedModules)}-${suffix}`);
 
   rmSync(targetPath, { force: true });
   copyFileSync(sourcePath, targetPath);
 
-  console.log(`Copied ${targetPath}`);
+  writeLog(onLog, `Copied ${targetPath}\n`);
 }
 
 function runCommand(command, args, options = {}) {
@@ -178,22 +204,58 @@ function runCommand(command, args, options = {}) {
     ...(options.env ?? {}),
   };
 
-  console.log(`\n${options.title ?? command}`);
-  console.log(`> ${[command, ...args].join(" ")}\n`);
+  const commandText = [command, ...args].join(" ");
 
-  const result = spawnSync(command, args, {
-    cwd,
-    env,
-    stdio: "inherit",
-    shell: true,
+  writeLog(options.onLog, `\n${options.title ?? command}\n`);
+  writeLog(options.onLog, `> ${commandText}\n\n`);
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+
+    const child = spawn(command, args, {
+      cwd,
+      env,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+
+    child.stdout.on("data", (chunk) => {
+      writeLog(options.onLog, chunk);
+    });
+
+    child.stderr.on("data", (chunk) => {
+      writeLog(options.onLog, chunk);
+    });
+
+    child.on("error", (error) => {
+      settled = true;
+      reject(error);
+    });
+
+    child.on("close", (status) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+
+      if (status !== 0) {
+        reject(new Error(`Command failed: ${commandText}`));
+        return;
+      }
+
+      resolve({
+        success: true,
+        status,
+      });
+    });
   });
+}
 
-  if (result.status !== 0) {
-    throw new Error(`Command failed: ${[command, ...args].join(" ")}`);
+function writeLog(onLog, text) {
+  if (typeof onLog === "function") {
+    onLog(text);
   }
-
-  return {
-    success: true,
-    status: result.status,
-  };
 }

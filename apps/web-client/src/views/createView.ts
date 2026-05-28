@@ -1,10 +1,7 @@
 import { preloadAssets } from "../assetManager/assetManager.js";
 import { Uncrasher } from "../uncrasher.js";
+import { getFirstEnabledViewKind, hasMultipleEnabledViewKinds, isViewKindEnabled } from "./enabledViews.js";
 import type { GameView, ViewKind } from "./types.js";
-
-type RendererBundle = "canvas" | "all";
-
-const rendererBundle = getRendererBundle();
 
 export async function createView(kind: ViewKind, root: HTMLElement): Promise<GameView> {
   const safeKind = getAvailableViewKind(kind);
@@ -55,15 +52,11 @@ export function parseViewKind(value: string | null): ViewKind {
 }
 
 export function isViewKindAvailable(kind: ViewKind): boolean {
-  if (rendererBundle === "all") {
-    return true;
-  }
-
-  return kind === "canvas";
+  return isViewKindEnabled(kind);
 }
 
 export function hasMultipleViewKinds(): boolean {
-  return rendererBundle === "all";
+  return hasMultipleEnabledViewKinds();
 }
 
 function getAvailableViewKind(kind: ViewKind): ViewKind {
@@ -71,13 +64,7 @@ function getAvailableViewKind(kind: ViewKind): ViewKind {
     return kind;
   }
 
-  return "canvas";
-}
-
-function getRendererBundle(): RendererBundle {
-  const value = import.meta.env.VITE_RENDERER_BUNDLE;
-
-  return value === "all" ? "all" : "canvas";
+  return getFirstEnabledViewKind();
 }
 
 let splash: HTMLDivElement | null = null;

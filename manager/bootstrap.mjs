@@ -1,5 +1,5 @@
-import { defaultDevModules } from "./config.mjs";
-import { getModuleChoices } from "./missions.mjs";
+import { defaultBuildViews, defaultDevModules } from "./config.mjs";
+import { getBuildViewChoices, getModuleChoices } from "./missions.mjs";
 import { askModulesInTui } from "./modulePicker.mjs";
 import { createTui } from "./tui.mjs";
 
@@ -35,15 +35,21 @@ export async function bootstrapManager() {
         return;
 
       case "task:run":
-        runOneShotTask(payload.taskName);
+        await runOneShotTask(payload.taskName, {
+          onLog: ui.appendLog,
+        });
         return;
 
       case "clean:target":
-        cleanTarget(payload.targetName);
+        await cleanTarget(payload.targetName, {
+          onLog: ui.appendLog,
+        });
         return;
 
       case "clean:all":
-        cleanAll();
+        await cleanAll({
+          onLog: ui.appendLog,
+        });
         return;
 
       case "exit":
@@ -83,25 +89,27 @@ async function restartDevFlow(ui) {
 }
 
 async function buildWebFlow(ui) {
-  const modules = await askModules(ui, "Select web build modules");
+  const views = await askBuildViews(ui, "Select web build views");
 
-  if (modules === null) {
+  if (views === null) {
     return;
   }
 
-  setSelectedModules(modules);
-  buildWeb(modules);
+  await buildWeb(views, {
+    onLog: ui.appendLog,
+  });
 }
 
 async function buildAndroidFlow(ui) {
-  const modules = await askModules(ui, "Select Android build modules");
+  const views = await askBuildViews(ui, "Select Android build views");
 
-  if (modules === null) {
+  if (views === null) {
     return;
   }
 
-  setSelectedModules(modules);
-  buildAndroid(modules);
+  await buildAndroid(views, {
+    onLog: ui.appendLog,
+  });
 }
 
 async function askModules(ui, title) {
@@ -111,5 +119,13 @@ async function askModules(ui, title) {
     title,
     choices: getModuleChoices(),
     selectedModules: selectedModules.length > 0 ? selectedModules : defaultDevModules,
+  });
+}
+
+async function askBuildViews(ui, title) {
+  return askModulesInTui(ui.screen, {
+    title,
+    choices: getBuildViewChoices(),
+    selectedModules: defaultBuildViews,
   });
 }

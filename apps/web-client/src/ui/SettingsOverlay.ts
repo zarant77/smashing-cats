@@ -6,11 +6,10 @@ import { deviceController } from "../device/DeviceController.js";
 import { storage } from "../storage.js";
 import { isNativeApp } from "../device/capacitor.js";
 
-type EngineKind = "canvas" | "phaser" | "three";
-
 type SettingsOverlayOptions = {
   isGameRunning?: () => boolean;
   showEngineSelector?: boolean;
+  enabledViews?: readonly ViewKind[];
   onClose?: () => void;
   onHelp?: () => void;
   onToggleMenu?: () => void;
@@ -25,7 +24,7 @@ type SettingsOverlayOptions = {
 };
 
 type SettingsOverlayState = {
-  currentEngine: EngineKind;
+  currentEngine: ViewKind;
   currentLanguage: TranslationLocale;
   soundEnabled: boolean;
   musicEnabled: boolean;
@@ -40,6 +39,7 @@ export class SettingsOverlay {
 
   private readonly isGameRunning: () => boolean;
   private readonly showEngineSelector: boolean;
+  private readonly enabledViews: readonly ViewKind[];
   private readonly onClose?: () => void;
   private readonly onHelp?: () => void;
   private readonly onToggleMenu?: () => void;
@@ -68,6 +68,7 @@ export class SettingsOverlay {
   public constructor(root: HTMLElement, options: SettingsOverlayOptions = {}) {
     this.isGameRunning = options.isGameRunning ?? (() => false);
     this.showEngineSelector = options.showEngineSelector ?? true;
+    this.enabledViews = options.enabledViews ?? ["canvas", "phaser", "three"];
     this.onClose = options.onClose;
     this.onHelp = options.onHelp;
     this.onToggleMenu = options.onToggleMenu;
@@ -329,9 +330,9 @@ export class SettingsOverlay {
     this.setButtonActive(".menu-button", this.visible);
 
     if (this.showEngineSelector) {
-      this.setButtonActive(".engine-canvas-button", this.state.currentEngine === "canvas");
-      this.setButtonActive(".engine-phaser-button", this.state.currentEngine === "phaser");
-      this.setButtonActive(".engine-three-button", this.state.currentEngine === "three");
+      for (const viewKind of this.enabledViews) {
+        this.setButtonActive(`.engine-${viewKind}-button`, this.state.currentEngine === viewKind);
+      }
     }
 
     this.setButtonActive(".language-en-button", this.state.currentLanguage === "en");
@@ -391,19 +392,19 @@ export class SettingsOverlay {
         <h3 data-i18n="engine">${t("engine")}</h3>
 
         <div class="settings-row">
-          <button class="engine-canvas-button" type="button" data-i18n-title="engineCanvas" title="${t("engineCanvas")}" aria-label="${t("engineCanvas")}">
-            <span class="icon icon-canvas"></span>
-          </button>
-
-          <button class="engine-phaser-button" type="button" data-i18n-title="enginePhaser" title="${t("enginePhaser")}" aria-label="${t("enginePhaser")}">
-            <span class="icon icon-phaser"></span>
-          </button>
-
-          <button class="engine-three-button" type="button" data-i18n-title="engineThree" title="${t("engineThree")}" aria-label="${t("engineThree")}">
-            <span class="icon icon-three"></span>
-          </button>
+          ${this.enabledViews.map((viewKind) => this.renderEngineButton(viewKind)).join("")}
         </div>
       </section>
+    `;
+  }
+
+  private renderEngineButton(viewKind: ViewKind): string {
+    const translationKey = getEngineTranslationKey(viewKind);
+
+    return `
+      <button class="engine-${viewKind}-button" type="button" data-i18n-title="${translationKey}" title="${t(translationKey)}" aria-label="${t(translationKey)}">
+        <span class="icon icon-${viewKind}"></span>
+      </button>
     `;
   }
 
@@ -426,5 +427,18 @@ export class SettingsOverlay {
 
     window.clearTimeout(this.closeTimeoutId);
     this.closeTimeoutId = undefined;
+  }
+}
+
+function getEngineTranslationKey(viewKind: ViewKind): "engineCanvas" | "enginePhaser" | "engineThree" {
+  switch (viewKind) {
+    case "canvas":
+      return "engineCanvas";
+
+    case "phaser":
+      return "enginePhaser";
+
+    case "three":
+      return "engineThree";
   }
 }

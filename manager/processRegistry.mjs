@@ -2,7 +2,7 @@ import { closeSync, openSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { join } from "node:path";
 
-import { devCommand, getModuleEnv, getModuleLabel, paths } from "./config.mjs";
+import { devCommand, getClientViewsFromModules, getModuleEnv, getModuleLabel, getViewEnv, paths } from "./config.mjs";
 
 import { clearDevSession, getDevSession, setDevSession } from "./stateStore.mjs";
 
@@ -40,17 +40,19 @@ export function startDevSession(selectedModules) {
   }
 
   const modulesLabel = getModuleLabel(selectedModules);
+  const selectedViews = getClientViewsFromModules(selectedModules);
   const logPath = join(paths.logs, `dev-${modulesLabel}.log`);
   const logFd = openSync(logPath, "a");
 
   const child = spawn(devCommand.command, devCommand.args, {
     cwd: devCommand.cwd,
     detached: true,
-    shell: true,
 
     env: {
       ...process.env,
       ENABLED_MODULES: getModuleEnv(selectedModules),
+      ENABLED_VIEWS: getViewEnv(selectedViews),
+      VITE_ENABLED_VIEWS: getViewEnv(selectedViews),
     },
 
     stdio: ["ignore", logFd, logFd],

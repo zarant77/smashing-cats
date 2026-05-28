@@ -14,7 +14,7 @@ export const paths = {
   logs: join(rootDir, "manager/logs"),
 };
 
-export const modules = {
+export const devModules = {
   server: {
     title: "Server",
     flag: "--server",
@@ -36,12 +36,21 @@ export const modules = {
   },
 };
 
+export const buildViews = {
+  canvas: devModules.canvas,
+  phaser: devModules.phaser,
+  three: devModules.three,
+};
+
+export const modules = devModules;
+
 export const defaultDevModules = ["server", "canvas"];
+export const defaultBuildViews = ["canvas", "phaser", "three"];
 
 export const devCommand = {
   title: "Dev",
-  command: "pnpm",
-  args: ["dev"],
+  command: "node",
+  args: ["manager/devLauncher.mjs"],
   cwd: paths.root,
   port: 8080,
   logFile: "dev.log",
@@ -66,6 +75,13 @@ export const oneShotTasks = {
     title: "Typecheck",
     command: "pnpm",
     args: ["typecheck"],
+    cwd: paths.root,
+  },
+
+  test: {
+    title: "Tests",
+    command: "pnpm",
+    args: ["test"],
     cwd: paths.root,
   },
 };
@@ -123,6 +139,14 @@ export function getModuleFlags(selectedModules) {
 
 export function getModuleEnv(selectedModules) {
   return selectedModules.join(",");
+}
+
+export function getViewEnv(selectedViews) {
+  return selectedViews.join(",");
+}
+
+export function getClientViewsFromModules(selectedModules) {
+  return [...new Set(selectedModules.filter((moduleName) => buildViews[moduleName] !== undefined))];
 }
 
 export function getModuleLabel(selectedModules) {

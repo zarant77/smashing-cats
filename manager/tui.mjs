@@ -103,6 +103,8 @@ export function createTui({ onAction }) {
 
   let busy = false;
   let busyText = "";
+  let taskLogBuffer = "";
+  let taskLogActive = false;
 
   menu.setItems(actions.map((item) => item.label));
   menu.focus();
@@ -132,13 +134,15 @@ export function createTui({ onAction }) {
 
     busy = true;
     busyText = "Restart dev";
+    taskLogBuffer = "";
+    taskLogActive = false;
 
     render();
 
     try {
       await onAction("dev:restart", {});
     } catch (error) {
-      logs.setContent(formatError(error));
+      appendLog(formatError(error));
     } finally {
       busy = false;
       busyText = "";
@@ -159,13 +163,15 @@ export function createTui({ onAction }) {
 
     busy = true;
     busyText = item.label.trim();
+    taskLogBuffer = "";
+    taskLogActive = false;
 
     render();
 
     try {
       await onAction(item.action, item.payload ?? {});
     } catch (error) {
-      logs.setContent(formatError(error));
+      appendLog(formatError(error));
     } finally {
       busy = false;
       busyText = "";
@@ -176,9 +182,16 @@ export function createTui({ onAction }) {
 
   function render() {
     renderStatus(status, busy, busyText);
-    renderLogs(logs);
+    renderLogs(logs, taskLogActive, taskLogBuffer);
 
     screen.render();
+  }
+
+  function appendLog(text) {
+    taskLogBuffer = trimTaskLog(`${taskLogBuffer}${text}`);
+    taskLogActive = true;
+
+    render();
   }
 
   const refreshTimer = setInterval(render, 1000);
@@ -198,6 +211,7 @@ export function createTui({ onAction }) {
     menu,
     status,
     logs,
+    appendLog,
   };
 }
 
@@ -256,7 +270,13 @@ function renderStatus(box, busy, busyText) {
   box.setContent(lines.join("\n"));
 }
 
-function renderLogs(box) {
+function renderLogs(box, taskLogActive, taskLogBuffer) {
+  if (taskLogActive) {
+    box.setContent(colorizeLogs(taskLogBuffer));
+    box.setScrollPerc(100);
+    return;
+  }
+
   const devSession = getRunningDevSession();
 
   if (devSession === null) {
@@ -269,7 +289,7 @@ function renderLogs(box) {
 
     const lines = content.trim().split("\n").slice(-12);
 
-    box.setContent(lines.join("\n") || "{gray-fg}No logs yet.{/gray-fg}");
+    box.setContent(colorizeLogs(lines.join("\n")) || "{gray-fg}No logs yet.{/gray-fg}");
   } catch {
     box.setContent("{gray-fg}No logs yet.{/gray-fg}");
   }
@@ -277,8 +297,75 @@ function renderLogs(box) {
 
 function formatError(error) {
   if (error instanceof Error) {
-    return `{red-fg}${error.stack ?? error.message}{/red-fg}`;
+    return `${error.stack ?? error.message}\n`;
   }
 
-  return `{red-fg}${String(error)}{/red-fg}`;
+  return `${String(error)}\n`;
+}
+
+function trimTaskLog(content) {
+  return content.split("\n").slice(-400).join("\n");
+}
+
+function colorizeLogs(content) {
+  const lines = content.split("\n");
+
+  return lines
+    .map((line, index) => colorizeLogLine(line, lines[index + 1] ?? ""))
+    .join("\n");
+}
+
+function colorizeLogLine(line, nextLine) {
+  const color = getLogLineColor(line, nextLine);
+  const escapedLine = escapeBlessedTags(line);
+
+  if (color === null) {
+    return escapedLine;
+  }
+
+  return `{${color}-fg}${escapedLine}{/${color}-fg}`;
+}
+
+function getLogLineColor(line, nextLine) {
+  const normalizedLine = line.toLowerCase();
+
+  if (line.startsWith(">") || (line.trim().length > 0 && nextLine.startsWith(">"))) {
+    return "cyan";
+  }
+
+  if (
+    normalizedLine.includes("error") ||
+    normalizedLine.includes("failed") ||
+    line.includes("ERR!") ||
+    line.includes("ELIFECYCLE") ||
+    line.includes("Command failed")
+  ) {
+    return "red";
+  }
+
+  if (
+    normalizedLine.includes("warning") ||
+    normalizedLine.includes("warn") ||
+    normalizedLine.includes("deprecated") ||
+    normalizedLine.includes("deprecation")
+  ) {
+    return "yellow";
+  }
+
+  if (
+    normalizedLine.includes("success") ||
+    normalizedLine.includes("passed") ||
+    normalizedLine.includes("done") ||
+    normalizedLine.includes("completed") ||
+    normalizedLine.includes("built") ||
+    normalizedLine.includes("copied")
+  ) {
+    return "green";
+  }
+
+  return null;
+}
+
+function escapeBlessedTags(text) {
+  return text.replaceAll("{", "{open}").replaceAll("}", "{close}");
 }

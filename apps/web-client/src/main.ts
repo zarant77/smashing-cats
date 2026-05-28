@@ -25,6 +25,7 @@ import { GameOverPopup } from "./ui/GameOverPopup.js";
 import { HelpPopup } from "./ui/HelpPopup.js";
 import { Hud } from "./ui/Hud.js";
 import { createView, hasMultipleViewKinds, parseViewKind } from "./views/createView.js";
+import { enabledViewKinds, isViewKindEnabled } from "./views/enabledViews.js";
 import { getViewSize } from "./views/viewport.js";
 import type { GameView, ViewKind } from "./views/types.js";
 import { isTextEditingTarget } from "./helpers/index.js";
@@ -181,6 +182,7 @@ async function bootstrap(): Promise<void> {
   settingsOverlay = new SettingsOverlay(uiRoot, {
     isGameRunning: () => runtime?.isGameRunning() === true,
     showEngineSelector: rendererSwitchingEnabled,
+    enabledViews: enabledViewKinds,
 
     onToggleMenu: () => {
       playSound("sound.ui_click");
@@ -306,7 +308,7 @@ async function bootstrap(): Promise<void> {
   async function switchView(nextViewKind: ViewKind): Promise<void> {
     playSound("sound.ui_click");
 
-    if (!rendererSwitchingEnabled && nextViewKind !== "canvas") {
+    if (!isViewKindEnabled(nextViewKind)) {
       syncSettingsOverlay();
       return;
     }
