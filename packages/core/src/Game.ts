@@ -1,4 +1,4 @@
-import type { DeltaSnapshot, GameEvent, GameSnapshot, PlayerId, PlayerInput } from "@smashing-cats/protocol";
+import type { DeltaSnapshot, GameEvent, GameSnapshot, PlayerId, PlayerInput, PlayerInputCommand } from "@smashing-cats/protocol";
 import type { Entity, Player, TutorialState } from "./types.js";
 import { type CharacterConfig, ENEMIES, GAME_CONFIG, TICK_RATE, getCharacterConfig } from "./config.js";
 import { Random } from "./Random.js";
@@ -10,7 +10,7 @@ import { createGameEvent } from "./event/gameEventFactory.js";
 import { EntityHistoryFrame, recordEntityHistory } from "./history/entityHistory.js";
 import { MAX_ENTITY_HISTORY_TICKS } from "./history/historyConfig.js";
 import { intersectsCompensatedEntity } from "./history/lagCompensation.js";
-import { applyPlayerInput, clearJumpRequest } from "./input/applyPlayerInput.js";
+import { applyPlayerInput, clearJumpRequest, queuePlayerInputCommand } from "./input/applyPlayerInput.js";
 import { updatePlayers } from "./player/playerSystem.js";
 import { createPlayer } from "./player/playerFactory.js";
 import { createGameSnapshot } from "./snapshot/snapshotFactory.js";
@@ -98,6 +98,16 @@ export class Game {
       snapshotTick,
       inputSeq,
     });
+  }
+
+  public queueInputCommand(playerId: PlayerId, command: PlayerInputCommand): void {
+    const player = this.players.get(playerId);
+
+    if (player === undefined || !player.alive || player.paused) {
+      return;
+    }
+
+    queuePlayerInputCommand(player, command);
   }
 
   public setPaused(playerId: PlayerId, paused: boolean): void {
@@ -295,6 +305,7 @@ export class Game {
         lastInputSnapshotTick: undefined,
         lastReceivedInputSeq: playerSnapshot.lastProcessedInputSeq,
         lastProcessedInputSeq: playerSnapshot.lastProcessedInputSeq,
+        pendingInputCommands: [],
         lastInput: {
           left: playerSnapshot.vx < 0,
           right: playerSnapshot.vx > 0,

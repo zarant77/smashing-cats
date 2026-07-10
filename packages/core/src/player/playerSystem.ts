@@ -1,5 +1,5 @@
 import { GAME_CONFIG, getCharacterConfig } from "../config.js";
-import { clearJumpRequest, consumeJumpRequest } from "../input/applyPlayerInput.js";
+import { clearJumpRequest, consumePlayerInputCommand } from "../input/applyPlayerInput.js";
 import { simulatePlayerMovement } from "../movement.js";
 import { updateDeadPlayer } from "./playerState.js";
 
@@ -34,10 +34,11 @@ export function updatePlayers({ players, dt }: UpdatePlayersOptions): void {
     }
 
     const characterConfig = getCharacterConfig(player.kind);
+    const command = consumePlayerInputCommand(player);
 
     const actionInput = {
       ...player.lastInput,
-      jump: consumeJumpRequest(player),
+      ...(command?.input ?? {}),
     };
 
     const result = simulatePlayerMovement(
@@ -52,7 +53,9 @@ export function updatePlayers({ players, dt }: UpdatePlayersOptions): void {
       dt,
     );
 
-    player.lastProcessedInputSeq = player.lastReceivedInputSeq;
+    if (command !== undefined) {
+      player.lastProcessedInputSeq = command.inputSeq;
+    }
 
     if (result.startedSmash) {
       player.smashSnapshotTick = player.lastInputSnapshotTick;

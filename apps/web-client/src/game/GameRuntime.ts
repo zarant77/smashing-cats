@@ -5,7 +5,6 @@ import type {
   EntitySnapshot,
   GameSnapshot,
   GameReplay,
-  InputMessage,
   ClientToServerMessage,
   LeaderboardEntry,
   LeaderboardEligibleMessage,
@@ -15,6 +14,7 @@ import type {
   LeaderboardSubmittedMessage,
   PlayerId,
   PlayerInput,
+  PlayerInputCommand,
   PlayerSnapshot,
   ReplayInputRun,
   ServerToClientMessage,
@@ -36,6 +36,7 @@ import { ReplayRecorder } from "./ReplayRecorder.js";
 
 const LOCAL_PLAYER_ID = "p1";
 const VIEWPORT_RIGHT_PADDING = 48;
+const MAX_INPUT_COMMANDS_PER_PACKET = 24;
 
 type GameRuntimeOptions = {
   multiplayer: boolean;
@@ -67,9 +68,6 @@ export class GameRuntime {
   private charactersValue: CharacterDefinition[];
   private hasSelectedCharacterValue = false;
   private playerId: PlayerId | undefined;
-  private inputSeq = 1;
-  private lastSentInputSeq = 0;
-  private lastSentInput: PlayerInput | undefined;
   private interpolator = new SnapshotInterpolator();
   private snapshotStore = new SnapshotStore();
   private predictor = new LocalPlayerPredictor();
@@ -117,9 +115,6 @@ export class GameRuntime {
 
     this.hasSelectedCharacterValue = false;
     this.playerId = this.multiplayer ? undefined : LOCAL_PLAYER_ID;
-    this.inputSeq = 1;
-    this.lastSentInputSeq = 0;
-    this.lastSentInput = undefined;
     this.charactersValue = this.multiplayer ? [] : [...CHARACTERS];
     this.interpolator = new SnapshotInterpolator();
     this.snapshotStore = new SnapshotStore();
@@ -257,7 +252,6 @@ export class GameRuntime {
         type: "pause",
         paused,
       });
-      this.lastSentInput = undefined;
       return;
     }
 
@@ -432,11 +426,9 @@ export class GameRuntime {
     }
 
     const input = this.applyLocalViewportRightGuard(this.readHeldPlayerInput(), currentPlayerId);
-    const currentInputSeq = this.getCurrentInputSeq(canSend && !isPaused(), input);
-
     this.updateLocalGame(canPlay, currentPlayerId, input);
 
-    const snapshot = this.getRenderSnapshot(currentInputSeq, input);
+    const snapshot = this.getRenderSnapshot(input, canSend && !isPaused());
 
     this.renderFrame(snapshot, this.playerId);
 
@@ -484,44 +476,15 @@ export class GameRuntime {
     };
   }
 
-  private getCurrentInputSeq(canSend: boolean, input: PlayerInput): number {
-    if (!this.multiplayer) {
-      return this.inputSeq++;
+  private sendInputCommands(commands: PlayerInputCommand[]): void {
+    if (commands.length === 0) {
+      return;
     }
 
-    if (canSend && this.shouldSendInput(input)) {
-      const inputSeq = this.inputSeq++;
-
-      this.sendInput(inputSeq, input);
-      this.lastSentInputSeq = inputSeq;
-      this.lastSentInput = { ...input };
-    }
-
-    return this.lastSentInputSeq;
-  }
-
-  private shouldSendInput(input: PlayerInput): boolean {
-    return hasActiveInput(input) || this.lastSentInput === undefined || !isSameInput(this.lastSentInput, input);
-  }
-
-  private sendInput(inputSeq: number, input: PlayerInput): void {
-    const snapshotTick = this.interpolator.getRenderedTick();
-
-    const inputMessage: InputMessage =
-      snapshotTick === undefined
-        ? {
-            type: "input",
-            inputSeq,
-            input,
-          }
-        : {
-            type: "input",
-            inputSeq,
-            snapshotTick,
-            input,
-          };
-
-    sendClientMessage(this.socket, inputMessage);
+    sendClientMessage(this.socket, {
+      type: "input",
+      commands: commands.slice(-MAX_INPUT_COMMANDS_PER_PACKET),
+    });
   }
 
   private updateLocalGame(
@@ -587,7 +550,7 @@ export class GameRuntime {
     this.submitReplayForVerification(replay);
   }
 
-  private getRenderSnapshot(currentInputSeq: number, input: PlayerInput): GameSnapshot | undefined {
+  private getRenderSnapshot(input: PlayerInput, canSendInput: boolean): GameSnapshot | undefined {
     if (!this.multiplayer) {
       return interpolateSnapshot(
         this.previousLocalSnapshot,
@@ -608,14 +571,19 @@ export class GameRuntime {
       return interpolatedSnapshot;
     }
 
-    return this.predictor.apply(
+    const snapshot = this.predictor.apply(
       interpolatedSnapshot,
       latestSnapshot,
       this.playerId,
-      currentInputSeq,
       input,
       this.charactersValue,
     );
+
+    if (canSendInput) {
+      this.sendInputCommands(this.predictor.getPendingInputCommands());
+    }
+
+    return snapshot;
   }
 }
 
@@ -689,14 +657,6 @@ function saveTutorialDoneIfFinished(previous: GameSnapshot | undefined, current:
   ) {
     storage.tutorialDone = true;
   }
-}
-
-function isSameInput(left: PlayerInput, right: PlayerInput): boolean {
-  return left.left === right.left && left.right === right.right && left.jump === right.jump;
-}
-
-function hasActiveInput(input: PlayerInput): boolean {
-  return input.left || input.right || input.jump;
 }
 
 function normalizePlayerInput(input: PlayerInput): PlayerInput {

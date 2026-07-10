@@ -85,6 +85,7 @@ export function createPlayer({
     lastInputSnapshotTick: undefined,
     lastReceivedInputSeq: 0,
     lastProcessedInputSeq: 0,
+    pendingInputCommands: [],
 
     smashSnapshotTick: undefined,
 

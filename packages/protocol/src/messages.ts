@@ -1,6 +1,6 @@
 import type { CharacterDefinition } from "./character.js";
 import type { PlayerId } from "./entity.js";
-import type { PlayerInput } from "./input.js";
+import type { PlayerInput, PlayerInputCommand } from "./input.js";
 import type { GameReplay } from "./replay.js";
 import type { DeltaSnapshot, GameSnapshot } from "./snapshot.js";
 
@@ -18,9 +18,10 @@ export type LeaderboardEntry = {
 
 export type InputMessage = {
   type: "input";
-  inputSeq: number;
+  inputSeq?: number;
   snapshotTick?: number;
-  input: PlayerInput;
+  input?: PlayerInput;
+  commands?: PlayerInputCommand[];
 };
 
 export type JoinMessage = {

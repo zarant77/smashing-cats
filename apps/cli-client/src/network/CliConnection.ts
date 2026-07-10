@@ -4,7 +4,7 @@ import {
   minifyMessage,
   type CharacterDefinition,
   type GameSnapshot,
-  type InputMessage,
+  type PlayerInputCommand,
   type PlayerId,
   type ServerToClientMessage,
   type ClientToServerMessage,
@@ -79,7 +79,7 @@ export class CliConnection {
       return;
     }
 
-    const message: InputMessage =
+    this.send(
       snapshotTick === undefined
         ? {
             type: "input",
@@ -91,9 +91,24 @@ export class CliConnection {
             inputSeq,
             snapshotTick,
             input,
-          };
+          },
+    );
+  }
 
-    this.send(message);
+  public sendInputCommands(commands: PlayerInputCommand[]): void {
+    if (
+      commands.length === 0 ||
+      this.socket?.readyState !== WebSocket.OPEN ||
+      this.playerId === undefined ||
+      !this.hasSelectedCharacter
+    ) {
+      return;
+    }
+
+    this.send({
+      type: "input",
+      commands,
+    });
   }
 
   public sendPause(paused: boolean): void {

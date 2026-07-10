@@ -4,6 +4,10 @@ export class SnapshotStore {
   private snapshot: GameSnapshot | undefined;
 
   public setFullSnapshot(snapshot: GameSnapshot): GameSnapshot {
+    if (this.snapshot !== undefined && snapshot.tick < this.snapshot.tick) {
+      return this.snapshot;
+    }
+
     this.snapshot = cloneSnapshot(snapshot);
     return this.snapshot;
   }
@@ -11,6 +15,10 @@ export class SnapshotStore {
   public applyDelta(delta: DeltaSnapshot): GameSnapshot | undefined {
     if (this.snapshot === undefined) {
       return undefined;
+    }
+
+    if (delta.tick <= this.snapshot.tick) {
+      return this.snapshot;
     }
 
     const snapshot = cloneSnapshot(this.snapshot);

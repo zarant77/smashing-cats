@@ -4,6 +4,13 @@ export type PlayerInput = {
   jump: boolean;
 };
 
+export type PlayerInputCommand = {
+  inputSeq: number;
+  clientTick: number;
+  snapshotTick?: number;
+  input: PlayerInput;
+};
+
 export const INPUT_LEFT = 1;
 export const INPUT_RIGHT = 2;
 export const INPUT_JUMP = 4;

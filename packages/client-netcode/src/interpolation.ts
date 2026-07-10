@@ -1,3 +1,4 @@
+import { FIXED_DT } from "@smashing-cats/core";
 import type { EntitySnapshot, GameSnapshot, PlayerId, PlayerSnapshot } from "@smashing-cats/protocol";
 
 const INITIAL_INTERPOLATION_DELAY_MS = 70;
@@ -10,6 +11,7 @@ const MAX_EXTRAPOLATION_MS = 80;
 const MAX_BUFFERED_SNAPSHOTS = 24;
 const WORLD_CORRECTION_SMOOTHING_MS = 70;
 const NETWORK_TIMING_SMOOTHING = 0.12;
+const TICK_DURATION_MS = FIXED_DT * 1000;
 
 type BufferedSnapshot = {
   snapshot: GameSnapshot;
@@ -20,31 +22,45 @@ export class SnapshotInterpolator {
   private readonly snapshots: BufferedSnapshot[] = [];
   private smoothedScrollX: { value: number; updatedAt: number } | undefined;
   private renderedTick: number | undefined;
+  private latestServerTickEstimate: { tick: number; updatedAt: number } | undefined;
   private interpolationDelayMs = INITIAL_INTERPOLATION_DELAY_MS;
   private smoothedSnapshotIntervalMs: number | undefined;
   private smoothedJitterMs = 0;
 
   public add(snapshot: GameSnapshot, receivedAt = performance.now()): void {
+    if (this.renderedTick !== undefined && snapshot.tick < this.renderedTick - 1) {
+      return;
+    }
+
+    const existingIndex = this.snapshots.findIndex((buffered) => buffered.snapshot.tick === snapshot.tick);
+
+    if (existingIndex !== -1) {
+      this.snapshots[existingIndex] = { snapshot, receivedAt };
+      return;
+    }
+
     const last = this.snapshots.at(-1);
 
-    if (last !== undefined && snapshot.tick < last.snapshot.tick) {
-      return;
-    }
-
-    if (last !== undefined && snapshot.tick === last.snapshot.tick) {
-      if (snapshot.gamePaused !== last.snapshot.gamePaused) {
-        last.snapshot = snapshot;
-        last.receivedAt = receivedAt;
-      }
-
-      return;
-    }
-
-    if (last !== undefined) {
+    if (last !== undefined && snapshot.tick > last.snapshot.tick) {
       this.updateNetworkTiming(receivedAt - last.receivedAt);
     }
 
-    this.snapshots.push({ snapshot, receivedAt });
+    const insertIndex = this.snapshots.findIndex((buffered) => buffered.snapshot.tick > snapshot.tick);
+
+    if (insertIndex === -1) {
+      this.snapshots.push({ snapshot, receivedAt });
+    } else {
+      this.snapshots.splice(insertIndex, 0, { snapshot, receivedAt });
+    }
+
+    const newest = this.snapshots.at(-1);
+
+    if (newest !== undefined) {
+      this.latestServerTickEstimate = {
+        tick: newest.snapshot.tick,
+        updatedAt: newest.receivedAt,
+      };
+    }
 
     if (this.snapshots.length > MAX_BUFFERED_SNAPSHOTS) {
       this.snapshots.splice(0, this.snapshots.length - MAX_BUFFERED_SNAPSHOTS);
@@ -55,14 +71,20 @@ export class SnapshotInterpolator {
     if (this.snapshots.length === 0) {
       this.smoothedScrollX = undefined;
       this.renderedTick = undefined;
+      this.latestServerTickEstimate = undefined;
       return undefined;
     }
 
     if (this.snapshots.length === 1) {
-      return this.setRenderedTick(this.smoothScrollX(this.extrapolateWorld(this.snapshots[0], now), now));
+      return this.setRenderedTick(this.smoothScrollX(this.extrapolateSnapshot(this.snapshots[0], localPlayerId, now), now));
     }
 
-    const renderTime = now - this.interpolationDelayMs;
+    const estimatedServerTick = this.getEstimatedServerTick(now);
+    const renderTick = estimatedServerTick - this.interpolationDelayMs / TICK_DURATION_MS;
+
+    if (renderTick <= this.snapshots[0].snapshot.tick) {
+      return this.setRenderedTick(this.smoothScrollX(this.snapshots[0].snapshot, now));
+    }
 
     let previous = this.snapshots[0];
     let next = this.snapshots.at(-1);
@@ -74,7 +96,7 @@ export class SnapshotInterpolator {
         continue;
       }
 
-      if (candidate.receivedAt >= renderTime) {
+      if (candidate.snapshot.tick >= renderTick) {
         next = candidate;
         break;
       }
@@ -83,14 +105,14 @@ export class SnapshotInterpolator {
     }
 
     if (previous === undefined || next === undefined) {
-      return this.setRenderedTick(this.smoothScrollX(this.extrapolateWorld(this.snapshots.at(-1), now), now));
+      return this.setRenderedTick(this.smoothScrollX(this.extrapolateSnapshot(this.snapshots.at(-1), localPlayerId, now), now));
     }
 
-    if (previous === next || next.receivedAt <= previous.receivedAt) {
-      return this.setRenderedTick(this.smoothScrollX(this.extrapolateWorld(next, now), now));
+    if (renderTick > next.snapshot.tick || previous === next || next.snapshot.tick <= previous.snapshot.tick) {
+      return this.setRenderedTick(this.smoothScrollX(this.extrapolateSnapshot(next, localPlayerId, now), now));
     }
 
-    const alpha = clamp01((renderTime - previous.receivedAt) / (next.receivedAt - previous.receivedAt));
+    const alpha = clamp01((renderTick - previous.snapshot.tick) / (next.snapshot.tick - previous.snapshot.tick));
     const interpolated = interpolateSnapshot(previous.snapshot, next.snapshot, alpha, localPlayerId);
 
     return this.setRenderedTick(this.smoothScrollX(interpolated, now));
@@ -143,7 +165,21 @@ export class SnapshotInterpolator {
     return snapshot;
   }
 
-  private extrapolateWorld(buffered: BufferedSnapshot | undefined, now: number): GameSnapshot | undefined {
+  private getEstimatedServerTick(now: number): number {
+    const estimate = this.latestServerTickEstimate;
+
+    if (estimate === undefined) {
+      return this.snapshots.at(-1)?.snapshot.tick ?? 0;
+    }
+
+    return estimate.tick + Math.max(0, now - estimate.updatedAt) / TICK_DURATION_MS;
+  }
+
+  private extrapolateSnapshot(
+    buffered: BufferedSnapshot | undefined,
+    localPlayerId: PlayerId | undefined,
+    now: number,
+  ): GameSnapshot | undefined {
     if (buffered === undefined) {
       return undefined;
     }
@@ -160,6 +196,20 @@ export class SnapshotInterpolator {
         ...buffered.snapshot.world,
         scrollX: buffered.snapshot.world.scrollX + buffered.snapshot.world.speed * dt,
       },
+      players: buffered.snapshot.players.map((player) =>
+        player.playerId === localPlayerId
+          ? player
+          : {
+              ...player,
+              x: player.x + player.vx * dt,
+              y: player.y + player.vy * dt,
+            },
+      ),
+      entities: buffered.snapshot.entities.map((entity) => ({
+        ...entity,
+        x: entity.x + entity.vx * dt,
+        y: entity.y + entity.vy * dt,
+      })),
     };
   }
 

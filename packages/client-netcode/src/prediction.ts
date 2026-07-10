@@ -1,6 +1,13 @@
 import { FIXED_DT, simulatePlayerMovement } from "@smashing-cats/core";
 import type { PlayerMovementState } from "@smashing-cats/core";
-import type { CharacterDefinition, GameSnapshot, PlayerId, PlayerInput, PlayerSnapshot } from "@smashing-cats/protocol";
+import type {
+  CharacterDefinition,
+  GameSnapshot,
+  PlayerId,
+  PlayerInput,
+  PlayerInputCommand,
+  PlayerSnapshot,
+} from "@smashing-cats/protocol";
 
 const FALLBACK_GRAVITY = 1700;
 const MAX_ACCUMULATED_DT = 0.25;
@@ -12,21 +19,18 @@ const LANDING_POSITION_ERROR = 8;
 const SNAP_POSITION_ERROR = 96;
 const VISUAL_CORRECTION_SMOOTHING_MS = 110;
 
-type PendingInput = {
-  inputSeq: number;
-  actionInput: PlayerInput;
-};
-
 export class LocalPlayerPredictor {
   private state: PlayerMovementState | undefined;
   private playerId: PlayerId | undefined;
-  private pendingInputs: PendingInput[] = [];
+  private pendingInputs: PlayerInputCommand[] = [];
   private lastRawInput: PlayerInput | undefined;
   private jumpRequested = false;
   private lastUpdatedAt: number | undefined;
   private accumulator = 0;
   private lastAuthoritativeTick: number | undefined;
   private lastAuthoritativeInputSeq: number | undefined;
+  private nextInputSeq = 1;
+  private clientTick = 0;
   private visualCorrectionX = 0;
   private visualCorrectionY = 0;
   private lastVisualCorrectionAt: number | undefined;
@@ -35,7 +39,6 @@ export class LocalPlayerPredictor {
     snapshot: GameSnapshot | undefined,
     latest: GameSnapshot | undefined,
     playerId: PlayerId | undefined,
-    inputSeq: number,
     input: PlayerInput,
     characters: CharacterDefinition[],
     now = performance.now(),
@@ -69,6 +72,8 @@ export class LocalPlayerPredictor {
       this.accumulator = 0;
       this.lastAuthoritativeTick = latest.tick;
       this.lastAuthoritativeInputSeq = authoritativePlayer.lastProcessedInputSeq;
+      this.nextInputSeq = authoritativePlayer.lastProcessedInputSeq + 1;
+      this.clientTick = latest.tick;
     }
 
     this.accumulateTime(now);
@@ -80,7 +85,7 @@ export class LocalPlayerPredictor {
       this.lastAuthoritativeInputSeq = authoritativePlayer.lastProcessedInputSeq;
     }
 
-    this.applyPredictionSteps(inputSeq, input, character, latest);
+    this.applyPredictionSteps(input, character, latest, snapshot.tick);
     this.decayVisualCorrection(now);
 
     return {
@@ -89,11 +94,27 @@ export class LocalPlayerPredictor {
     };
   }
 
+  public getPendingInputCommands(): PlayerInputCommand[] {
+    return this.pendingInputs.map((pendingInput) => ({
+      ...pendingInput,
+      input: { ...pendingInput.input },
+    }));
+  }
+
+  public getLastInputSeq(): number {
+    return this.nextInputSeq - 1;
+  }
+
   private hasNewAuthoritativeState(tick: number, inputSeq: number): boolean {
     return this.lastAuthoritativeTick !== tick || this.lastAuthoritativeInputSeq !== inputSeq;
   }
 
-  private applyPredictionSteps(inputSeq: number, input: PlayerInput, character: CharacterDefinition, snapshot: GameSnapshot): void {
+  private applyPredictionSteps(
+    input: PlayerInput,
+    character: CharacterDefinition,
+    snapshot: GameSnapshot,
+    renderedSnapshotTick: number,
+  ): void {
     if (this.state === undefined) {
       return;
     }
@@ -104,16 +125,20 @@ export class LocalPlayerPredictor {
         jump: this.consumeJumpRequest(),
       };
 
-      this.pendingInputs.push({
-        inputSeq,
-        actionInput,
-      });
+      const command: PlayerInputCommand = {
+        inputSeq: this.nextInputSeq++,
+        clientTick: ++this.clientTick,
+        snapshotTick: renderedSnapshotTick,
+        input: actionInput,
+      };
+
+      this.pendingInputs.push(command);
 
       if (this.pendingInputs.length > MAX_PENDING_INPUTS) {
         this.pendingInputs.splice(0, this.pendingInputs.length - MAX_PENDING_INPUTS);
       }
 
-      simulatePlayerMovement(this.state, actionInput, character, createGameConfig(snapshot.world), FIXED_DT);
+      simulatePlayerMovement(this.state, command.input, character, createGameConfig(snapshot.world), FIXED_DT);
       this.accumulator -= FIXED_DT;
     }
   }
@@ -124,11 +149,12 @@ export class LocalPlayerPredictor {
     }
 
     this.pendingInputs = this.pendingInputs.filter((pendingInput) => pendingInput.inputSeq > authoritativePlayer.lastProcessedInputSeq);
+    this.nextInputSeq = Math.max(this.nextInputSeq, authoritativePlayer.lastProcessedInputSeq + 1);
 
     const reconciledState = createMovementState(authoritativePlayer);
 
     for (const pendingInput of this.pendingInputs) {
-      simulatePlayerMovement(reconciledState, pendingInput.actionInput, character, createGameConfig(snapshot.world), FIXED_DT);
+      simulatePlayerMovement(reconciledState, pendingInput.input, character, createGameConfig(snapshot.world), FIXED_DT);
     }
 
     this.applyReconciledState(reconciledState, now);
@@ -285,6 +311,8 @@ export class LocalPlayerPredictor {
     this.accumulator = 0;
     this.lastAuthoritativeTick = undefined;
     this.lastAuthoritativeInputSeq = undefined;
+    this.nextInputSeq = 1;
+    this.clientTick = 0;
     this.visualCorrectionX = 0;
     this.visualCorrectionY = 0;
     this.lastVisualCorrectionAt = undefined;
@@ -296,7 +324,7 @@ export class LocalPlayerPredictor {
     }
 
     const dtMs = Math.max(0, now - this.lastVisualCorrectionAt);
-    const alpha = clamp01(dtMs / VISUAL_CORRECTION_SMOOTHING_MS);
+    const alpha = 1 - Math.exp(-dtMs / VISUAL_CORRECTION_SMOOTHING_MS);
 
     this.visualCorrectionX = lerp(this.visualCorrectionX, 0, alpha);
     this.visualCorrectionY = lerp(this.visualCorrectionY, 0, alpha);

@@ -5,6 +5,7 @@ import type {
   HurtCircle,
   PlayerId,
   PlayerInput,
+  PlayerInputCommand,
   Size,
   SmashBox,
 } from "@smashing-cats/protocol";
@@ -72,6 +73,7 @@ export type Player = Entity & {
   lastReceivedInputSeq: number;
   lastProcessedInputSeq: number;
   lastInput: PlayerInput;
+  pendingInputCommands: PlayerInputCommand[];
 
   smashSnapshotTick: number | undefined;
 

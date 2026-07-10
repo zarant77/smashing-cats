@@ -1,4 +1,4 @@
-import type { PlayerInput } from "@smashing-cats/protocol";
+import type { PlayerInput, PlayerInputCommand } from "@smashing-cats/protocol";
 
 import { normalizeInput } from "./inputState.js";
 import { normalizeInputSeq, normalizeSnapshotTick } from "./inputSeq.js";
@@ -12,31 +12,69 @@ type ApplyPlayerInputOptions = {
   inputSeq: number | undefined;
 };
 
-const jumpRequests = new WeakSet<Player>();
+const MAX_QUEUED_INPUT_COMMANDS = 120;
+const MAX_ACCEPTED_SEQUENCE_AHEAD = 240;
 
 export function applyPlayerInput({ player, input, snapshotTick, inputSeq }: ApplyPlayerInputOptions): void {
-  const normalizedInput = normalizeInput(input);
-  const wasJumpPressed = player.lastInput.jump;
-
-  if (normalizedInput.jump && !wasJumpPressed) {
-    jumpRequests.add(player);
-  }
-
-  player.lastInput = normalizedInput;
-  player.lastInputSnapshotTick = normalizeSnapshotTick(snapshotTick);
-  player.lastReceivedInputSeq = normalizeInputSeq(inputSeq, player.lastReceivedInputSeq);
+  queuePlayerInputCommand(player, {
+    inputSeq: normalizeInputSeq(inputSeq, player.lastReceivedInputSeq + 1),
+    clientTick: 0,
+    snapshotTick,
+    input,
+  });
 }
 
-export function consumeJumpRequest(player: Player): boolean {
-  if (!jumpRequests.has(player)) {
-    return false;
+export function queuePlayerInputCommand(player: Player, command: PlayerInputCommand): void {
+  const inputSeq = normalizeIncomingInputSeq(command.inputSeq, player.lastReceivedInputSeq + 1);
+
+  if (inputSeq <= player.lastProcessedInputSeq) {
+    return;
   }
 
-  jumpRequests.delete(player);
+  if (inputSeq > player.lastProcessedInputSeq + MAX_ACCEPTED_SEQUENCE_AHEAD) {
+    return;
+  }
 
-  return true;
+  if (player.pendingInputCommands.some((pendingCommand) => pendingCommand.inputSeq === inputSeq)) {
+    return;
+  }
+
+  player.pendingInputCommands.push({
+    inputSeq,
+    clientTick: normalizeSnapshotTick(command.clientTick) ?? 0,
+    snapshotTick: normalizeSnapshotTick(command.snapshotTick),
+    input: normalizeInput(command.input),
+  });
+
+  player.pendingInputCommands.sort((left, right) => left.inputSeq - right.inputSeq);
+  player.lastReceivedInputSeq = Math.max(player.lastReceivedInputSeq, inputSeq);
+
+  if (player.pendingInputCommands.length > MAX_QUEUED_INPUT_COMMANDS) {
+    player.pendingInputCommands.splice(0, player.pendingInputCommands.length - MAX_QUEUED_INPUT_COMMANDS);
+  }
+}
+
+export function consumePlayerInputCommand(player: Player): PlayerInputCommand | undefined {
+  const command = player.pendingInputCommands.shift();
+
+  if (command === undefined) {
+    return undefined;
+  }
+
+  player.lastInput = command.input;
+  player.lastInputSnapshotTick = command.snapshotTick;
+
+  return command;
 }
 
 export function clearJumpRequest(player: Player): void {
-  jumpRequests.delete(player);
+  player.pendingInputCommands = [];
+}
+
+function normalizeIncomingInputSeq(inputSeq: number | undefined, fallback: number): number {
+  if (inputSeq === undefined || !Number.isFinite(inputSeq)) {
+    return fallback;
+  }
+
+  return Math.max(0, Math.floor(inputSeq));
 }

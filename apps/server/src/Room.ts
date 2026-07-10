@@ -314,7 +314,21 @@ export class Room {
       return;
     }
 
-    match.game.setInput(playerId, message.input, message.snapshotTick, message.inputSeq);
+    if (Array.isArray(message.commands)) {
+      for (const command of message.commands) {
+        if (!isPlayerInputCommand(command)) {
+          continue;
+        }
+
+        match.game.queueInputCommand(playerId, command);
+      }
+
+      return;
+    }
+
+    if (isPlayerInput(message.input)) {
+      match.game.setInput(playerId, message.input, message.snapshotTick, message.inputSeq);
+    }
   }
 
   private handlePause(playerId: string, paused: boolean): void {
@@ -651,6 +665,37 @@ function parseClientMessage(raw: string): ClientToServerMessage | undefined {
   } catch {
     return undefined;
   }
+}
+
+function isPlayerInput(input: unknown): input is NonNullable<Extract<ClientToServerMessage, { type: "input" }>["input"]> {
+  if (typeof input !== "object" || input === null || Array.isArray(input)) {
+    return false;
+  }
+
+  const candidate = input as Record<string, unknown>;
+
+  return (
+    typeof candidate.left === "boolean" &&
+    typeof candidate.right === "boolean" &&
+    typeof candidate.jump === "boolean"
+  );
+}
+
+function isPlayerInputCommand(
+  command: unknown,
+): command is NonNullable<Extract<ClientToServerMessage, { type: "input" }>["commands"]>[number] {
+  if (typeof command !== "object" || command === null || Array.isArray(command)) {
+    return false;
+  }
+
+  const candidate = command as Record<string, unknown>;
+
+  return (
+    typeof candidate.inputSeq === "number" &&
+    typeof candidate.clientTick === "number" &&
+    (candidate.snapshotTick === undefined || typeof candidate.snapshotTick === "number") &&
+    isPlayerInput(candidate.input)
+  );
 }
 
 function analyzeReplayInputs(replay: ReplayVerificationReplay): {

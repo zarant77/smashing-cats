@@ -19,6 +19,8 @@ type GameScreenOptions = {
   onRestart: () => void;
 };
 
+const MAX_INPUT_COMMANDS_PER_PACKET = 24;
+
 export class GameScreen implements Screen {
   private readonly root: blessed.Widgets.BoxElement;
   private readonly status: blessed.Widgets.BoxElement;
@@ -38,15 +40,11 @@ export class GameScreen implements Screen {
   private gameOverOverlay: GameOverOverlay | undefined;
 
   private characters: CharacterDefinition[] = [];
-  private inputSeq = 1;
-  private latestInputSeq = 0;
   private latestInput: PlayerInput = {
     left: false,
     right: false,
     jump: false,
   };
-  private lastSentInput: PlayerInput | undefined;
-
   private paused = false;
 
   public constructor(private readonly options: GameScreenOptions) {
@@ -187,15 +185,8 @@ export class GameScreen implements Screen {
         return;
       }
 
-      const currentInputSeq = this.inputSeq++;
       const input = this.terminalInput.read();
       this.latestInput = input;
-
-      if (this.shouldSendInput(input)) {
-        this.latestInputSeq = currentInputSeq;
-        this.lastSentInput = { ...input };
-        this.connection?.sendInput(currentInputSeq, input, this.interpolator.getRenderedTick());
-      }
     }, 1000 / 30);
   }
 
@@ -205,10 +196,13 @@ export class GameScreen implements Screen {
         this.interpolator.get(this.playerId),
         this.interpolator.getLatest(),
         this.playerId,
-        this.latestInputSeq,
         this.latestInput,
         this.characters,
       );
+
+      if (!this.paused) {
+        this.connection?.sendInputCommands(this.predictor.getPendingInputCommands().slice(-MAX_INPUT_COMMANDS_PER_PACKET));
+      }
 
       const content = this.renderer.render(snapshot, this.playerId);
       this.viewport.setContent(this.paused ? this.withPauseOverlay(content) : content);
@@ -322,14 +316,9 @@ export class GameScreen implements Screen {
 
     this.paused = !this.paused;
     this.terminalInput.clear();
-    this.lastSentInput = undefined;
 
     this.connection?.sendPause(this.paused);
     terminalBell.ui();
-  }
-
-  private shouldSendInput(input: PlayerInput): boolean {
-    return hasActiveInput(input) || this.lastSentInput === undefined || !isSameInput(this.lastSentInput, input);
   }
 
   private withPauseOverlay(content: string): string {
@@ -353,12 +342,4 @@ export class GameScreen implements Screen {
 
     return lines.join("\n");
   }
-}
-
-function isSameInput(left: PlayerInput, right: PlayerInput): boolean {
-  return left.left === right.left && left.right === right.right && left.jump === right.jump;
-}
-
-function hasActiveInput(input: PlayerInput): boolean {
-  return input.left || input.right || input.jump;
 }
