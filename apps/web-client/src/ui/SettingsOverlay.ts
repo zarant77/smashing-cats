@@ -33,6 +33,11 @@ type SettingsOverlayState = {
 };
 
 const MENU_ANIMATION_MS = 220;
+const MATCH_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const MATCH_CODE_LENGTH = 6;
+const CREATED_MATCH_CODE_STORAGE_KEY = "smashing-cats-created-match-code";
+
+type NetworkGameTab = "create" | "join";
 
 export class SettingsOverlay {
   private readonly element: HTMLDivElement;
@@ -94,9 +99,100 @@ export class SettingsOverlay {
 
         ${this.renderFullscreenButton()}
 
+        <button class="netplay-button" type="button" data-i18n-title="networkGame" title="${t("networkGame")}" aria-label="${t("networkGame")}">
+          <span class="icon icon-netplay"></span>
+        </button>
+
         <button class="menu-button" type="button" data-i18n-title="pause" title="${t("pause")}" aria-label="${t("pause")}">
           <span class="icon icon-menu"></span>
         </button>
+      </div>
+
+      <div class="network-game-popup popup-open" hidden>
+        <div class="network-game-backdrop"></div>
+
+        <div class="network-game-card" role="dialog" aria-modal="true" aria-labelledby="network-game-title">
+          <button class="network-game-close-button" type="button" data-i18n-title="close" title="${t("close")}" aria-label="${t("close")}">
+            <span aria-hidden="true">×</span>
+          </button>
+
+          <h2 id="network-game-title" data-i18n="networkGame">${t("networkGame")}</h2>
+
+          <div
+            class="network-game-tabs"
+            role="tablist"
+            data-i18n-title="networkGame"
+            aria-label="${t("networkGame")}"
+          >
+            <button
+              class="network-game-tab-button active"
+              type="button"
+              role="tab"
+              id="network-create-tab"
+              aria-controls="network-create-panel"
+              aria-selected="true"
+              data-network-tab="create"
+              data-i18n="createGame"
+            >${t("createGame")}</button>
+
+            <button
+              class="network-game-tab-button"
+              type="button"
+              role="tab"
+              id="network-join-tab"
+              aria-controls="network-join-panel"
+              aria-selected="false"
+              data-network-tab="join"
+              data-i18n="joinGame"
+            >${t("joinGame")}</button>
+          </div>
+
+          <section
+            class="network-game-panel network-create-panel"
+            id="network-create-panel"
+            role="tabpanel"
+            aria-labelledby="network-create-tab"
+          >
+            <button class="network-game-primary-button network-create-button" type="button" data-i18n="createGame">
+              ${t("createGame")}
+            </button>
+
+            <div class="network-room-result" aria-live="polite" hidden>
+              <span data-i18n="roomKey">${t("roomKey")}</span>
+              <output class="network-room-key"></output>
+            </div>
+          </section>
+
+          <section
+            class="network-game-panel network-join-panel"
+            id="network-join-panel"
+            role="tabpanel"
+            aria-labelledby="network-join-tab"
+            hidden
+          >
+            <label for="network-room-input" data-i18n="roomKeyOrLink">${t("roomKeyOrLink")}</label>
+
+            <input
+              class="network-room-input"
+              id="network-room-input"
+              type="text"
+              inputmode="text"
+              autocomplete="off"
+              autocapitalize="characters"
+              spellcheck="false"
+              placeholder="https://smash.catemup.com/?match=AAA"
+              aria-describedby="network-room-error"
+            >
+
+            <p class="network-room-error" id="network-room-error" data-i18n="invalidRoomKey" hidden>
+              ${t("invalidRoomKey")}
+            </p>
+
+            <button class="network-game-primary-button network-join-button" type="button" data-i18n="joinMatch">
+              ${t("joinMatch")}
+            </button>
+          </section>
+        </div>
       </div>
 
       <div class="card" hidden>
@@ -159,6 +255,7 @@ export class SettingsOverlay {
     root.append(this.element);
     this.bindEvents();
     this.syncActiveButtons();
+    this.restoreCreatedNetworkGame();
   }
 
   public render(snapshot: GameSnapshot | undefined, localPlayerId: PlayerId | undefined): void {
@@ -243,11 +340,25 @@ export class SettingsOverlay {
     return card;
   }
 
+  private get networkGamePopup(): HTMLDivElement {
+    const popup = this.element.querySelector<HTMLDivElement>(".network-game-popup");
+
+    if (popup === null) {
+      throw new Error("Network game popup not found");
+    }
+
+    return popup;
+  }
+
   private bindEvents(): void {
     this.element.addEventListener("click", (event) => {
       const target = event.target;
 
       if (!(target instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      if (target.closest(".network-game-popup, .netplay-button") !== null) {
         return;
       }
 
@@ -263,6 +374,56 @@ export class SettingsOverlay {
     this.element
       .querySelector<HTMLButtonElement>(".fullscreen-button")
       ?.addEventListener("click", () => this.onToggleFullscreen?.());
+    this.element.querySelector<HTMLButtonElement>(".netplay-button")?.addEventListener("click", () => {
+      playSound("sound.ui_click");
+
+      if (this.networkGamePopup.hidden) {
+        this.showNetworkGamePopup();
+        return;
+      }
+
+      this.hideNetworkGamePopup();
+    });
+    this.element.querySelector<HTMLButtonElement>(".network-game-close-button")?.addEventListener("click", () => {
+      playSound("sound.ui_click");
+      this.hideNetworkGamePopup();
+    });
+    this.element.querySelector<HTMLDivElement>(".network-game-backdrop")?.addEventListener("click", () => {
+      playSound("sound.ui_click");
+      this.hideNetworkGamePopup();
+    });
+    this.element.querySelectorAll<HTMLButtonElement>(".network-game-tab-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const tab = button.dataset.networkTab;
+
+        if (tab !== "create" && tab !== "join") {
+          return;
+        }
+
+        playSound("sound.ui_click");
+        this.selectNetworkGameTab(tab);
+      });
+    });
+    this.element.querySelector<HTMLButtonElement>(".network-create-button")?.addEventListener("click", () => {
+      playSound("sound.ui_click");
+      this.createNetworkGame();
+    });
+    this.element.querySelector<HTMLButtonElement>(".network-join-button")?.addEventListener("click", () => {
+      playSound("sound.ui_click");
+      this.joinNetworkGame();
+    });
+    this.element.querySelector<HTMLInputElement>(".network-room-input")?.addEventListener("input", () => {
+      this.setNetworkRoomErrorVisible(false);
+    });
+    this.element.querySelector<HTMLInputElement>(".network-room-input")?.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") {
+        return;
+      }
+
+      event.preventDefault();
+      playSound("sound.ui_click");
+      this.joinNetworkGame();
+    });
     this.element
       .querySelector<HTMLButtonElement>(".music-button")
       ?.addEventListener("click", () => this.onToggleMusic?.());
@@ -307,6 +468,10 @@ export class SettingsOverlay {
         return;
       }
 
+      if (this.networkGamePopup.contains(target)) {
+        return;
+      }
+
       if (this.card.contains(target)) {
         return;
       }
@@ -345,6 +510,7 @@ export class SettingsOverlay {
     this.setButtonDisabled(".vibration-button", !deviceController.vibrationSupported);
 
     this.setButtonActive(".fullscreen-button", this.state.fullscreenEnabled);
+    this.setButtonActive(".netplay-button", !this.networkGamePopup.hidden);
 
     const pauseTitle = this.element.querySelector(".pause-title") as HTMLDivElement | null;
 
@@ -367,6 +533,117 @@ export class SettingsOverlay {
 
     if (!paused && this.visible) {
       this.hide();
+    }
+  }
+
+  private showNetworkGamePopup(): void {
+    this.networkGamePopup.hidden = false;
+    this.selectNetworkGameTab("create");
+
+    const currentMatchCode = getMatchCodeFromInput(window.location.href);
+
+    if (currentMatchCode !== undefined) {
+      this.showNetworkRoomKey(currentMatchCode);
+    }
+
+    this.syncActiveButtons();
+
+    window.requestAnimationFrame(() => {
+      this.element.querySelector<HTMLButtonElement>(".network-game-close-button")?.focus();
+    });
+  }
+
+  private hideNetworkGamePopup(): void {
+    this.networkGamePopup.hidden = true;
+    this.setNetworkRoomErrorVisible(false);
+    this.syncActiveButtons();
+  }
+
+  private selectNetworkGameTab(tab: NetworkGameTab): void {
+    this.element.querySelectorAll<HTMLButtonElement>(".network-game-tab-button").forEach((button) => {
+      const selected = button.dataset.networkTab === tab;
+
+      button.classList.toggle("active", selected);
+      button.setAttribute("aria-selected", String(selected));
+      button.tabIndex = selected ? 0 : -1;
+    });
+
+    const createPanel = this.element.querySelector<HTMLElement>(".network-create-panel");
+    const joinPanel = this.element.querySelector<HTMLElement>(".network-join-panel");
+
+    if (createPanel !== null) {
+      createPanel.hidden = tab !== "create";
+    }
+
+    if (joinPanel !== null) {
+      joinPanel.hidden = tab !== "join";
+    }
+
+    if (tab === "join") {
+      window.requestAnimationFrame(() => {
+        this.element.querySelector<HTMLInputElement>(".network-room-input")?.focus();
+      });
+    }
+  }
+
+  private createNetworkGame(): void {
+    const matchCode = generateMatchCode();
+    const matchUrl = createMatchUrl(matchCode);
+
+    window.sessionStorage.setItem(CREATED_MATCH_CODE_STORAGE_KEY, matchCode);
+    window.location.replace(matchUrl);
+  }
+
+  private joinNetworkGame(): void {
+    const input = this.element.querySelector<HTMLInputElement>(".network-room-input");
+    const matchCode = getMatchCodeFromInput(input?.value ?? "");
+
+    if (matchCode === undefined) {
+      this.setNetworkRoomErrorVisible(true);
+      input?.focus();
+      return;
+    }
+
+    window.location.assign(createMatchUrl(matchCode));
+  }
+
+  private showNetworkRoomKey(matchCode: string): void {
+    const result = this.element.querySelector<HTMLDivElement>(".network-room-result");
+    const output = this.element.querySelector<HTMLOutputElement>(".network-room-key");
+
+    if (result !== null) {
+      result.hidden = false;
+    }
+
+    if (output !== null) {
+      output.value = matchCode;
+      output.textContent = matchCode;
+    }
+  }
+
+  private restoreCreatedNetworkGame(): void {
+    const createdMatchCode = window.sessionStorage.getItem(CREATED_MATCH_CODE_STORAGE_KEY);
+
+    if (createdMatchCode === null) {
+      return;
+    }
+
+    window.sessionStorage.removeItem(CREATED_MATCH_CODE_STORAGE_KEY);
+
+    const currentMatchCode = getMatchCodeFromInput(window.location.href);
+
+    if (currentMatchCode !== createdMatchCode) {
+      return;
+    }
+
+    this.showNetworkGamePopup();
+  }
+
+  private setNetworkRoomErrorVisible(visible: boolean): void {
+    const error = this.element.querySelector<HTMLParagraphElement>(".network-room-error");
+
+    if (error !== null) {
+      error.hidden = !visible;
     }
   }
 
@@ -427,6 +704,45 @@ export class SettingsOverlay {
 
     window.clearTimeout(this.closeTimeoutId);
     this.closeTimeoutId = undefined;
+  }
+}
+
+function createMatchUrl(matchCode: string): string {
+  const url = new URL(window.location.href);
+
+  url.searchParams.set("match", matchCode);
+
+  return url.toString();
+}
+
+function generateMatchCode(): string {
+  let code = "";
+
+  for (let index = 0; index < MATCH_CODE_LENGTH; index += 1) {
+    code += MATCH_CODE_ALPHABET[Math.floor(Math.random() * MATCH_CODE_ALPHABET.length)];
+  }
+
+  return code;
+}
+
+function getMatchCodeFromInput(input: string): string | undefined {
+  const value = input.trim();
+
+  if (value === "") {
+    return undefined;
+  }
+
+  if (!value.includes("://")) {
+    return value.toUpperCase();
+  }
+
+  try {
+    const url = new URL(value);
+    const matchCode = url.searchParams.get("match")?.trim();
+
+    return matchCode === undefined || matchCode === "" ? undefined : matchCode.toUpperCase();
+  } catch {
+    return undefined;
   }
 }
 
