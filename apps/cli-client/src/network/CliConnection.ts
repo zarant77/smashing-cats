@@ -142,7 +142,11 @@ export class CliConnection {
 
     if (message.type === "snapshot") {
       const snapshot = this.snapshotStore.setFullSnapshot(message.snapshot);
-      this.options.onSnapshot(snapshot);
+
+      if (snapshot !== undefined) {
+        this.options.onSnapshot(snapshot);
+      }
+
       return;
     }
 

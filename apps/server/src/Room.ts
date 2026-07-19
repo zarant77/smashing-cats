@@ -1,6 +1,7 @@
 import {
   CHARACTERS,
   FIXED_DT,
+  FixedStepClock,
   Game,
   SNAPSHOT_INTERVAL_TICKS,
   TICK_RATE,
@@ -20,6 +21,7 @@ import {
   type LeaderboardMode,
   type ServerToClientMessage,
 } from "@smashing-cats/protocol";
+import { performance } from "node:perf_hooks";
 import type { WebSocket } from "ws";
 import { leaderboardStore } from "./leaderboard.js";
 
@@ -56,6 +58,8 @@ type RoomOptions = {
 const FULL_SNAPSHOT_INTERVAL_TICKS = TICK_RATE * 60;
 const EMPTY_MATCH_CLEANUP_MS = 10_000;
 const REPLAY_VERIFICATION_COOLDOWN_MS = 5_000;
+const SERVER_LOOP_INTERVAL_MS = Math.max(1, Math.floor((FIXED_DT * 1000) / 2));
+const MAX_INPUT_COMMANDS_PER_MESSAGE = 64;
 
 export class Room {
   private readonly clients = new Map<string, Client>();
@@ -64,6 +68,7 @@ export class Room {
   private readonly pendingLeaderboardSubmissions = new Map<string, PendingLeaderboardSubmission>();
   private readonly lastReplayVerificationSubmitAt = new Map<string, number>();
   private readonly onEmpty: () => void;
+  private readonly simulationClock = new FixedStepClock(FIXED_DT);
 
   private interval: NodeJS.Timeout | undefined;
   private lastPingTime = 0;
@@ -128,37 +133,50 @@ export class Room {
       return;
     }
 
-    this.interval = setInterval(() => {
-      if (this.clients.size === 0) {
-        this.stop();
-        this.onEmpty();
-        return;
-      }
+    this.simulationClock.reset(performance.now());
+    this.interval = setInterval(() => this.runServerLoop(), SERVER_LOOP_INTERVAL_MS);
+  }
 
-      const now = Date.now();
+  private runServerLoop(): void {
+    if (this.clients.size === 0) {
+      this.stop();
+      this.onEmpty();
+      return;
+    }
 
-      if (now - this.lastPingTime >= 10_000) {
-        this.lastPingTime = now;
+    this.updateConnections();
 
-        for (const [playerId, client] of this.clients) {
-          if (!client.alive) {
-            console.log(`[room] ping timeout ${playerId}`);
+    const simulationSteps = this.simulationClock.advance(performance.now());
 
-            client.socket.terminate();
-            this.removeClient(playerId);
-
-            continue;
-          }
-
-          client.alive = false;
-          client.socket.ping();
-        }
-      }
-
+    for (let step = 0; step < simulationSteps; step += 1) {
       for (const match of this.matches.values()) {
         this.updateMatch(match);
       }
-    }, 1000 / TICK_RATE);
+    }
+  }
+
+  private updateConnections(): void {
+    const now = Date.now();
+
+    if (now - this.lastPingTime < 10_000) {
+      return;
+    }
+
+    this.lastPingTime = now;
+
+    for (const [playerId, client] of this.clients) {
+      if (!client.alive) {
+        console.log(`[room] ping timeout ${playerId}`);
+
+        client.socket.terminate();
+        this.removeClient(playerId);
+
+        continue;
+      }
+
+      client.alive = false;
+      client.socket.ping();
+    }
   }
 
   private updateMatch(match: Match): void {
@@ -315,7 +333,7 @@ export class Room {
     }
 
     if (Array.isArray(message.commands)) {
-      for (const command of message.commands) {
+      for (const command of message.commands.slice(-MAX_INPUT_COMMANDS_PER_MESSAGE)) {
         if (!isPlayerInputCommand(command)) {
           continue;
         }

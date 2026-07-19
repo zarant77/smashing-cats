@@ -143,7 +143,21 @@ export class Game {
   }
 
   public setGamePaused(paused: boolean): void {
+    if (this.gamePaused === paused) {
+      return;
+    }
+
     this.gamePaused = paused;
+
+    for (const player of this.players.values()) {
+      player.lastInput = {
+        left: false,
+        right: false,
+        jump: false,
+      };
+      player.lastProcessedInputSeq = player.lastReceivedInputSeq;
+      clearJumpRequest(player);
+    }
   }
 
   public isGamePaused(): boolean {

@@ -141,6 +141,10 @@ importers:
       '@smashing-cats/protocol':
         specifier: workspace:*
         version: link:../protocol
+    devDependencies:
+      vitest:
+        specifier: ^4.1.7
+        version: 4.1.7(@types/node@25.9.1)(vite@8.0.14(@types/node@25.9.1)(esbuild@0.28.0)(tsx@4.22.3))
 
   packages/core:
     dependencies:

@@ -3,9 +3,9 @@ import type { DeltaSnapshot, EntitySnapshot, GameSnapshot, PlayerSnapshot } from
 export class SnapshotStore {
   private snapshot: GameSnapshot | undefined;
 
-  public setFullSnapshot(snapshot: GameSnapshot): GameSnapshot {
+  public setFullSnapshot(snapshot: GameSnapshot): GameSnapshot | undefined {
     if (this.snapshot !== undefined && snapshot.tick < this.snapshot.tick) {
-      return this.snapshot;
+      return undefined;
     }
 
     this.snapshot = cloneSnapshot(snapshot);
@@ -18,7 +18,7 @@ export class SnapshotStore {
     }
 
     if (delta.tick <= this.snapshot.tick) {
-      return this.snapshot;
+      return undefined;
     }
 
     const snapshot = cloneSnapshot(this.snapshot);

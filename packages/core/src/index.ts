@@ -19,6 +19,7 @@ export { verifyGameReplay } from "./replayVerification.js";
 export { simulatePlayerMovement } from "./movement.js";
 export { createDeltaSnapshot } from "./snapshot/deltaSnapshotFactory.js";
 export * from "./snapshot/SnapshotStore.js";
+export { FixedStepClock } from "./time/FixedStepClock.js";
 export * from "./math.js";
 export type { PlayerMovementState } from "./movement.js";
 export type { ReplayVerificationResult } from "./replayVerification.js";

@@ -30,6 +30,7 @@ import {
   readInput,
 } from "../input.js";
 import { createSocket, parseServerMessage, sendClientMessage } from "../network/clientConnection.js";
+import { receiveWithSimulatedLag } from "../networkDebug.js";
 import type { TouchControls } from "../ui/TouchControls.js";
 import { createLocalGame, createLocalGameSeed } from "./localGame.js";
 import { ReplayRecorder } from "./ReplayRecorder.js";
@@ -305,11 +306,13 @@ export class GameRuntime {
     });
 
     this.socket.addEventListener("message", (event) => {
-      const message = parseServerMessage(event.data);
+      receiveWithSimulatedLag(() => {
+        const message = parseServerMessage(event.data);
 
-      if (message !== undefined) {
-        this.handleServerMessage(message);
-      }
+        if (message !== undefined) {
+          this.handleServerMessage(message);
+        }
+      });
     });
   }
 
@@ -327,7 +330,11 @@ export class GameRuntime {
 
     if (message.type === "snapshot") {
       const snapshot = this.snapshotStore.setFullSnapshot(message.snapshot);
-      this.interpolator.add(snapshot);
+
+      if (snapshot !== undefined) {
+        this.interpolator.add(snapshot);
+      }
+
       return;
     }
 
@@ -425,7 +432,7 @@ export class GameRuntime {
       }
     }
 
-    const input = this.applyLocalViewportRightGuard(this.readHeldPlayerInput(), currentPlayerId);
+    const input = this.applyLocalViewportRightGuard(this.readPlayerInput(), currentPlayerId);
     this.updateLocalGame(canPlay, currentPlayerId, input);
 
     const snapshot = this.getRenderSnapshot(input, canSend && !isPaused());
@@ -444,6 +451,23 @@ export class GameRuntime {
       right: keyboardInput.right || touchInput?.right === true,
       jump: keyboardInput.jump || touchInput?.jump === true,
     };
+  }
+
+  private readPlayerInput(): PlayerInput {
+    const heldInput = this.readHeldPlayerInput();
+
+    if (!this.multiplayer) {
+      return heldInput;
+    }
+
+    const keyboardJumpPressed = consumeJumpPress();
+    const touchJumpPressed = this.touchControls?.consumeJumpPress() === true;
+    const jumpPressed = keyboardJumpPressed || touchJumpPressed;
+
+    return normalizePlayerInput({
+      ...heldInput,
+      jump: heldInput.jump || jumpPressed,
+    });
   }
 
   private applyLocalViewportRightGuard(input: PlayerInput, playerId: PlayerId | undefined): PlayerInput {
@@ -527,7 +551,9 @@ export class GameRuntime {
   }
 
   private consumeLocalInputForTick(heldInput: PlayerInput): PlayerInput {
-    const jumpPressed = consumeJumpPress() || this.touchControls?.consumeJumpPress() === true;
+    const keyboardJumpPressed = consumeJumpPress();
+    const touchJumpPressed = this.touchControls?.consumeJumpPress() === true;
+    const jumpPressed = keyboardJumpPressed || touchJumpPressed;
 
     return normalizePlayerInput({
       ...heldInput,
@@ -563,11 +589,8 @@ export class GameRuntime {
     const latestSnapshot = this.interpolator.getLatest();
     const localPlayer = latestSnapshot?.players.find((player) => player.playerId === this.playerId);
 
-    if (latestSnapshot?.gamePaused === true) {
-      return interpolatedSnapshot;
-    }
-
-    if (localPlayer?.paused === true) {
+    if (latestSnapshot?.gamePaused === true || localPlayer?.paused === true || !canSendInput) {
+      this.predictor.suspend(input);
       return interpolatedSnapshot;
     }
 
@@ -579,9 +602,7 @@ export class GameRuntime {
       this.charactersValue,
     );
 
-    if (canSendInput) {
-      this.sendInputCommands(this.predictor.getPendingInputCommands());
-    }
+    this.sendInputCommands(this.predictor.takeUnsentInputCommands(MAX_INPUT_COMMANDS_PER_PACKET));
 
     return snapshot;
   }

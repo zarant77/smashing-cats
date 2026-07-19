@@ -192,16 +192,21 @@ export class GameScreen implements Screen {
 
   private startRenderLoop(): void {
     this.renderTimer = setInterval(() => {
-      const snapshot = this.predictor.apply(
-        this.interpolator.get(this.playerId),
-        this.interpolator.getLatest(),
-        this.playerId,
-        this.latestInput,
-        this.characters,
-      );
+      const interpolatedSnapshot = this.interpolator.get(this.playerId);
+      const snapshot = this.paused
+        ? interpolatedSnapshot
+        : this.predictor.apply(
+            interpolatedSnapshot,
+            this.interpolator.getLatest(),
+            this.playerId,
+            this.latestInput,
+            this.characters,
+          );
 
       if (!this.paused) {
-        this.connection?.sendInputCommands(this.predictor.getPendingInputCommands().slice(-MAX_INPUT_COMMANDS_PER_PACKET));
+        this.connection?.sendInputCommands(this.predictor.takeUnsentInputCommands(MAX_INPUT_COMMANDS_PER_PACKET));
+      } else {
+        this.predictor.suspend(this.latestInput);
       }
 
       const content = this.renderer.render(snapshot, this.playerId);

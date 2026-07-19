@@ -30,10 +30,13 @@ export class LocalPlayerPredictor {
   private lastAuthoritativeTick: number | undefined;
   private lastAuthoritativeInputSeq: number | undefined;
   private nextInputSeq = 1;
+  private lastSentInputSeq = 0;
   private clientTick = 0;
   private visualCorrectionX = 0;
   private visualCorrectionY = 0;
   private lastVisualCorrectionAt: number | undefined;
+  private lastRenderedX: number | undefined;
+  private lastRenderedY: number | undefined;
 
   public apply(
     snapshot: GameSnapshot | undefined,
@@ -66,13 +69,14 @@ export class LocalPlayerPredictor {
       this.state = createMovementState(authoritativePlayer);
       this.playerId = playerId;
       this.pendingInputs = [];
-      this.lastRawInput = input;
+      this.lastRawInput = { ...input, jump: false };
       this.jumpRequested = false;
       this.lastUpdatedAt = now;
       this.accumulator = 0;
       this.lastAuthoritativeTick = latest.tick;
       this.lastAuthoritativeInputSeq = authoritativePlayer.lastProcessedInputSeq;
       this.nextInputSeq = authoritativePlayer.lastProcessedInputSeq + 1;
+      this.lastSentInputSeq = authoritativePlayer.lastProcessedInputSeq;
       this.clientTick = latest.tick;
     }
 
@@ -88,9 +92,15 @@ export class LocalPlayerPredictor {
     this.applyPredictionSteps(input, character, latest, snapshot.tick);
     this.decayVisualCorrection(now);
 
+    const renderedState = this.createRenderState(input, character, latest);
+    const predictedPlayer = this.createPredictedPlayer(authoritativePlayer, renderedState);
+
+    this.lastRenderedX = predictedPlayer.x;
+    this.lastRenderedY = predictedPlayer.y;
+
     return {
       ...snapshot,
-      players: snapshot.players.map((player) => (player.playerId === playerId ? this.createPredictedPlayer(authoritativePlayer) : player)),
+      players: snapshot.players.map((player) => (player.playerId === playerId ? predictedPlayer : player)),
     };
   }
 
@@ -99,6 +109,37 @@ export class LocalPlayerPredictor {
       ...pendingInput,
       input: { ...pendingInput.input },
     }));
+  }
+
+  public takeUnsentInputCommands(maxCommands: number): PlayerInputCommand[] {
+    const limit = Math.max(0, Math.floor(maxCommands));
+
+    if (limit === 0) {
+      return [];
+    }
+
+    const commands = this.pendingInputs
+      .filter((pendingInput) => pendingInput.inputSeq > this.lastSentInputSeq)
+      .slice(0, limit)
+      .map((pendingInput) => ({
+        ...pendingInput,
+        input: { ...pendingInput.input },
+      }));
+
+    const lastCommand = commands.at(-1);
+
+    if (lastCommand !== undefined) {
+      this.lastSentInputSeq = lastCommand.inputSeq;
+    }
+
+    return commands;
+  }
+
+  public suspend(input: PlayerInput, now = performance.now()): void {
+    this.lastUpdatedAt = now;
+    this.accumulator = 0;
+    this.lastRawInput = input;
+    this.jumpRequested = false;
   }
 
   public getLastInputSeq(): number {
@@ -150,6 +191,7 @@ export class LocalPlayerPredictor {
 
     this.pendingInputs = this.pendingInputs.filter((pendingInput) => pendingInput.inputSeq > authoritativePlayer.lastProcessedInputSeq);
     this.nextInputSeq = Math.max(this.nextInputSeq, authoritativePlayer.lastProcessedInputSeq + 1);
+    this.lastSentInputSeq = Math.max(this.lastSentInputSeq, authoritativePlayer.lastProcessedInputSeq);
 
     const reconciledState = createMovementState(authoritativePlayer);
 
@@ -174,42 +216,20 @@ export class LocalPlayerPredictor {
     const dy = reconciledState.y - currentState.y;
     const distance = Math.hypot(dx, dy);
 
-    if (this.shouldIgnoreGroundedYCorrection(currentState, reconciledState, dy)) {
-      this.state = {
-        ...reconciledState,
-        x: Math.abs(dx) <= IGNORE_POSITION_ERROR ? currentState.x : reconciledState.x,
-        y: reconciledState.y,
-        vy: 0,
-        grounded: true,
-        smashing: false,
-        smashingForCollision: false,
-        jumpStartY: reconciledState.y,
-      };
-      this.visualCorrectionY = 0;
-      return;
-    }
-
-    if (this.shouldStabilizeLanding(currentState, reconciledState, dy)) {
-      this.state = {
-        ...reconciledState,
-        y: reconciledState.y,
-        vy: 0,
-        grounded: true,
-        smashing: false,
-        smashingForCollision: false,
-        jumpStartY: reconciledState.y,
-      };
-      this.visualCorrectionY = 0;
-      this.lastVisualCorrectionAt = now;
-      return;
-    }
+    const stabilizeGroundedY = this.shouldIgnoreGroundedYCorrection(currentState, reconciledState, dy);
+    const stabilizeLanding = this.shouldStabilizeLanding(currentState, reconciledState, dy);
 
     if (distance <= IGNORE_POSITION_ERROR) {
       this.state = {
         ...reconciledState,
         x: currentState.x,
-        y: currentState.y,
+        y: stabilizeGroundedY || stabilizeLanding ? reconciledState.y : currentState.y,
       };
+
+      if (stabilizeGroundedY || stabilizeLanding) {
+        this.visualCorrectionY = 0;
+      }
+
       return;
     }
 
@@ -221,10 +241,10 @@ export class LocalPlayerPredictor {
       return;
     }
 
-    this.applySmoothedCorrection(reconciledState, now);
+    this.applySmoothedCorrection(reconciledState, now, stabilizeGroundedY || stabilizeLanding);
   }
 
-  private applySmoothedCorrection(reconciledState: PlayerMovementState, now: number): void {
+  private applySmoothedCorrection(reconciledState: PlayerMovementState, now: number, stabilizeY: boolean): void {
     if (this.state === undefined) {
       this.state = reconciledState;
       this.visualCorrectionX = 0;
@@ -233,11 +253,11 @@ export class LocalPlayerPredictor {
       return;
     }
 
-    const visualX = this.state.x + this.visualCorrectionX;
-    const visualY = this.state.y + this.visualCorrectionY;
+    const visualX = this.lastRenderedX ?? this.state.x + this.visualCorrectionX;
+    const visualY = this.lastRenderedY ?? this.state.y + this.visualCorrectionY;
     this.state = reconciledState;
     this.visualCorrectionX = visualX - reconciledState.x;
-    this.visualCorrectionY = visualY - reconciledState.y;
+    this.visualCorrectionY = stabilizeY ? 0 : visualY - reconciledState.y;
     this.lastVisualCorrectionAt = now;
   }
 
@@ -283,21 +303,54 @@ export class LocalPlayerPredictor {
     return true;
   }
 
-  private createPredictedPlayer(authoritativePlayer: PlayerSnapshot): PlayerSnapshot {
+  private createRenderState(
+    input: PlayerInput,
+    character: CharacterDefinition,
+    snapshot: GameSnapshot,
+  ): PlayerMovementState | undefined {
     if (this.state === undefined) {
+      return undefined;
+    }
+
+    const renderedState: PlayerMovementState = {
+      ...this.state,
+      size: [...this.state.size],
+    };
+
+    if (this.accumulator > 0) {
+      simulatePlayerMovement(
+        renderedState,
+        {
+          ...input,
+          jump: this.jumpRequested,
+        },
+        character,
+        createGameConfig(snapshot.world),
+        this.accumulator,
+      );
+    }
+
+    return renderedState;
+  }
+
+  private createPredictedPlayer(
+    authoritativePlayer: PlayerSnapshot,
+    renderedState: PlayerMovementState | undefined,
+  ): PlayerSnapshot {
+    if (renderedState === undefined) {
       return authoritativePlayer;
     }
 
     return {
       ...authoritativePlayer,
-      x: this.state.x + this.visualCorrectionX,
-      y: this.state.y + this.visualCorrectionY,
-      vx: this.state.vx,
-      vy: this.state.vy,
-      grounded: this.state.grounded,
-      smashing: this.state.smashing,
-      jumpStartY: this.state.jumpStartY,
-      wasJumpPressed: this.state.wasJumpPressed,
+      x: renderedState.x + this.visualCorrectionX,
+      y: renderedState.y + this.visualCorrectionY,
+      vx: renderedState.vx,
+      vy: renderedState.vy,
+      grounded: renderedState.grounded,
+      smashing: renderedState.smashing,
+      jumpStartY: renderedState.jumpStartY,
+      wasJumpPressed: renderedState.wasJumpPressed,
     };
   }
 
@@ -312,10 +365,13 @@ export class LocalPlayerPredictor {
     this.lastAuthoritativeTick = undefined;
     this.lastAuthoritativeInputSeq = undefined;
     this.nextInputSeq = 1;
+    this.lastSentInputSeq = 0;
     this.clientTick = 0;
     this.visualCorrectionX = 0;
     this.visualCorrectionY = 0;
     this.lastVisualCorrectionAt = undefined;
+    this.lastRenderedX = undefined;
+    this.lastRenderedY = undefined;
   }
 
   private decayVisualCorrection(now: number): void {

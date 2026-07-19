@@ -11,6 +11,8 @@ const MAX_EXTRAPOLATION_MS = 80;
 const MAX_BUFFERED_SNAPSHOTS = 24;
 const WORLD_CORRECTION_SMOOTHING_MS = 70;
 const NETWORK_TIMING_SMOOTHING = 0.12;
+const MIN_PLAYBACK_RATE = 0.9;
+const MAX_PLAYBACK_RATE = 1.1;
 const TICK_DURATION_MS = FIXED_DT * 1000;
 
 type BufferedSnapshot = {
@@ -22,20 +24,33 @@ export class SnapshotInterpolator {
   private readonly snapshots: BufferedSnapshot[] = [];
   private smoothedScrollX: { value: number; updatedAt: number } | undefined;
   private renderedTick: number | undefined;
+  private lastRenderedAt: number | undefined;
   private latestServerTickEstimate: { tick: number; updatedAt: number } | undefined;
   private interpolationDelayMs = INITIAL_INTERPOLATION_DELAY_MS;
   private smoothedSnapshotIntervalMs: number | undefined;
   private smoothedJitterMs = 0;
 
   public add(snapshot: GameSnapshot, receivedAt = performance.now()): void {
-    if (this.renderedTick !== undefined && snapshot.tick < this.renderedTick - 1) {
-      return;
-    }
-
     const existingIndex = this.snapshots.findIndex((buffered) => buffered.snapshot.tick === snapshot.tick);
 
     if (existingIndex !== -1) {
-      this.snapshots[existingIndex] = { snapshot, receivedAt };
+      const existing = this.snapshots[existingIndex];
+
+      if (existing === undefined) {
+        return;
+      }
+
+      const pauseStateChanged = existing.snapshot.gamePaused !== snapshot.gamePaused;
+
+      this.snapshots[existingIndex] = {
+        snapshot,
+        receivedAt: pauseStateChanged ? receivedAt : existing.receivedAt,
+      };
+
+      if (pauseStateChanged && existingIndex === this.snapshots.length - 1) {
+        this.latestServerTickEstimate = { tick: snapshot.tick, updatedAt: receivedAt };
+      }
+
       return;
     }
 
@@ -55,11 +70,8 @@ export class SnapshotInterpolator {
 
     const newest = this.snapshots.at(-1);
 
-    if (newest !== undefined) {
-      this.latestServerTickEstimate = {
-        tick: newest.snapshot.tick,
-        updatedAt: newest.receivedAt,
-      };
+    if (newest !== undefined && newest.snapshot.tick === snapshot.tick) {
+      this.updateServerTickEstimate(snapshot, receivedAt, last?.snapshot.gamePaused === true);
     }
 
     if (this.snapshots.length > MAX_BUFFERED_SNAPSHOTS) {
@@ -71,19 +83,29 @@ export class SnapshotInterpolator {
     if (this.snapshots.length === 0) {
       this.smoothedScrollX = undefined;
       this.renderedTick = undefined;
+      this.lastRenderedAt = undefined;
       this.latestServerTickEstimate = undefined;
       return undefined;
     }
 
-    if (this.snapshots.length === 1) {
-      return this.setRenderedTick(this.smoothScrollX(this.extrapolateSnapshot(this.snapshots[0], localPlayerId, now), now));
+    const newest = this.snapshots.at(-1);
+
+    if (newest === undefined) {
+      return undefined;
+    }
+
+    if (newest.snapshot.gamePaused) {
+      this.renderedTick = newest.snapshot.tick;
+      this.lastRenderedAt = now;
+      return this.smoothScrollX(newest.snapshot, now);
     }
 
     const estimatedServerTick = this.getEstimatedServerTick(now);
-    const renderTick = estimatedServerTick - this.interpolationDelayMs / TICK_DURATION_MS;
+    const targetRenderTick = estimatedServerTick - this.interpolationDelayMs / TICK_DURATION_MS;
+    const renderTick = this.advanceRenderClock(targetRenderTick, newest.snapshot.tick, now);
 
     if (renderTick <= this.snapshots[0].snapshot.tick) {
-      return this.setRenderedTick(this.smoothScrollX(this.snapshots[0].snapshot, now));
+      return this.smoothScrollX(this.snapshots[0].snapshot, now);
     }
 
     let previous = this.snapshots[0];
@@ -105,17 +127,17 @@ export class SnapshotInterpolator {
     }
 
     if (previous === undefined || next === undefined) {
-      return this.setRenderedTick(this.smoothScrollX(this.extrapolateSnapshot(this.snapshots.at(-1), localPlayerId, now), now));
+      return this.smoothScrollX(this.extrapolateSnapshot(newest, localPlayerId, renderTick), now);
     }
 
     if (renderTick > next.snapshot.tick || previous === next || next.snapshot.tick <= previous.snapshot.tick) {
-      return this.setRenderedTick(this.smoothScrollX(this.extrapolateSnapshot(next, localPlayerId, now), now));
+      return this.smoothScrollX(this.extrapolateSnapshot(next, localPlayerId, renderTick), now);
     }
 
     const alpha = clamp01((renderTick - previous.snapshot.tick) / (next.snapshot.tick - previous.snapshot.tick));
     const interpolated = interpolateSnapshot(previous.snapshot, next.snapshot, alpha, localPlayerId);
 
-    return this.setRenderedTick(this.smoothScrollX(interpolated, now));
+    return this.smoothScrollX(interpolated, now);
   }
 
   public getRenderedTick(): number | undefined {
@@ -160,11 +182,6 @@ export class SnapshotInterpolator {
     this.interpolationDelayMs = lerp(this.interpolationDelayMs, targetDelay, INTERPOLATION_DELAY_SMOOTHING);
   }
 
-  private setRenderedTick(snapshot: GameSnapshot | undefined): GameSnapshot | undefined {
-    this.renderedTick = snapshot?.tick;
-    return snapshot;
-  }
-
   private getEstimatedServerTick(now: number): number {
     const estimate = this.latestServerTickEstimate;
 
@@ -178,13 +195,16 @@ export class SnapshotInterpolator {
   private extrapolateSnapshot(
     buffered: BufferedSnapshot | undefined,
     localPlayerId: PlayerId | undefined,
-    now: number,
+    renderTick: number,
   ): GameSnapshot | undefined {
     if (buffered === undefined) {
       return undefined;
     }
 
-    const dt = Math.min(MAX_EXTRAPOLATION_MS, Math.max(0, now - buffered.receivedAt)) / 1000;
+    const dt = Math.min(
+      MAX_EXTRAPOLATION_MS / 1000,
+      Math.max(0, renderTick - buffered.snapshot.tick) * FIXED_DT,
+    );
 
     if (buffered.snapshot.gamePaused) {
       return buffered.snapshot;
@@ -211,6 +231,52 @@ export class SnapshotInterpolator {
         y: entity.y + entity.vy * dt,
       })),
     };
+  }
+
+  private updateServerTickEstimate(snapshot: GameSnapshot, receivedAt: number, wasPaused: boolean): void {
+    const estimate = this.latestServerTickEstimate;
+
+    if (estimate === undefined || snapshot.gamePaused || wasPaused) {
+      this.latestServerTickEstimate = {
+        tick: snapshot.tick,
+        updatedAt: receivedAt,
+      };
+      return;
+    }
+
+    const projectedTick = estimate.tick + Math.max(0, receivedAt - estimate.updatedAt) / TICK_DURATION_MS;
+
+    this.latestServerTickEstimate = {
+      // Packet latency may make the observed snapshot older than the current
+      // estimate. Never re-anchor the playback clock backwards on a late
+      // packet; only correct it forward when the server is demonstrably ahead.
+      tick: Math.max(projectedTick, snapshot.tick),
+      updatedAt: receivedAt,
+    };
+  }
+
+  private advanceRenderClock(targetTick: number, newestSnapshotTick: number, now: number): number {
+    if (this.renderedTick === undefined || this.lastRenderedAt === undefined) {
+      this.renderedTick = targetTick;
+      this.lastRenderedAt = now;
+      return targetTick;
+    }
+
+    const elapsedTicks = Math.max(0, now - this.lastRenderedAt) / TICK_DURATION_MS;
+    const naturalTick = this.renderedTick + elapsedTicks;
+    const correction = targetTick - naturalTick;
+    const minCorrection = elapsedTicks * (MIN_PLAYBACK_RATE - 1);
+    const maxCorrection = elapsedTicks * (MAX_PLAYBACK_RATE - 1);
+    const maxExtrapolatedTick = newestSnapshotTick + MAX_EXTRAPOLATION_MS / TICK_DURATION_MS;
+    const nextTick = Math.min(
+      maxExtrapolatedTick,
+      Math.max(this.renderedTick, naturalTick + clamp(correction, minCorrection, maxCorrection)),
+    );
+
+    this.renderedTick = nextTick;
+    this.lastRenderedAt = now;
+
+    return nextTick;
   }
 
   private smoothScrollX(snapshot: GameSnapshot | undefined, now: number): GameSnapshot | undefined {

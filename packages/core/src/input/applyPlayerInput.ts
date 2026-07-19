@@ -55,16 +55,46 @@ export function queuePlayerInputCommand(player: Player, command: PlayerInputComm
 }
 
 export function consumePlayerInputCommand(player: Player): PlayerInputCommand | undefined {
-  const command = player.pendingInputCommands.shift();
+  const command = player.pendingInputCommands.at(-1);
 
   if (command === undefined) {
     return undefined;
   }
 
-  player.lastInput = command.input;
-  player.lastInputSnapshotTick = command.snapshotTick;
+  // A network packet can deliver several client ticks at once. The server has
+  // already simulated the elapsed ticks with the last known held input, so
+  // replaying every delayed command here would create an ever-later input
+  // queue. Apply the freshest held state and preserve a one-shot jump from any
+  // command that was coalesced into this server tick.
+  let jumpHeld = player.wasJumpPressed;
+  let jumpCommand: PlayerInputCommand | undefined;
 
-  return command;
+  for (const pendingCommand of player.pendingInputCommands) {
+    if (pendingCommand.input.jump && !jumpHeld) {
+      jumpCommand = pendingCommand;
+    }
+
+    jumpHeld = pendingCommand.input.jump;
+  }
+
+  const consumedCommand: PlayerInputCommand = {
+    ...command,
+    snapshotTick: jumpCommand?.snapshotTick ?? command.snapshotTick,
+    input: {
+      ...command.input,
+      jump: jumpCommand === undefined ? command.input.jump : true,
+    },
+  };
+
+  if (jumpCommand !== undefined) {
+    player.wasJumpPressed = false;
+  }
+
+  player.pendingInputCommands = [];
+  player.lastInput = consumedCommand.input;
+  player.lastInputSnapshotTick = consumedCommand.snapshotTick;
+
+  return consumedCommand;
 }
 
 export function clearJumpRequest(player: Player): void {

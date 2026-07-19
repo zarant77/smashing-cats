@@ -3,11 +3,17 @@
   "version": "0.1.0",
   "type": "module",
   "private": true,
+  "scripts": {
+    "test": "vitest run"
+  },
   "exports": {
     ".": "./src/index.ts"
   },
   "dependencies": {
     "@smashing-cats/core": "workspace:*",
     "@smashing-cats/protocol": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.7"
   }
 }
