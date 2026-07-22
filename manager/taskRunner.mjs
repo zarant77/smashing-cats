@@ -1,6 +1,7 @@
 import { copyFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
-import { spawn } from "node:child_process";
-import { join } from "node:path";
+import { spawn, spawnSync } from "node:child_process";
+import { homedir } from "node:os";
+import { delimiter, join } from "node:path";
 
 import {
   androidOutputs,
@@ -67,6 +68,9 @@ export async function buildAndroid(selectedViews, options = {}) {
   }
 
   const enabledViews = getViewEnv(clientViews);
+  const androidJava = resolveAndroidJava();
+
+  writeLog(onLog, `Using Java ${androidJava.majorVersion} from ${androidJava.home}\n`);
 
   mkdirSync(paths.build, { recursive: true });
 
@@ -110,12 +114,14 @@ export async function buildAndroid(selectedViews, options = {}) {
     cwd: paths.android,
     title: "Gradle clean",
     onLog,
+    env: androidJava.env,
   });
 
   await runCommand("./gradlew", ["assembleDebug", "assembleRelease", "bundleRelease"], {
     cwd: paths.android,
     title: "Gradle Android build",
     onLog,
+    env: androidJava.env,
   });
 
   copyAndroidArtifacts(clientViews, onLog);
@@ -194,6 +200,75 @@ function copyArtifactFile(selectedModules, suffix, sourcePath, onLog) {
   copyFileSync(sourcePath, targetPath);
 
   writeLog(onLog, `Copied ${targetPath}\n`);
+}
+
+function resolveAndroidJava() {
+  const candidates = getAndroidJavaCandidates();
+
+  for (const home of candidates) {
+    const majorVersion = readJavaMajorVersion(home);
+
+    if (majorVersion === null || majorVersion < 21) {
+      continue;
+    }
+
+    return {
+      home,
+      majorVersion,
+      env: {
+        JAVA_HOME: home,
+        PATH: `${join(home, "bin")}${delimiter}${process.env.PATH ?? ""}`,
+      },
+    };
+  }
+
+  throw new Error(
+    "Android build requires JDK 21 or newer. Install JDK 21 or set ANDROID_JAVA_HOME to its home directory.",
+  );
+}
+
+function getAndroidJavaCandidates() {
+  const platformCandidates =
+    process.platform === "darwin"
+      ? [
+          "/Applications/Android Studio.app/Contents/jbr/Contents/Home",
+          join(homedir(), "Applications/Android Studio.app/Contents/jbr/Contents/Home"),
+          "/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home",
+          "/usr/local/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home",
+        ]
+      : process.platform === "linux"
+        ? ["/opt/android-studio/jbr", "/usr/local/android-studio/jbr"]
+        : [];
+
+  return [
+    process.env.ANDROID_JAVA_HOME,
+    process.env.JAVA_HOME,
+    process.env.STUDIO_JDK,
+    ...platformCandidates,
+  ].filter((candidate, index, allCandidates) => {
+    return typeof candidate === "string" && candidate.length > 0 && allCandidates.indexOf(candidate) === index;
+  });
+}
+
+function readJavaMajorVersion(home) {
+  const executable = join(home, "bin", process.platform === "win32" ? "java.exe" : "java");
+
+  if (!existsSync(executable)) {
+    return null;
+  }
+
+  const result = spawnSync(executable, ["-version"], {
+    encoding: "utf8",
+  });
+
+  if (result.error !== undefined || result.status !== 0) {
+    return null;
+  }
+
+  const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
+  const versionMatch = output.match(/(?:openjdk|java) version "(?:1\.)?(\d+)/i);
+
+  return versionMatch === null ? null : Number.parseInt(versionMatch[1], 10);
 }
 
 function runCommand(command, args, options = {}) {
